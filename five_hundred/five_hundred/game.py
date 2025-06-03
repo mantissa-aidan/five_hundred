@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Callable
 from enum import Enum, auto
 from .card import Card, Suit, Rank
 from .deck import Deck
@@ -35,6 +35,7 @@ class Game:
         self.player_has_passed_auction: Dict[Player, bool] = {player: False for player in self.players}
         self.passes_this_round: int = 0 # Number of consecutive passes in current bidding sequence
         self.last_bidder: Optional[Player] = None # The player who made the current highest_bid_this_round
+        self._test_mode_card_choice_logic: Optional[Callable[[Player, List[Card], Optional[Suit], Optional[Suit]], Card]] = None # Test hook
 
     def _deal_cards(self):
         """Deals cards to players and the kitty according to 500 rules."""
@@ -144,40 +145,108 @@ class Game:
 
     def _get_player_bid_action(self, player: Player) -> Tuple[str, Optional[Tuple]]:
         """
-        Placeholder for getting player's bid or pass action.
-        In a real game, this would involve UI/input.
-        For simulation/testing, we can predefine actions or use simple AI.
-        Returns:
-            A tuple: (action_type: str, action_params: Optional[tuple])
-            action_type: "bid" or "pass"
-            action_params: (tricks, suit, bid_type) if action_type is "bid", else None
+        Gets player's bid or pass action via user input.
         """
-        # ---- Player Action Simulation (to be replaced by actual input/AI) ----
-        # Example: Player 0 bids 6S if no current bid, others pass.
-        # This simulation needs to be more dynamic for proper testing of the auction.
-        if self.highest_bid_this_round is None:
-            if player == self.players[0]: # First player to bid (if P0 is to left of dealer)
-                print(f"SIM: {player.name} considering initial bid.")
-                # Simple initial bid for P0
-                return ("bid", (6, Suit.SPADES, BidType.SUIT_TRUMP))
-            else:
-                print(f"SIM: {player.name} considering pass (no initial bid from P0).")
-                return ("pass", None)
-        else:
-            # If there's a bid, other players will pass in this simple simulation
-            # A real AI would decide whether to overbid.
-            if player != self.last_bidder: # Don't let last bidder pass immediately
-                 print(f"SIM: {player.name} considering pass over existing bid.")
-                 return ("pass", None)
-            else: # Last bidder's turn again (after others passed or bid)
-                # This situation should be handled by the re-bidding rule in player_attempts_bid
-                # For simulation, if it's last_bidder's turn again, they also pass (ending auction)
-                print(f"SIM: {player.name} (last bidder) passes as others passed back.")
-                return ("pass", None)
+        print(f"\n{player.name}'s turn to bid.")
+        player.sort_hand() # Ensure hand is sorted for display
+        print(f"Your hand: {player.hand}")
 
-        # Fallback: pass
-        # print(f"SIM: {player.name} defaults to pass.")
-        # return ("pass", None)
+        if self.highest_bid_this_round:
+            print(f"Current highest bid: {self.highest_bid_this_round}")
+        else:
+            print("No bids yet.")
+        
+        print("Bidding options: 'bid' or 'pass'")
+        
+        while True:
+            action = input("Enter your action ('bid' or 'pass'): ").strip().lower()
+            if action == "pass":
+                return ("pass", None)
+            elif action == "bid":
+                try:
+                    print("\n--- Place Your Bid ---")
+                    
+                    # Get tricks (6-10 for suit/NT, 0 for Misere/Open Misere)
+                    while True:
+                        try:
+                            tricks_str = input("Enter number of tricks (6-10, or 0 for Misere bids): ")
+                            tricks = int(tricks_str)
+                            # Basic validation, Bid class will do more
+                            if not (0 <= tricks <= 10):
+                                print("Invalid number of tricks. Must be 0 (for Misere) or between 6 and 10.")
+                                continue
+                            break
+                        except ValueError:
+                            print("Invalid input. Please enter a number.")
+
+                    # Get BidType
+                    print("Bid Types:")
+                    bid_type_options = {i+1: bt for i, bt in enumerate(BidType)}
+                    for i, bt in bid_type_options.items():
+                        print(f"  {i}. {bt.name.replace('_', ' ').title()}")
+                    
+                    bid_type_choice = None
+                    while bid_type_choice is None:
+                        try:
+                            bt_idx_str = input(f"Choose bid type (1-{len(bid_type_options)}): ")
+                            bt_idx = int(bt_idx_str)
+                            if bt_idx in bid_type_options:
+                                bid_type_choice = bid_type_options[bt_idx]
+                            else:
+                                print(f"Invalid choice. Please enter a number between 1 and {len(bid_type_options)}.")
+                        except ValueError:
+                            print("Invalid input. Please enter a number.")
+                    
+                    chosen_bid_type = bid_type_choice
+
+                    # Handle Misere/Open Misere tricks automatically
+                    if chosen_bid_type == BidType.MISERE or chosen_bid_type == BidType.OPEN_MISERE:
+                        if tricks != 0:
+                            print(f"For {chosen_bid_type.name}, tricks are automatically 0. Adjusting.")
+                        tricks = 0 # Enforce 0 tricks for Misere types
+                        chosen_suit = None # No suit for Misere bids
+                        return ("bid", (tricks, chosen_suit, chosen_bid_type))
+
+                    # Get Suit for Suit Trump or No Trump bids
+                    if chosen_bid_type == BidType.NO_TRUMP:
+                        if tricks < 6:
+                             print("No Trump bids must be for 6-10 tricks. Please re-bid.")
+                             continue # Restart bid input
+                        chosen_suit = Suit.NO_TRUMP # Special case for NT, Bid class handles it
+                        return ("bid", (tricks, chosen_suit, chosen_bid_type))
+                    elif chosen_bid_type == BidType.SUIT_TRUMP:
+                        if not (6 <= tricks <= 10):
+                            print("Suit Trump bids must be for 6-10 tricks. Please re-bid.")
+                            continue # Restart bid input
+                        
+                        print("Suits:")
+                        suit_options = {i+1: s for i, s in enumerate([Suit.SPADES, Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS])}
+                        for i, s_opt in suit_options.items():
+                            print(f"  {i}. {s_opt.name.title()}")
+                        
+                        suit_choice = None
+                        while suit_choice is None:
+                            try:
+                                s_idx_str = input(f"Choose suit (1-{len(suit_options)}): ")
+                                s_idx = int(s_idx_str)
+                                if s_idx in suit_options:
+                                    suit_choice = suit_options[s_idx]
+                                else:
+                                    print(f"Invalid choice. Please enter a number between 1 and {len(suit_options)}.")
+                            except ValueError:
+                                print("Invalid input. Please enter a number.")
+                        chosen_suit = suit_choice
+                        return ("bid", (tricks, chosen_suit, chosen_bid_type))
+                    else:
+                        # Should not happen if BidTypes are handled above
+                        print("Error: Unexpected bid type. Please try again.")
+                        continue
+
+                except Exception as e: # Catch any unexpected errors during input
+                    print(f"An error occurred during bid input: {e}. Please try again.")
+                    # Loop again for fresh input
+            else:
+                print("Invalid action. Please enter 'bid' or 'pass'.")
 
     def run_bidding_round(self, starting_bidder_idx: int):
         """Manages the entire bidding auction among players."""
@@ -274,166 +343,62 @@ class Game:
             # Optionally: self.start_new_round() or pass to next dealer automatically
 
     def _handle_kitty_exchange(self, declarer: Player):
-        """Allows the declarer to exchange cards with the kitty, with a basic discard strategy."""
+        """Allows the declarer to exchange cards with the kitty via user input."""
         print(f"\n--- Kitty Exchange Phase ---")
-        print(f"{declarer.name} is exchanging with the kitty.")
-        print(f"Kitty contains: {self.kitty}")
+        print(f"{declarer.name}, you won the bid: {self.winning_bid}")
+        print(f"Kitty contained: {self.kitty}")
         
         declarer.add_cards_to_hand(self.kitty)
-        self.kitty = [] # Kitty is now empty
-        # print(f"{declarer.name}'s hand before discard (13 cards): {declarer.hand}")
-        declarer.sort_hand() # Sorts Joker > Trumps (by rank) > Other suits (by rank)
-        print(f"{declarer.name}'s sorted hand (13 cards): {declarer.hand}")
+        self.kitty = [] 
+        declarer.sort_hand() 
+
+        print(f"\n{declarer.name}'s hand with kitty cards (13 cards total):")
+        for i, card in enumerate(declarer.hand):
+            print(f"  {i+1}. {card}")
 
         num_to_discard = len(declarer.hand) - 10
         discards: List[Card] = []
+        discard_indices: List[int] = []
 
-        if num_to_discard <= 0: # Should not happen with 3 kitty cards
-            print(f"{declarer.name} has 10 or fewer cards, no discard needed.")
-        elif self.winning_bid.bid_type in [BidType.MISERE, BidType.OPEN_MISERE]:
-            # Misere discard strategy: discard highest cards
-            # Hand is sorted Joker > Ace > King ... (effectively highest to lowest)
-            # So, pop from the beginning of the sorted list (which are the highest cards)
-            print(f"SIM: {declarer.name} (Misere bid) discarding highest cards.")
-            for _ in range(num_to_discard):
-                if declarer.hand:
-                    discards.append(declarer.hand.pop(0)) # Pop from front (highest)
+        print(f"You must discard {num_to_discard} card(s).")
+        
+        if num_to_discard <= 0:
+            print("No discard necessary.")
         else:
-            # Suit or No-Trump bid discard strategy
-            print(f"SIM: {declarer.name} (Suit/NT bid) discarding strategically.")
-            temp_hand = list(declarer.hand) # Work with a copy
+            for i in range(num_to_discard):
+                while True:
+                    try:
+                        card_idx_str = input(f"Choose card to discard #{i+1} (enter number 1-{len(declarer.hand)}): ").strip()
+                        card_idx_one_based = int(card_idx_str)
+                        card_idx_zero_based = card_idx_one_based - 1
+
+                        if not (0 <= card_idx_zero_based < len(declarer.hand)):
+                            print("Invalid card number. Please choose from the list.")
+                            continue
+                        if card_idx_zero_based in discard_indices:
+                            print("You've already selected that card to discard. Choose a different one.")
+                            continue
+                        
+                        discard_indices.append(card_idx_zero_based)
+                        break 
+                    except ValueError:
+                        print("Invalid input. Please enter a number.")
             
-            trumps_in_hand: List[Card] = []
-            non_trumps_in_hand: List[Card] = []
-
-            # Identify trumps (Joker, Bowers, cards of trump suit)
-            # Note: self.trump_suit is set before this method is called.
-            # For No_Trump bids, self.trump_suit is Suit.NO_TRUMP.
-            # Joker is always a trump in effect, regardless of self.trump_suit for actual suit bids.
-
-            actual_trump_suit_for_play = self.trump_suit
-            if self.winning_bid.bid_type == BidType.NO_TRUMP or \
-               self.winning_bid.bid_type == BidType.MISERE or \
-               self.winning_bid.bid_type == BidType.OPEN_MISERE:
-                actual_trump_suit_for_play = Suit.NO_TRUMP # Joker is the only effective trump
-
-            for card in temp_hand:
-                is_trump_card = False
-                if card.rank == Rank.JOKER:
-                    is_trump_card = True
-                elif actual_trump_suit_for_play != Suit.NO_TRUMP:
-                    if card.suit == actual_trump_suit_for_play:
-                        is_trump_card = True
-                    elif card.rank == Rank.JACK: # Check for Bowers
-                        left_bower_suit = None
-                        if actual_trump_suit_for_play == Suit.SPADES: left_bower_suit = Suit.CLUBS
-                        elif actual_trump_suit_for_play == Suit.CLUBS: left_bower_suit = Suit.SPADES
-                        elif actual_trump_suit_for_play == Suit.DIAMONDS: left_bower_suit = Suit.HEARTS
-                        elif actual_trump_suit_for_play == Suit.HEARTS: left_bower_suit = Suit.DIAMONDS
-                        if card.suit == left_bower_suit:
-                            is_trump_card = True 
-               
-                if is_trump_card:
-                    trumps_in_hand.append(card)
-                else:
-                    non_trumps_in_hand.append(card)
+            # Sort indices in reverse order to avoid issues when removing from list
+            discard_indices.sort(reverse=True)
             
-            # Sort non-trumps: lowest to highest (for easier pop from end)
-            # Player.sort_hand sorts high to low. We need to define card_value for sorting or reverse.
-            # For simplicity with current sort: Player.sort_hand sorts Ace high.
-            # So the end of non_trumps_in_hand (if sorted by player.sort_hand logic) would be lowest.
-            # Let's use a simple rank value for sorting discards (lower is better to discard)
-            def get_card_discard_value(c: Card, is_misere: bool) -> int:
-                # For Misere, higher value is better to discard.
-                # For Trump/NT, lower value is better to discard (among non-trumps or low trumps).
-                # This needs to align with how Player.sort_hand works or be independent.
-                # Player.sort_hand puts Joker first, then suits, then rank high-low.
-                # So, to discard low non-trumps, we want to pick from the *end* of a sorted list of non-trumps.
-                # To discard low trumps, from the *end* of a sorted list of trumps (excluding Joker/Bowers if possible).
-                
-                # Simplified: Use default sort order (Ace high, Joker highest)
-                # Non-trumps: discard from the end of the sorted list (lowest non-trumps)
-                # Trumps: discard from the end of the sorted list (lowest trumps, but try to keep Joker/Bowers)
-                # This is implicitly handled by player.sort_hand() and popping from end of sub-lists.
-                return c.rank.value # This is enum order, not game rank. Not ideal directly.
-                # Let's just rely on the main hand sort and iterate.
-
-            # Discard non-trumps first, lowest ones first
-            # The main hand is sorted high-to-low. So iterate and pick from those not in trumps_in_hand.
-            # A bit complex to pick lowest non-trump from a combined sorted list. 
-            # Simpler: sort non_trumps_in_hand from low to high value, then pop.
-            
-            # Re-sort non_trumps_in_hand by rank (ascending - 4 low, Ace high) for discarding
-            # This is crude, doesn't perfectly align with Player.sort_hand internal values for Joker etc.
-            # but okay for a basic strategy.
-            non_trumps_in_hand.sort(key=lambda c: (c.rank.value, c.suit.value)) # Sort low rank first
-
-            for _ in range(num_to_discard):
-                if not declarer.hand: break # Should not happen
-                
-                card_to_discard = None
-                if non_trumps_in_hand:
-                    card_to_discard = non_trumps_in_hand.pop(0) # Discard lowest non-trump
-                    if card_to_discard in trumps_in_hand: # Should not happen if logic is right
-                        # This might occur if a card is somehow both (e.g. a bug in Bower ID elsewhere)
-                        # or if list management is tricky. Safe removal:
-                        if card_to_discard in trumps_in_hand:
-                            trumps_in_hand.remove(card_to_discard)
-                elif trumps_in_hand:
-                    # Have to discard trumps. Sort trumps low to high to discard lowest.
-                    # Avoid Joker/Bowers if other trumps exist.
-                    # Key for sorting: Joker (0), Bowers (1), Other Trumps (2), then by rank, then suit.
-                    trumps_in_hand.sort(key=lambda c: (
-                        0 if c.rank == Rank.JOKER else
-                        (1 if c.rank == Rank.JACK and 
-                            (c.suit == actual_trump_suit_for_play or # Right Bower
-                             (actual_trump_suit_for_play == Suit.SPADES and c.suit == Suit.CLUBS) or 
-                             (actual_trump_suit_for_play == Suit.CLUBS and c.suit == Suit.SPADES) or 
-                             (actual_trump_suit_for_play == Suit.DIAMONDS and c.suit == Suit.HEARTS) or 
-                             (actual_trump_suit_for_play == Suit.HEARTS and c.suit == Suit.DIAMONDS)
-                            ) # End of Left Bower check
-                         else 2), # Other trumps
-                        c.rank.value, 
-                        c.suit.value
-                    ))
-                    
-                    if trumps_in_hand: # Still have trumps to discard
-                        card_to_discard = trumps_in_hand.pop(0) # Discard lowest trump (that isn't Joker/Bower if others exist)
-                else:
-                    # Should have cards if num_to_discard > 0 and hand is not empty
-                    # Fallback: if logic above fails to select, and hand has cards, pop from overall hand.
-                    # The main hand is sorted high-low, so this discards the current lowest overall.
-                    if declarer.hand: 
-                        print(f"SIM: Discard strategy led to empty non_trump/trump lists, but still need to discard.")
-                        card_to_discard = declarer.hand[-1] # Lowest from already sorted hand
-
-                if card_to_discard:
-                    if card_to_discard in declarer.hand: 
-                        declarer.hand.remove(card_to_discard)
-                        discards.append(card_to_discard)
-                    else:
-                        # This indicates an issue: card selected for discard was not in the main hand copy.
-                        # This might happen if card_to_discard came from a sublist (trumps_in_hand, non_trumps_in_hand)
-                        # that wasn't perfectly in sync or if the card was already removed.
-                        # The primary removal should be from `declarer.hand`.
-                        print(f"SIM: Warning - card_to_discard {card_to_discard} not found in declarer.hand directly. Trying fallback.")
-                        if declarer.hand and len(discards) < num_to_discard :
-                             fallback_discard = declarer.hand.pop() # Pop from the end (lowest of sorted hand)
-                             discards.append(fallback_discard)
-                             print(f"SIM: Fallback discard from declarer.hand: {fallback_discard}")
-                elif len(discards) < num_to_discard and declarer.hand:
-                    # If no card was selected by the strategy (e.g. all lists became empty prematurely)
-                    print(f"SIM: No card selected by strategy, but still need to discard. Fallback.")
-                    fallback_discard = declarer.hand.pop() # Pop from the end (lowest of sorted hand)
-                    discards.append(fallback_discard)
-                    print(f"SIM: Fallback discard due to no selection: {fallback_discard}")
-
+            for idx_to_remove in discard_indices:
+                discards.append(declarer.hand.pop(idx_to_remove))
+        
         assert len(declarer.hand) == 10, f"Declarer hand size not 10, but {len(declarer.hand)}"
-        print(f"{declarer.name} discarded: {discards}")
+        print(f"\n{declarer.name} discarded: {discards}")
         print(f"{declarer.name}'s final hand (10 cards): {declarer.hand}")
-        print(f"--- End Kitty Exchange ---")
 
-        # After kitty exchange, proceed to play the round
+        if self.winning_bid.bid_type == BidType.OPEN_MISERE:
+            print(f"{declarer.name}'s hand is now open for Open Misere: {declarer.hand}")
+            # In a real CLI/GUI, this hand would remain visible to all players.
+
+        print(f"--- End Kitty Exchange ---")
         self._play_round(declarer)
 
     def _determine_lead_player_for_first_trick(self, declarer: Player) -> Player:
@@ -519,8 +484,17 @@ class Game:
         # If player cannot follow suit, they can play any card.
         return list(hand) 
 
+    def _get_player_card_choice_for_test(self, player: Player, playable_cards: List[Card], trick_suit: Optional[Suit], current_trump_suit: Optional[Suit]) -> Card:
+        """Used by _play_trick in test mode to get a card based on scenario logic."""
+        if self._test_mode_card_choice_logic:
+            chosen_card = self._test_mode_card_choice_logic(player, playable_cards, trick_suit, current_trump_suit)
+            if chosen_card not in playable_cards:
+                raise ValueError(f"Test logic for {player.name} chose unplayable card {chosen_card} from {playable_cards}")
+            return chosen_card
+        raise RuntimeError("Test mode card choice logic not set!")
+
     def _play_trick(self, lead_player: Player) -> Player:
-        """Manages the playing of a single trick and determines the winner."""
+        """Manages the playing of a single trick, getting card choices from users, and determines the winner."""
         current_trick_cards: Dict[Player, Card] = {}
         trick_suit: Optional[Suit] = None
         
@@ -531,36 +505,57 @@ class Game:
 
         for i in range(num_players):
             current_player = self.players[current_player_idx]
+            current_player.sort_hand() # Keep hand sorted for display consistency
             playable_cards = self._get_playable_cards(current_player, trick_suit)
 
             if not playable_cards:
-                # This should not happen if players always have cards during the 10 tricks
-                raise Exception(f"Player {current_player.name} has no cards to play!")
+                print(f"Error: {current_player.name} has no playable cards. This should not happen.")
+                # Handle this gracefully, maybe by auto-passing or erroring out the trick/round.
+                # For now, let's assume this indicates a test setup or game logic error.
+                # If game could continue, a rule for unplayable cards (e.g. misdeal) would apply.
+                raise ValueError(f"{current_player.name} has no playable cards. Hand: {current_player.hand}, Trick Suit: {trick_suit}, Trump: {self.trump_suit}")
 
-            # --- Player Card Choice Simulation ---
-            # In a real game, player chooses. For simulation, play the first playable card.
-            # A better simulation/AI would choose strategically.
-            chosen_card = playable_cards[0] 
-            # ---- End Player Card Choice Simulation ---
+            chosen_card = None
+            if self._test_mode_card_choice_logic: # TEST MODE HOOK
+                chosen_card = self._get_player_card_choice_for_test(current_player, playable_cards, trick_suit, self.trump_suit)
+            else: # Normal CLI input mode
+                print(f"\n{current_player.name}'s turn to play a card.")
+                print(f"Your hand: {current_player.hand}")
+                if trick_suit:
+                    print(f"Suit led: {trick_suit.name}")
+                else:
+                    print("You are leading this trick.")
+                if self.trump_suit and self.trump_suit != Suit.NO_TRUMP:
+                    print(f"Trump suit: {self.trump_suit.name}")
+                
+                print("Playable cards:")
+                for idx, card_option in enumerate(playable_cards):
+                    print(f"  {idx+1}. {card_option}")
+
+                while chosen_card is None:
+                    try:
+                        choice_str = input(f"Choose card to play (1-{len(playable_cards)}): ")
+                        choice_idx = int(choice_str) - 1
+                        if 0 <= choice_idx < len(playable_cards):
+                            chosen_card = playable_cards[choice_idx]
+                        else:
+                            print(f"Invalid choice. Please enter a number between 1 and {len(playable_cards)}. ")
+                    except ValueError:
+                        print("Invalid input. Please enter a number.")
             
-            current_player.play_card(chosen_card) # Removes card from hand
-            current_trick_cards[current_player] = chosen_card
             print(f"{current_player.name} plays: {chosen_card}")
+            current_player.play_card(chosen_card)
+            current_trick_cards[current_player] = chosen_card
 
-            if i == 0: # Lead card sets the trick_suit (unless it's Joker in some rules)
+            if i == 0: # First card played in the trick sets the trick_suit (unless it's a Joker in a trump game)
                 trick_suit = chosen_card.suit
-                if chosen_card.rank == Rank.JOKER and self.trump_suit != Suit.NO_TRUMP:
-                    # If Joker leads a trump game, it makes the trick a trump trick.
-                    # (Or player nominates suit if that's a house rule - not implemented here)
-                    # For simplicity, if Joker leads, trick is effectively trump suit.
-                    trick_suit = self.trump_suit 
-                elif chosen_card.rank == Rank.JOKER and self.trump_suit == Suit.NO_TRUMP:
-                    # If Joker leads a No-Trump game, the suit is... what? Highest other card?
-                    # Standard: Joker is its own suit. For now, let trick_suit be NO_TRUMP.
-                    trick_suit = Suit.NO_TRUMP 
-            
-            current_player_idx = self._determine_next_player_idx(current_player_idx)
+                if self.trump_suit and self.trump_suit != Suit.NO_TRUMP and chosen_card.is_joker():
+                    trick_suit = self.trump_suit # Joker led in trump game makes trick suit trump
+                elif chosen_card.is_joker() and (not self.trump_suit or self.trump_suit == Suit.NO_TRUMP):
+                    trick_suit = Suit.NO_TRUMP # Joker led in NT game, trick is NT (Joker's "suit")
 
+            current_player_idx = self._determine_next_player_idx(current_player_idx)
+        
         # Determine winner of the trick
         winning_card_in_trick: Optional[Card] = None
         trick_winner: Optional[Player] = None

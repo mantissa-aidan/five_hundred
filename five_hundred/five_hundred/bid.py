@@ -134,13 +134,21 @@ class Bid:
             return f"Bid(Player: {self.player.name}, Misere, Points: {self.points})"
         if self.bid_type == BidType.OPEN_MISERE:
             return f"Bid(Player: {self.player.name}, Open Misere, Points: {self.points})"
-        suit_str = "No Trump" if self.bid_type == BidType.NO_TRUMP or self.suit == Suit.NO_TRUMP else self.suit.value
-        return f"Bid(Player: {self.player.name}, Tricks: {self.tricks}, Suit: {suit_str}, Type: {self.bid_type.value}, Points: {self.points})"
+        
+        suit_display_name = "No Trump" # Default for NO_TRUMP type or if suit is NO_TRUMP
+        if self.bid_type == BidType.SUIT_TRUMP and self.suit is not None and self.suit != Suit.NO_TRUMP:
+            suit_display_name = self.suit.name.title() # Get 'Spades', 'Hearts', etc.
+            
+        return f"Bid(Player: {self.player.name}, Tricks: {self.tricks}, Suit: {suit_display_name}, Type: {self.bid_type.value}, Points: {self.points})"
 
     def __str__(self) -> str:
         if self.bid_type == BidType.MISERE:
             return f"{self.player.name} bids Misere ({self.points} pts)"
         if self.bid_type == BidType.OPEN_MISERE:
             return f"{self.player.name} bids Open Misere ({self.points} pts)"
-        suit_str = "No Trump" if self.bid_type == BidType.NO_TRUMP or self.suit == Suit.NO_TRUMP else self.suit.value
-        return f"{self.player.name} bids {self.tricks} {suit_str} ({self.points} pts)" 
+
+        suit_display_name = "No Trump" # Default for NO_TRUMP type or if suit is NO_TRUMP
+        if self.bid_type == BidType.SUIT_TRUMP and self.suit is not None and self.suit != Suit.NO_TRUMP:
+            suit_display_name = self.suit.name.title() # Get 'Spades', 'Hearts', etc.
+            
+        return f"{self.player.name} bids {self.tricks} {suit_display_name} ({self.points} pts)" 
