@@ -1,3 +1,5 @@
 # requirements.txt
 # Add your project dependencies here
-pytest 
+numpy
+
+pytest

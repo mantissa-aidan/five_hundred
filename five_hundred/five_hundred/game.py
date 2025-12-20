@@ -3,17 +3,30 @@ from enum import Enum, auto
 from .card import Card, Suit, Rank
 from .deck import Deck
 from .player import Player
+from .bot_player import BotPlayer
 from .team import Team
 from .bid import Bid, BidType, MISERE_POINTS, OPEN_MISERE_POINTS # Assuming Bid class is in bid.py
 
 class Game:
-    def __init__(self, player_names: List[str], team_names: List[str]):
+    def __init__(self, player_names: List[str], team_names: List[str], bot_config: Optional[Dict[int, str]] = None, verbose: bool = True):
+        self.verbose = verbose
         if len(player_names) != 4:
             raise ValueError("Standard 500 game requires 4 players.")
         if len(team_names) != 2:
             raise ValueError("Standard 500 game requires 2 teams.")
 
-        self.players: List[Player] = [Player(name) for name in player_names]
+        self.players: List[Player] = []
+        if bot_config is None:
+            bot_config = {} # Default to no bots if not provided
+            
+        for i, name in enumerate(player_names):
+            if i in bot_config:
+                self.players.append(BotPlayer(name, difficulty=bot_config[i]))
+                self._log(f"Creating BotPlayer: {name} with difficulty {bot_config[i]}") # Debug print
+            else:
+                self.players.append(Player(name))
+                self._log(f"Creating Player: {name}") # Debug print
+
         # Assign players to teams: P0,P2 to T0; P1,P3 to T1 (standard partnership)
         self.teams: List[Team] = [
             Team(team_names[0], [self.players[0], self.players[2]]),
@@ -36,6 +49,10 @@ class Game:
         self.passes_this_round: int = 0 # Number of consecutive passes in current bidding sequence
         self.last_bidder: Optional[Player] = None # The player who made the current highest_bid_this_round
         self._test_mode_card_choice_logic: Optional[Callable[[Player, List[Card], Optional[Suit], Optional[Suit]], Card]] = None # Test hook
+
+    def _log(self, message: str):
+        if self.verbose:
+            print(message)
 
     def _deal_cards(self):
         """Deals cards to players and the kitty according to 500 rules."""
@@ -77,21 +94,21 @@ class Game:
     def start_new_round(self):
         """Starts a new round: sets dealer, deals cards, starts bidding."""
         if self.game_over:
-            print("Game is over. Cannot start a new round.")
+            self._log("Game is over. Cannot start a new round.")
             return
 
-        print(f"\n--- Starting New Round ---")
+        self._log(f"\n--- Starting New Round ---")
         # Rotate dealer: current_dealer_idx is the dealer from the *previous* round.
         # The new dealer for *this* round is the next player.
         self.current_dealer_idx = self._determine_next_player_idx(self.current_dealer_idx)
         
         dealer = self.players[self.current_dealer_idx]
-        print(f"{dealer.name} is the dealer.")
+        self._log(f"{dealer.name} is the dealer.")
 
         self._deal_cards()
         # For testing, show hands:
-        # for p in self.players: print(f"{p.name}'s hand: {p.hand}")
-        # print(f"Kitty: {self.kitty}")
+        # for p in self.players: self._log(f"{p.name}'s hand: {p.hand}")
+        # self._log(f"Kitty: {self.kitty}")
 
         self.winning_bid = None
         self.trump_suit = None
@@ -103,30 +120,30 @@ class Game:
 
         # Bidding starts with the player to the left of the dealer.
         bidder_idx = self._determine_next_player_idx(self.current_dealer_idx)
-        print(f"Bidding will start with {self.players[bidder_idx].name}.")
+        self._log(f"Bidding will start with {self.players[bidder_idx].name}.")
         self.run_bidding_round(bidder_idx) # Activate the bidding round
 
     # --- Bidding Phase Methods (to be expanded) ---
     def player_attempts_bid(self, player: Player, tricks: int, suit: Optional[Suit], bid_type: BidType) -> bool:
         """Allows a player to attempt to make a bid. Returns True if successful."""
         if self.player_has_passed_auction[player]:
-            print(f"{player.name} cannot bid after passing.")
+            self._log(f"{player.name} cannot bid after passing.")
             return False
 
         try:
             potential_bid = Bid(player, tricks, suit, bid_type)
         except ValueError as e:
-            print(f"Invalid bid parameters for {player.name}: {e}")
+            self._log(f"Invalid bid parameters for {player.name}: {e}")
             return False
 
         if self.highest_bid_this_round is None or potential_bid > self.highest_bid_this_round:
             # Rule: A player who has bid may only bid again if there has been an intervening bid.
             # This means they cannot bid if they are already the self.last_bidder
             if self.last_bidder == player:
-                print(f"{player.name}, you cannot bid again without an intervening bid.")
+                self._log(f"{player.name}, you cannot bid again without an intervening bid.")
                 return False
             
-            print(f"{player.name} bids {potential_bid.tricks} {potential_bid.suit.value if potential_bid.suit else potential_bid.bid_type.value} (Points: {potential_bid.points})")
+            self._log(f"{player.name} bids {potential_bid.tricks} {potential_bid.suit.value if potential_bid.suit else potential_bid.bid_type.value} (Points: {potential_bid.points})")
             self.highest_bid_this_round = potential_bid
             self.bids_this_round.append(potential_bid)
             self.player_has_bid_this_round[player] = True # Mark that this player has made a bid
@@ -134,29 +151,55 @@ class Game:
             self.passes_this_round = 0 # Successful bid resets consecutive passes
             return True
         else:
-            print(f"{player.name}, your bid of {potential_bid.points} pts is not higher than current bid of {self.highest_bid_this_round.points} pts.")
+            self._log(f"{player.name}, your bid of {potential_bid.points} pts is not higher than current bid of {self.highest_bid_this_round.points} pts.")
             return False
 
     def player_passes_bid(self, player: Player):
         """Handles a player passing."""
-        print(f"{player.name} passes.")
+        self._log(f"{player.name} passes.")
         self.player_has_passed_auction[player] = True
         self.passes_this_round += 1 # Increment passes when a player formally passes
 
     def _get_player_bid_action(self, player: Player) -> Tuple[str, Optional[Tuple]]:
         """
-        Gets player's bid or pass action via user input.
+        Gets player's bid or pass action.
+        If player is a BotPlayer, calls its decide_bid method.
+        Otherwise, prompts human player via CLI.
         """
-        print(f"\n{player.name}'s turn to bid.")
+        self._log(f"\n{player.name}'s turn to bid.")
         player.sort_hand() # Ensure hand is sorted for display
-        print(f"Your hand: {player.hand}")
+        self._log(f"Your hand: {player.hand}")
 
         if self.highest_bid_this_round:
-            print(f"Current highest bid: {self.highest_bid_this_round}")
+            self._log(f"Current highest bid: {self.highest_bid_this_round} (Points: {self.highest_bid_this_round.points})")
         else:
-            print("No bids yet.")
+            self._log("No bids yet.")
+
+        if isinstance(player, BotPlayer):
+            # TODO: Pass relevant game state to the bot's decision method
+            # For now, using what's available in this scope, but BotPlayer.decide_bid
+            # needs to be aligned with the arguments it expects.
+            # Current BotPlayer.decide_bid expects: self, current_highest_bid, bids_this_round, player_has_bid_this_round, player_has_passed_auction
+            
+            # Ensure all necessary info is passed to the bot
+            # We need to get the full player_has_bid_this_round and player_has_passed_auction status
+            # current_highest_bid is self.highest_bid_this_round
+            # bids_this_round is self.bids_this_round
+
+            action, bid_params = player.decide_bid(
+                current_highest_bid=self.highest_bid_this_round,
+                bids_this_round=self.bids_this_round,
+                player_has_bid_this_round=self.player_has_bid_this_round, # Pass the dict
+                player_has_passed_auction=self.player_has_passed_auction # Pass the dict
+            )
+            if action == "bid" and bid_params:
+                self._log(f"{player.name} (Bot) decided to bid: {bid_params[0]} {bid_params[2].name if bid_params[1] is None else bid_params[1]} ")
+            elif action == "pass":
+                self._log(f"{player.name} (Bot) decided to pass.")
+            return action, bid_params
         
-        print("Bidding options: 'bid' or 'pass'")
+        # Human player input
+        self._log("Bidding options: 'bid' or 'pass'")
         
         while True:
             action = input("Enter your action ('bid' or 'pass'): ").strip().lower()
@@ -164,7 +207,7 @@ class Game:
                 return ("pass", None)
             elif action == "bid":
                 try:
-                    print("\n--- Place Your Bid ---")
+                    self._log("\n--- Place Your Bid ---")
                     
                     # Get tricks (6-10 for suit/NT, 0 for Misere/Open Misere)
                     while True:
@@ -173,17 +216,17 @@ class Game:
                             tricks = int(tricks_str)
                             # Basic validation, Bid class will do more
                             if not (0 <= tricks <= 10):
-                                print("Invalid number of tricks. Must be 0 (for Misere) or between 6 and 10.")
+                                self._log("Invalid number of tricks. Must be 0 (for Misere) or between 6 and 10.")
                                 continue
                             break
                         except ValueError:
-                            print("Invalid input. Please enter a number.")
+                            self._log("Invalid input. Please enter a number.")
 
                     # Get BidType
-                    print("Bid Types:")
+                    self._log("Bid Types:")
                     bid_type_options = {i+1: bt for i, bt in enumerate(BidType)}
                     for i, bt in bid_type_options.items():
-                        print(f"  {i}. {bt.name.replace('_', ' ').title()}")
+                        self._log(f"  {i}. {bt.name.replace('_', ' ').title()}")
                     
                     bid_type_choice = None
                     while bid_type_choice is None:
@@ -193,16 +236,16 @@ class Game:
                             if bt_idx in bid_type_options:
                                 bid_type_choice = bid_type_options[bt_idx]
                             else:
-                                print(f"Invalid choice. Please enter a number between 1 and {len(bid_type_options)}.")
+                                self._log(f"Invalid choice. Please enter a number between 1 and {len(bid_type_options)}.")
                         except ValueError:
-                            print("Invalid input. Please enter a number.")
+                            self._log("Invalid input. Please enter a number.")
                     
                     chosen_bid_type = bid_type_choice
 
                     # Handle Misere/Open Misere tricks automatically
                     if chosen_bid_type == BidType.MISERE or chosen_bid_type == BidType.OPEN_MISERE:
                         if tricks != 0:
-                            print(f"For {chosen_bid_type.name}, tricks are automatically 0. Adjusting.")
+                            self._log(f"For {chosen_bid_type.name}, tricks are automatically 0. Adjusting.")
                         tricks = 0 # Enforce 0 tricks for Misere types
                         chosen_suit = None # No suit for Misere bids
                         return ("bid", (tricks, chosen_suit, chosen_bid_type))
@@ -210,19 +253,19 @@ class Game:
                     # Get Suit for Suit Trump or No Trump bids
                     if chosen_bid_type == BidType.NO_TRUMP:
                         if tricks < 6:
-                             print("No Trump bids must be for 6-10 tricks. Please re-bid.")
+                             self._log("No Trump bids must be for 6-10 tricks. Please re-bid.")
                              continue # Restart bid input
                         chosen_suit = Suit.NO_TRUMP # Special case for NT, Bid class handles it
                         return ("bid", (tricks, chosen_suit, chosen_bid_type))
                     elif chosen_bid_type == BidType.SUIT_TRUMP:
                         if not (6 <= tricks <= 10):
-                            print("Suit Trump bids must be for 6-10 tricks. Please re-bid.")
+                            self._log("Suit Trump bids must be for 6-10 tricks. Please re-bid.")
                             continue # Restart bid input
                         
-                        print("Suits:")
+                        self._log("Suits:")
                         suit_options = {i+1: s for i, s in enumerate([Suit.SPADES, Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS])}
                         for i, s_opt in suit_options.items():
-                            print(f"  {i}. {s_opt.name.title()}")
+                            self._log(f"  {i}. {s_opt.name.title()}")
                         
                         suit_choice = None
                         while suit_choice is None:
@@ -232,25 +275,25 @@ class Game:
                                 if s_idx in suit_options:
                                     suit_choice = suit_options[s_idx]
                                 else:
-                                    print(f"Invalid choice. Please enter a number between 1 and {len(suit_options)}.")
+                                    self._log(f"Invalid choice. Please enter a number between 1 and {len(suit_options)}.")
                             except ValueError:
-                                print("Invalid input. Please enter a number.")
+                                self._log("Invalid input. Please enter a number.")
                         chosen_suit = suit_choice
                         return ("bid", (tricks, chosen_suit, chosen_bid_type))
                     else:
                         # Should not happen if BidTypes are handled above
-                        print("Error: Unexpected bid type. Please try again.")
+                        self._log("Error: Unexpected bid type. Please try again.")
                         continue
 
                 except Exception as e: # Catch any unexpected errors during input
-                    print(f"An error occurred during bid input: {e}. Please try again.")
+                    self._log(f"An error occurred during bid input: {e}. Please try again.")
                     # Loop again for fresh input
             else:
-                print("Invalid action. Please enter 'bid' or 'pass'.")
+                self._log("Invalid action. Please enter 'bid' or 'pass'.")
 
     def run_bidding_round(self, starting_bidder_idx: int):
         """Manages the entire bidding auction among players."""
-        print("\n--- Bidding Phase ---")
+        self._log("\n--- Bidding Phase ---")
         num_players = len(self.players)
         current_bidder_idx = starting_bidder_idx
         
@@ -263,14 +306,14 @@ class Game:
             action_taken_this_turn = False
 
             if self.player_has_passed_auction[current_player]:
-                print(f"{current_player.name} has already passed. Passing automatically.")
+                self._log(f"{current_player.name} has already passed. Passing automatically.")
                 # No need to call self.player_passes_bid() again, already marked.
                 # It still counts as a pass for ending the auction.
                 consecutive_passes_since_last_bid += 1
                 total_passes_this_auction +=1 # Still counts towards all players passing
                 action_taken_this_turn = True
             else:
-                print(f"\nIt is {current_player.name}'s turn to bid.")
+                self._log(f"\nIt is {current_player.name}'s turn to bid.")
                 # --- Get Player Action (Bid or Pass) ---
                 # This is where you'd get input from the player or AI.
                 # Using placeholder for now.
@@ -286,7 +329,7 @@ class Game:
                     else:
                         # Bid attempt failed (e.g., too low, already passed, tried to rebid self)
                         # Treat as a pass for auction flow, player might choose to pass formally next if applicable
-                        print(f"{current_player.name}'s bid attempt failed. Turn continues (player might pass or try valid bid).")
+                        self._log(f"{current_player.name}'s bid attempt failed. Turn continues (player might pass or try valid bid).")
                         # Forcing a pass here if bid fails for simplicity of simulation flow.
                         # In a real game, they'd get another chance to make a *valid* bid or pass.
                         self.player_passes_bid(current_player)
@@ -303,7 +346,7 @@ class Game:
             if not action_taken_this_turn:
                 # This case should ideally not be reached if _get_player_bid_action always returns a valid action
                 # or if a failed bid is handled. For safety, assume pass.
-                print(f"Warning: No action taken by {current_player.name}, defaulting to pass.")
+                self._log(f"Warning: No action taken by {current_player.name}, defaulting to pass.")
                 self.player_passes_bid(current_player)
                 consecutive_passes_since_last_bid += 1
                 total_passes_this_auction +=1
@@ -313,11 +356,11 @@ class Game:
             if self.highest_bid_this_round is not None and consecutive_passes_since_last_bid >= num_players - 1:
                 self.winning_bid = self.highest_bid_this_round
                 bidding_active = False
-                print(f"--- Bidding Ended --- Winner: {self.winning_bid.player.name} with {self.winning_bid}")
+                self._log(f"--- Bidding Ended --- Winner: {self.winning_bid.player.name} with {self.winning_bid}")
             # 2. No bid has been made, and all players have had a chance to act and passed.
             #    total_passes_this_auction will be num_players if everyone passes in sequence.
             elif self.highest_bid_this_round is None and total_passes_this_auction >= num_players:
-                print("All players passed. Round is dead.")
+                self._log("All players passed. Round is dead.")
                 self.winning_bid = None 
                 bidding_active = False
             
@@ -334,72 +377,131 @@ class Game:
                 self.trump_suit = Suit.NO_TRUMP # Joker is the only trump
             
             declarer = self.winning_bid.player
-            print(f"{declarer.name} won the bid with {self.winning_bid.tricks} {self.winning_bid.suit.value if self.winning_bid.suit else self.winning_bid.bid_type.value}.")
+            self._log(f"{declarer.name} won the bid with {self.winning_bid.tricks} {self.winning_bid.suit.value if self.winning_bid.suit else self.winning_bid.bid_type.value}.")
             if self.trump_suit:
-                print(f"Trump suit is {self.trump_suit.value}.")
+                self._log(f"Trump suit is {self.trump_suit.value}.")
             self._handle_kitty_exchange(declarer)
+            self._play_round(declarer)
         else:
-            print("No winning bid. Round ends. (Consider re-deal or next dealer)")
+            self._log("No winning bid. Round ends. (Consider re-deal or next dealer)")
             # Optionally: self.start_new_round() or pass to next dealer automatically
 
     def _handle_kitty_exchange(self, declarer: Player):
-        """Allows the declarer to exchange cards with the kitty via user input."""
-        print(f"\n--- Kitty Exchange Phase ---")
-        print(f"{declarer.name}, you won the bid: {self.winning_bid}")
-        print(f"Kitty contained: {self.kitty}")
+        """Allows the declarer to exchange cards with the kitty.
+        If declarer is a BotPlayer, calls its decide_kitty_exchange method.
+        Otherwise, prompts human player via CLI.
+        """
+        self._log(f"\n--- Kitty Exchange Phase ---")
+        self._log(f"{declarer.name}, you won the bid: {self.winning_bid}")
+        self._log(f"Kitty contained: {self.kitty}")
         
+        original_kitty = list(self.kitty) # Keep a copy for the bot's context if needed
         declarer.add_cards_to_hand(self.kitty)
         self.kitty = [] 
-        declarer.sort_hand() 
+        declarer.sort_hand(trump_suit=self.winning_bid.suit if self.winning_bid else None) 
 
-        print(f"\n{declarer.name}'s hand with kitty cards (13 cards total):")
-        for i, card in enumerate(declarer.hand):
-            print(f"  {i+1}. {card}")
-
-        num_to_discard = len(declarer.hand) - 10
-        discards: List[Card] = []
-        discard_indices: List[int] = []
-
-        print(f"You must discard {num_to_discard} card(s).")
-        
-        if num_to_discard <= 0:
-            print("No discard necessary.")
-        else:
-            for i in range(num_to_discard):
-                while True:
-                    try:
-                        card_idx_str = input(f"Choose card to discard #{i+1} (enter number 1-{len(declarer.hand)}): ").strip()
-                        card_idx_one_based = int(card_idx_str)
-                        card_idx_zero_based = card_idx_one_based - 1
-
-                        if not (0 <= card_idx_zero_based < len(declarer.hand)):
-                            print("Invalid card number. Please choose from the list.")
-                            continue
-                        if card_idx_zero_based in discard_indices:
-                            print("You've already selected that card to discard. Choose a different one.")
-                            continue
-                        
-                        discard_indices.append(card_idx_zero_based)
-                        break 
-                    except ValueError:
-                        print("Invalid input. Please enter a number.")
+        if isinstance(declarer, BotPlayer):
+            # Bot needs its full 13-card hand to decide discards
+            # The winning_bid is important for the bot to know the trump suit
+            discards_from_bot = declarer.decide_kitty_exchange(original_kitty, self.winning_bid)
             
-            # Sort indices in reverse order to avoid issues when removing from list
-            discard_indices.sort(reverse=True)
+            # Validate bot's discards
+            num_expected_discards = len(declarer.hand) - 10
+            if len(discards_from_bot) != num_expected_discards:
+                # Handle error: bot returned wrong number of discards
+                self._log(f"Error: Bot {declarer.name} tried to discard {len(discards_from_bot)} cards, expected {num_expected_discards}")
+                # Fallback: a simple discard from bot's hand (e.g. first N cards)
+                # This is a safety net; ideally, bot logic is correct.
+                declarer.sort_hand(trump_suit=self.winning_bid.suit if self.winning_bid else None)
+                actual_discards = declarer.hand[:num_expected_discards]
+                for card_to_remove in actual_discards:
+                    declarer.play_card(card_to_remove) # Use play_card to remove from hand
+                self._log(f"{declarer.name} (Bot) fallback discarded: {actual_discards}")
+            else:
+                # Remove the cards chosen by the bot from its hand
+                temp_hand = list(declarer.hand) # Operate on a copy for safe removal
+                successfully_removed_bot_discards = []
+                for card_to_discard in discards_from_bot:
+                    if card_to_discard in temp_hand:
+                        temp_hand.remove(card_to_discard)
+                        successfully_removed_bot_discards.append(card_to_discard)
+                    else:
+                        # This means bot tried to discard a card it doesn't have / already discarded from the list
+                        # This is an issue with bot logic
+                        self._log(f"Error: Bot {declarer.name} tried to discard {card_to_discard} which is not in its hand or was a duplicate in discard list.")
+                        # We need to ensure correct number of cards are discarded.
+                
+                if len(successfully_removed_bot_discards) == num_expected_discards:
+                    declarer.hand = temp_hand # Assign the modified hand back
+                    self._log(f"{declarer.name} (Bot) discarded: {successfully_removed_bot_discards}")
+                else:
+                    # Fallback if bot's discard choices were problematic (e.g., duplicates, not in hand)
+                    self._log(f"Error processing bot's discards. Reverting to simple discard logic for {declarer.name}")
+                    declarer.sort_hand(trump_suit=self.winning_bid.suit if self.winning_bid else None) # Re-sort original 13 cards
+                    # Need to re-add kitty and then discard, as hand might be in inconsistent state
+                    declarer.hand = [] # Clear hand
+                    declarer.add_cards_to_hand(original_kitty) # Add kitty back
+                    # At this point, the declarer.hand should have had the non-kitty cards from before + original_kitty.
+                    # This part is tricky; the original state before bot's decision was player hand + kitty.
+                    # Let's re-fetch initial state for safety if bot fails badly.
+                    # This fallback needs to be robust. The simplest is to take the first N cards from sorted 13-card hand.
+                    
+                    # Re-ensure the 13 cards are there before discard
+                    # The current declarer.hand should be the 13 cards. Sort and take first N.
+                    declarer.sort_hand(trump_suit=self.winning_bid.suit if self.winning_bid else None)
+                    final_discards = []
+                    # Pop from the current 13 card hand to be sure
+                    for _ in range(num_expected_discards):
+                        if declarer.hand:
+                             # Discarding the 'lowest' as per sort order
+                            card_popped = declarer.hand.pop(0) 
+                            final_discards.append(card_popped)
+                    self._log(f"{declarer.name} (Bot) fallback (safe) discarded: {final_discards}")
+
+            assert len(declarer.hand) == 10, f"Bot declarer hand size not 10 after discard, but {len(declarer.hand)}"
+
+        else: # Human player
+            self._log(f"\n{declarer.name}'s hand with kitty cards ({len(declarer.hand)} cards total):")
+            for i, card in enumerate(declarer.hand):
+                self._log(f"  {i+1}. {card}")
+
+            num_to_discard = len(declarer.hand) - 10
+            discards: List[Card] = []
+            discard_indices: List[int] = []
+
+            self._log(f"You must discard {num_to_discard} card(s).")
             
-            for idx_to_remove in discard_indices:
-                discards.append(declarer.hand.pop(idx_to_remove))
-        
-        assert len(declarer.hand) == 10, f"Declarer hand size not 10, but {len(declarer.hand)}"
-        print(f"\n{declarer.name} discarded: {discards}")
-        print(f"{declarer.name}'s final hand (10 cards): {declarer.hand}")
+            if num_to_discard <= 0:
+                self._log("No discard necessary.")
+            else:
+                for i in range(num_to_discard):
+                    while True:
+                        try:
+                            card_idx_str = input(f"Choose card to discard #{i+1} (enter number 1-{len(declarer.hand)}): ").strip()
+                            card_idx_one_based = int(card_idx_str)
+                            card_idx_zero_based = card_idx_one_based - 1
 
-        if self.winning_bid.bid_type == BidType.OPEN_MISERE:
-            print(f"{declarer.name}'s hand is now open for Open Misere: {declarer.hand}")
-            # In a real CLI/GUI, this hand would remain visible to all players.
+                            if not (0 <= card_idx_zero_based < len(declarer.hand)):
+                                self._log("Invalid card number. Please choose from the list.")
+                                continue
+                            if card_idx_zero_based in discard_indices:
+                                self._log("You've already selected that card to discard. Choose a different one.")
+                                continue
+                            
+                            discard_indices.append(card_idx_zero_based)
+                            break 
+                        except ValueError:
+                            self._log("Invalid input. Please enter a number.")
+                
+                discard_indices.sort(reverse=True)
+                
+                for idx_to_remove in discard_indices:
+                    discards.append(declarer.hand.pop(idx_to_remove))
+            
+            assert len(declarer.hand) == 10, f"Declarer hand size not 10, but {len(declarer.hand)}"
+            self._log(f"\n{declarer.name} discarded: {discards}")
 
-        print(f"--- End Kitty Exchange ---")
-        self._play_round(declarer)
+        self._log(f"{declarer.name}'s final hand (10 cards): {declarer.hand}")
 
     def _determine_lead_player_for_first_trick(self, declarer: Player) -> Player:
         """Determines who leads the first trick.
@@ -414,39 +516,39 @@ class Game:
 
     def _play_round(self, declarer: Player):
         """Manages the playing of 10 tricks in a round."""
-        print("\n--- Play Phase ---")
+        self._log("\n--- Play Phase ---")
         if not self.winning_bid:
-            print("Cannot play round without a winning bid.")
+            self._log("Cannot play round without a winning bid.")
             return
 
         current_trick_leader = self._determine_lead_player_for_first_trick(declarer)
-        print(f"{current_trick_leader.name} leads the first trick.")
+        self._log(f"{current_trick_leader.name} leads the first trick.")
 
         for trick_num in range(1, 11): # 10 tricks
-            print(f"\n-- Trick {trick_num} --")
+            self._log(f"\n-- Trick {trick_num} --")
             trick_winner_player = self._play_trick(current_trick_leader)
             current_trick_leader = trick_winner_player # Winner of trick leads next
             # For now, let's assume declarer's team wins all tricks for testing scoring later
             # This is a major placeholder
-            # print(f"Playing trick {trick_num} (actual logic TBD). Leader: {current_trick_leader.name}")
+            # self._log(f"Playing trick {trick_num} (actual logic TBD). Leader: {current_trick_leader.name}")
             # if trick_num % 2 == 0: # Simulate alternating trick winners for testing
             #      # Assign trick to declarer's team for now
             #     declarer_team = [t for t in self.teams if declarer in t.players][0]
             #     # Find a player in that team to attribute the trick to (e.g., declarer)
             #     declarer.increment_tricks_won() 
-            #     print(f"Trick {trick_num} won by {declarer.name} (placeholder)")
+            #     self._log(f"Trick {trick_num} won by {declarer.name} (placeholder)")
             #     current_trick_leader = declarer # Declarer leads again
             # else:
             #     # Assign to other team (first player of other team)
             #     non_declarer_team = [t for t in self.teams if declarer not in t.players][0]
             #     opponent_player = non_declarer_team.players[0]
             #     opponent_player.increment_tricks_won()
-            #     print(f"Trick {trick_num} won by {opponent_player.name} (placeholder)")
+            #     self._log(f"Trick {trick_num} won by {opponent_player.name} (placeholder)")
             #     current_trick_leader = opponent_player
             
         # After 10 tricks, proceed to scoring
         self._score_round(declarer) # Call scoring after the round
-        print("\n--- End of Play Phase --- ")
+        self._log("\n--- End of Play Phase --- ")
 
     def _get_playable_cards(self, player: Player, trick_suit: Optional[Suit]) -> List[Card]:
         """Determines which cards a player can legally play in the current trick."""
@@ -494,43 +596,58 @@ class Game:
         raise RuntimeError("Test mode card choice logic not set!")
 
     def _play_trick(self, lead_player: Player) -> Player:
-        """Manages the playing of a single trick, getting card choices from users, and determines the winner."""
-        current_trick_cards: Dict[Player, Card] = {}
+        """Manages the playing of a single trick, getting card choices from players, and determines the winner."""
+        current_trick_cards_played_by_player: Dict[Player, Card] = {} # Stores card played by each player in order
+        current_trick_display_order: List[Tuple[Player, Card]] = [] # For displaying cards in order of play
         trick_suit: Optional[Suit] = None
         
         num_players = len(self.players)
         current_player_idx = self.players.index(lead_player)
 
-        print(f"Lead player for this trick: {lead_player.name}")
+        self._log(f"Lead player for this trick: {lead_player.name}")
 
         for i in range(num_players):
             current_player = self.players[current_player_idx]
-            current_player.sort_hand() # Keep hand sorted for display consistency
+            current_player.sort_hand(trump_suit=self.trump_suit) 
             playable_cards = self._get_playable_cards(current_player, trick_suit)
 
             if not playable_cards:
-                print(f"Error: {current_player.name} has no playable cards. This should not happen.")
-                # Handle this gracefully, maybe by auto-passing or erroring out the trick/round.
-                # For now, let's assume this indicates a test setup or game logic error.
-                # If game could continue, a rule for unplayable cards (e.g. misdeal) would apply.
-                raise ValueError(f"{current_player.name} has no playable cards. Hand: {current_player.hand}, Trick Suit: {trick_suit}, Trump: {self.trump_suit}")
+                # This should ideally not happen with correct game logic / dealing
+                self._log(f"Error: {current_player.name} has no playable cards! Hand: {current_player.hand}, Trick Suit: {trick_suit}, Trump: {self.trump_suit}")
+                # Consider implications: does this mean a misdeal, or does player forfeit trick/game?
+                # For now, raise an error as it indicates a flaw or an unhandled edge case.
+                raise ValueError(f"{current_player.name} has no playable cards. This is an unexpected state.")
 
-            chosen_card = None
-            if self._test_mode_card_choice_logic: # TEST MODE HOOK
+            chosen_card: Optional[Card] = None
+            if isinstance(current_player, BotPlayer):
+                # Bot makes a decision
+                # Pass current_trick_display_order which contains (Player, Card) tuples for cards already played
+                chosen_card = current_player.decide_play_card(playable_cards, trick_suit, self.trump_suit, current_trick_display_order)
+                if chosen_card not in playable_cards:
+                    self._log(f"Error: Bot {current_player.name} chose an unplayable card {chosen_card}. Defaulting to first playable.")
+                    chosen_card = playable_cards[0] # Fallback
+
+            elif self._test_mode_card_choice_logic: # Test mode hook for non-bot players, or if bot needs overriding
+                # This hook could be used for scripted tests for human players or specific bot scenarios
+                self._log(f"Using test mode logic for {current_player.name}")
                 chosen_card = self._get_player_card_choice_for_test(current_player, playable_cards, trick_suit, self.trump_suit)
-            else: # Normal CLI input mode
-                print(f"\n{current_player.name}'s turn to play a card.")
-                print(f"Your hand: {current_player.hand}")
+            else: # Normal CLI input mode for human players
+                self._log(f"\n{current_player.name}'s turn to play a card.")
+                self._log(f"Your hand: {current_player.hand}")
+                if current_trick_display_order:
+                    self._log("Cards played in trick so far:")
+                    for p, c in current_trick_display_order:
+                        self._log(f"  {p.name}: {c}")
                 if trick_suit:
-                    print(f"Suit led: {trick_suit.name}")
+                    self._log(f"Suit led: {trick_suit.name}")
                 else:
-                    print("You are leading this trick.")
+                    self._log("You are leading this trick.")
                 if self.trump_suit and self.trump_suit != Suit.NO_TRUMP:
-                    print(f"Trump suit: {self.trump_suit.name}")
+                    self._log(f"Trump suit: {self.trump_suit.name}")
                 
-                print("Playable cards:")
+                self._log("Playable cards:")
                 for idx, card_option in enumerate(playable_cards):
-                    print(f"  {idx+1}. {card_option}")
+                    self._log(f"  {idx+1}. {card_option}")
 
                 while chosen_card is None:
                     try:
@@ -539,20 +656,34 @@ class Game:
                         if 0 <= choice_idx < len(playable_cards):
                             chosen_card = playable_cards[choice_idx]
                         else:
-                            print(f"Invalid choice. Please enter a number between 1 and {len(playable_cards)}. ")
+                            self._log(f"Invalid choice. Please enter a number between 1 and {len(playable_cards)}. ")
                     except ValueError:
-                        print("Invalid input. Please enter a number.")
+                        self._log("Invalid input. Please enter a number.")
             
-            print(f"{current_player.name} plays: {chosen_card}")
-            current_player.play_card(chosen_card)
-            current_trick_cards[current_player] = chosen_card
+            if chosen_card is None: # Should not be reached if logic above is correct
+                 raise Exception(f"Error: No card chosen for {current_player.name}")
 
-            if i == 0: # First card played in the trick sets the trick_suit (unless it's a Joker in a trump game)
+            self._log(f"{current_player.name} plays: {chosen_card}")
+            current_player.play_card(chosen_card) # Removes card from player's hand
+            current_trick_cards_played_by_player[current_player] = chosen_card
+            current_trick_display_order.append((current_player, chosen_card))
+
+            if i == 0: # First card played in the trick sets the trick_suit
                 trick_suit = chosen_card.suit
+                # Special Joker rule: If Joker is led in a trump game, the trick suit becomes the trump suit.
+                # If Joker is led in No Trump, its suit is effectively what it was declared as (if that was a feature), 
+                # or it acts as its own suit. Here, card.suit for Joker is JOKER_SUIT or similar.
+                # The `_get_card_strength_in_trick` needs to handle Joker correctly.
                 if self.trump_suit and self.trump_suit != Suit.NO_TRUMP and chosen_card.is_joker():
-                    trick_suit = self.trump_suit # Joker led in trump game makes trick suit trump
+                    trick_suit = self.trump_suit 
                 elif chosen_card.is_joker() and (not self.trump_suit or self.trump_suit == Suit.NO_TRUMP):
-                    trick_suit = Suit.NO_TRUMP # Joker led in NT game, trick is NT (Joker's "suit")
+                    # If NT or no trump declared yet, and Joker led. What is its suit?
+                    # The Card class should define Joker's suit property appropriately.
+                    # For simplicity, if Joker led in NT, trick_suit is Joker's actual suit (e.g. Suit.JOKER if defined)
+                    # Or, it might mean the player leading joker in NT gets to declare the suit of the trick.
+                    # Current card.py might give Joker a suit like SPADES for sorting. This needs to be clear.
+                    # Let's assume `chosen_card.suit` is sensible for Joker for now or strength calc handles it.
+                    pass # trick_suit is already chosen_card.suit
 
             current_player_idx = self._determine_next_player_idx(current_player_idx)
         
@@ -562,25 +693,35 @@ class Game:
 
         # The actual trump suit for this game round (set after bidding)
         game_trump_suit = self.trump_suit if self.trump_suit is not None else Suit.NO_TRUMP 
-        # If Joker led and it's a trump game, the trick_suit was already set to game_trump_suit
-        # If Joker led a NT game, trick_suit became NO_TRUMP.
 
-        for player, card_played in current_trick_cards.items():
-            if winning_card_in_trick is None:
+        # Iterate through cards in the order they were played to determine winner
+        # First card played establishes baseline for winning
+        # Trick suit is established by the first card (considering Joker rules)
+        first_player_of_trick, first_card_of_trick = current_trick_display_order[0]
+        winning_card_in_trick = first_card_of_trick
+        trick_winner = first_player_of_trick
+
+        for player_who_played, card_played in current_trick_display_order[1:]:
+            # If trick_suit is None here, it means first card was Joker in NT and no suit was declared for it (needs rule clarification)
+            # Assuming trick_suit is always determined from the first card (potentially trump if Joker led in trump game)
+            if trick_suit is None: # Should be set by the lead card
+                raise Exception("Trick suit not determined after first card.")
+
+            strength_current_card = self._get_card_strength_in_trick(card_played, trick_suit, game_trump_suit)
+            strength_winning_card = self._get_card_strength_in_trick(winning_card_in_trick, trick_suit, game_trump_suit)
+            
+            if strength_current_card > strength_winning_card:
                 winning_card_in_trick = card_played
-                trick_winner = player
-            else:
-                strength_current_card = self._get_card_strength_in_trick(card_played, trick_suit, game_trump_suit)
-                strength_winning_card = self._get_card_strength_in_trick(winning_card_in_trick, trick_suit, game_trump_suit)
-                if strength_current_card > strength_winning_card:
-                    winning_card_in_trick = card_played
-                    trick_winner = player
+                trick_winner = player_who_played
         
-        if trick_winner is None or winning_card_in_trick is None: # Should not happen
+        if trick_winner is None or winning_card_in_trick is None: 
             raise Exception("Could not determine trick winner.")
 
         trick_winner.increment_tricks_won()
-        print(f"Trick won by {trick_winner.name} with {winning_card_in_trick}.")
+        # Add to team tricks won as well if Team class tracks that, or do it at end of round.
+        # For now, Player tracks its own tricks.
+        self._log(f"Trick won by {trick_winner.name} with {winning_card_in_trick}.")
+        self._log(f"Current trick scores: {[(p.name, p.tricks_won_this_round) for p in self.players]}") # Debug
         return trick_winner
 
     def _get_card_strength_in_trick(self, card: Card, trick_suit: Suit, current_trump_suit: Suit) -> int:
@@ -648,13 +789,13 @@ class Game:
         """Checks if any team has reached 500 points (win) or -500 points (loss)."""
         for team in self.teams:
             if team.team_score >= 500:
-                print(f"Game Over! {team.name} wins with {team.team_score} points!")
+                self._log(f"Game Over! {team.name} wins with {team.team_score} points!")
                 self.game_over = True
                 return True
             if team.team_score <= -500: # Losing condition
                 # Determine other team as winner
                 other_team = [t for t in self.teams if t != team][0]
-                print(f"Game Over! {team.name} reaches {team.team_score} points. {other_team.name} wins!")
+                self._log(f"Game Over! {team.name} reaches {team.team_score} points. {other_team.name} wins!")
                 self.game_over = True
                 return True
         return False
@@ -664,9 +805,9 @@ class Game:
 
     def _score_round(self, declarer: Player):
         """Calculates and applies scores after a round of play."""
-        print("\n--- Scoring Phase ---")
+        self._log("\n--- Scoring Phase ---")
         if not self.winning_bid:
-            print("No winning bid this round. No scores to calculate.")
+            self._log("No winning bid this round. No scores to calculate.")
             return
 
         contracting_player = self.winning_bid.player
@@ -690,8 +831,8 @@ class Game:
         bid_points = bid_details.points
         bid_tricks_target = bid_details.tricks
 
-        print(f"Contract was: {bid_details}")
-        print(f"{contracting_team.name} (declarer: {contracting_player.name}) won {tricks_won_by_contracting_team} tricks.")
+        self._log(f"Contract was: {bid_details}")
+        self._log(f"{contracting_team.name} (declarer: {contracting_player.name}) won {tricks_won_by_contracting_team} tricks.")
 
         if bid_details.bid_type == BidType.SUIT_TRUMP or bid_details.bid_type == BidType.NO_TRUMP:
             if tricks_won_by_contracting_team >= bid_tricks_target:
@@ -700,14 +841,14 @@ class Game:
                 # Avondale Slam rule: if bid < 250 points and all 10 tricks taken, score 250.
                 if tricks_won_by_contracting_team == 10 and bid_points < 250:
                     points_to_award = 250
-                    print(f"Slam! All 10 tricks taken, bid was {bid_points}, awarding 250 points.")
+                    self._log(f"Slam! All 10 tricks taken, bid was {bid_points}, awarding 250 points.")
                 
                 contracting_team.update_score(points_to_award)
-                print(f"{contracting_team.name} scores {points_to_award} points.")
+                self._log(f"{contracting_team.name} scores {points_to_award} points.")
             else:
                 # Contract failed (set/euchred)
                 contracting_team.update_score(-bid_points) # Lose points for the bid
-                print(f"{contracting_team.name} failed contract, loses {bid_points} points.")
+                self._log(f"{contracting_team.name} failed contract, loses {bid_points} points.")
                 # Opponent scoring for breaking contract (e.g., 10 pts per trick they took)
                 # This rule varies. Wikipedia: "no points are scored by the opponents, although some rule books state otherwise"
                 # For now, no points for opponents if contract broken, unless it's a specific setting.
@@ -719,10 +860,10 @@ class Game:
             misere_bidder_tricks_won = contracting_player.tricks_won_this_round
             if misere_bidder_tricks_won == 0:
                 contracting_team.update_score(MISERE_POINTS)
-                print(f"{contracting_team.name} (bidder {contracting_player.name}) successfully made Misere, scores {MISERE_POINTS} points.")
+                self._log(f"{contracting_team.name} (bidder {contracting_player.name}) successfully made Misere, scores {MISERE_POINTS} points.")
             else:
                 contracting_team.update_score(-MISERE_POINTS)
-                print(f"{contracting_team.name} (bidder {contracting_player.name}) failed Misere by taking {misere_bidder_tricks_won} trick(s), loses {MISERE_POINTS} points.")
+                self._log(f"{contracting_team.name} (bidder {contracting_player.name}) failed Misere by taking {misere_bidder_tricks_won} trick(s), loses {MISERE_POINTS} points.")
                 # Opponent scoring for breaking Misere (e.g. 10 pts per trick taken by misere bidder)
                 # This also varies. Some rules might give opponents points.
                 # For now, no specific opponent scoring for failed Misere.
@@ -731,14 +872,14 @@ class Game:
             open_misere_bidder_tricks_won = contracting_player.tricks_won_this_round
             if open_misere_bidder_tricks_won == 0:
                 contracting_team.update_score(OPEN_MISERE_POINTS)
-                print(f"{contracting_team.name} (bidder {contracting_player.name}) successfully made Open Misere, scores {OPEN_MISERE_POINTS} points.")
+                self._log(f"{contracting_team.name} (bidder {contracting_player.name}) successfully made Open Misere, scores {OPEN_MISERE_POINTS} points.")
             else:
                 contracting_team.update_score(-OPEN_MISERE_POINTS)
-                print(f"{contracting_team.name} (bidder {contracting_player.name}) failed Open Misere by taking {open_misere_bidder_tricks_won} trick(s), loses {OPEN_MISERE_POINTS} points.")
+                self._log(f"{contracting_team.name} (bidder {contracting_player.name}) failed Open Misere by taking {open_misere_bidder_tricks_won} trick(s), loses {OPEN_MISERE_POINTS} points.")
 
-        print(f"Current Scores:")
+        self._log(f"Current Scores:")
         for team in self.teams:
-            print(f"  {team.name}: {team.team_score}")
+            self._log(f"  {team.name}: {team.team_score}")
         
         self.check_game_over()
 
