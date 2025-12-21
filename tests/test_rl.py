@@ -29,6 +29,7 @@ def env_setup():
         env.game.cards_played_this_round = []
         env.game.winning_bid = None
         env.game.trump_suit = None
+        env.game.bids_this_round = []
         
         # RL player is always index 0 in this setup
         env.rl_player = env.game.players[0]

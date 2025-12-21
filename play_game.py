@@ -9,6 +9,7 @@ import time
 import glob
 import re
 import os
+from five_hundred.history_recorder import recorder
 
 VERBOSE = True
 
@@ -152,8 +153,51 @@ def main():
             }
             
             set_game_state(ui_state)
-            time.sleep(0.5)
             
+            # --- History Recording Integration ---
+            # We want to catch when an action happened and log the transition.
+            # This is simpler if we hook into the Player methods directly.
+            # Let's see if we can instrument them here.
+            
+            time.sleep(0.5)
+
+    # --- Instrumentation for History ---
+    def instrument_player(player, game_obj):
+        original_bid = player.decide_bid
+        original_play = player.decide_play_card
+        
+        def bid_wrapper(*args, **kwargs):
+            # Capture state BEFORE
+            state_before = {
+                "phase": "BID",
+                "hand": player.hand[:],
+                "scores": [t.team_score for t in game_obj.teams],
+                "bids": [str(b) for b in game_obj.bids_this_round]
+            }
+            res = original_bid(*args, **kwargs)
+            # Log
+            recorder.record(state_before, res, 0, {"phase": "BID_POST"}, False)
+            return res
+            
+        def play_wrapper(*args, **kwargs):
+             state_before = {
+                "phase": "PLAY",
+                "hand": player.hand[:],
+                "scores": [t.team_score for t in game_obj.teams],
+                "trump": str(game_obj.trump_suit),
+                "trick": [str(c) for _, c in game_obj.current_trick_cards]
+            }
+             res = original_play(*args, **kwargs)
+             recorder.record(state_before, res, 0, {"phase": "PLAY_POST"}, False)
+             return res
+             
+        player.decide_bid = bid_wrapper
+        player.decide_play_card = play_wrapper
+
+    # Instrument all players
+    for p in [human, agent1, agent2, agent3]:
+        instrument_player(p, game)
+
     t_state = threading.Thread(target=state_pusher, daemon=True)
     t_state.start()
 

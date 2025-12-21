@@ -8,28 +8,58 @@ from collections import deque
 class BiddingNetwork(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(BiddingNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 512)
-        self.fc2 = nn.Linear(512, 512)
-        self.fc3 = nn.Linear(512, output_dim)
-        self.relu = nn.ReLU()
+        self.feature = nn.Sequential(
+            nn.Linear(input_dim, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU()
+        )
+        
+        self.advantage = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, output_dim)
+        )
+        
+        self.value = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1)
+        )
         
     def forward(self, x):
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        return self.fc3(x)
+        x = self.feature(x)
+        adv = self.advantage(x)
+        val = self.value(x)
+        return val + adv - adv.mean(dim=1, keepdim=True)
 
 class PlayingNetwork(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(PlayingNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 512)
-        self.fc2 = nn.Linear(512, 512)
-        self.fc3 = nn.Linear(512, output_dim)
-        self.relu = nn.ReLU()
+        self.feature = nn.Sequential(
+            nn.Linear(input_dim, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU()
+        )
+        
+        self.advantage = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, output_dim)
+        )
+        
+        self.value = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1)
+        )
         
     def forward(self, x):
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        return self.fc3(x)
+        x = self.feature(x)
+        adv = self.advantage(x)
+        val = self.value(x)
+        return val + adv - adv.mean(dim=1, keepdim=True)
 
 class PyTorchAgent:
     def __init__(self, state_dim=600, action_dim=100, lr=1e-4, gamma=0.99, buffer_size=50000):

@@ -285,6 +285,53 @@ class FiveHundredEnv:
         vec[idx+2] = (my_score - opp_score) / 1000.0 # Explicit Delta
         idx += 3
 
+        # 8. Winning Bid / Contract Info (15)
+        # 6 (Tricks: 0, 6, 7, 8, 9, 10) + 5 (Suit: S, C, D, H, NT) + 4 (Bidder seat rel to me)
+        winning_bid = obs.get('winning_bid_obj')
+        if winning_bid:
+            # Tricks (0 for Misere, 6-10 for standard)
+            tr_idx = 0
+            if winning_bid.tricks >= 6: tr_idx = winning_bid.tricks - 5 
+            vec[idx + tr_idx] = 1
+            idx += 6
+            
+            # Suit
+            s_map = {Suit.SPADES: 0, Suit.CLUBS: 1, Suit.DIAMONDS: 2, Suit.HEARTS: 3, Suit.NO_TRUMP: 4}
+            s_idx = s_map.get(winning_bid.suit or (Suit.NO_TRUMP if winning_bid.bid_type != BidType.SUIT_TRUMP else None), 4)
+            vec[idx + s_idx] = 1
+            idx += 5
+            
+            # Bidder (Seat relative to agent)
+            # Find agent seat
+            agent_seat = obs.get('agent_seat', 0)
+            bidder_seat = obs.get('bidder_seat', 0)
+            rel_seat = (bidder_seat - agent_seat) % 4
+            vec[idx + rel_seat] = 1
+            idx += 4
+        else:
+            idx += 15
+
+        # 9. Current Tricks Won (2)
+        # My Team, Enemy Team (Normalized 0.0 - 1.0)
+        tricks_my_team = obs.get('tricks_my_team', 0)
+        tricks_opp_team = obs.get('tricks_opp_team', 0)
+        vec[idx] = tricks_my_team / 10.0
+        vec[idx+1] = tricks_opp_team / 10.0
+        idx += 2
+
+        # 10. Bidding History (Simplified) (112)
+        # Last bid/pass for each of the 4 players (28 slots each)
+        bidding_history = obs.get('bidding_history_one_hot', {}) # {player_idx: bid_idx}
+        for i in range(4):
+            # seat rel to agent
+            agent_seat = obs.get('agent_seat', 0)
+            seat_idx = (agent_seat + i) % 4
+            bid_idx = bidding_history.get(seat_idx)
+            if bid_idx is not None:
+                # 0=Pass, 1-25=Suits, 26=Misere, 27=OpenMisere
+                vec[idx + bid_idx] = 1
+            idx += 28
+
         return vec
 
     def _get_action_mask(self, obs: Dict) -> np.ndarray:
@@ -362,6 +409,44 @@ class FiveHundredEnv:
             
             raw_obs['my_score'] = team_0.team_score
             raw_obs['opp_score'] = team_1.team_score
+            
+            # Expanded Info
+            raw_obs['agent_seat'] = 0 # RL Agent is always at seat 0 in FiveHundredEnv
+            
+            # Contract
+            if self.game.winning_bid:
+                raw_obs['winning_bid_obj'] = self.game.winning_bid
+                raw_obs['bidder_seat'] = self.game.players.index(self.game.winning_bid.player)
+                
+            # Tricks Won
+            raw_obs['tricks_my_team'] = sum(p.tricks_won_this_round for p in team_0.players)
+            raw_obs['tricks_opp_team'] = sum(p.tricks_won_this_round for p in team_1.players)
+            
+            # Bidding History (Simplified: Last action of each player)
+            raw_obs['bidding_history_one_hot'] = {}
+            for item in self.game.bids_this_round:
+                # bids_this_round contains either Bid objects or "Name passes" strings?
+                # Let's check game.player_passes_bid
+                if isinstance(item, str) and "passes" in item:
+                    # Find player
+                    for i, p in enumerate(self.game.players):
+                        if p.name in item:
+                            raw_obs['bidding_history_one_hot'][i] = 0 # Pass
+                            break
+                elif hasattr(item, 'player'):
+                    p_idx = self.game.players.index(item.player)
+                    # Encode bid to 1-27
+                    # This logic should match _decode_action in reverse
+                    bid_code = 0
+                    if item.bid_type == BidType.MISERE: bid_code = 26
+                    elif item.bid_type == BidType.OPEN_MISERE: bid_code = 27
+                    else:
+                        # 1..25
+                        tr_idx = item.tricks - 6
+                        s_map = {Suit.SPADES: 0, Suit.CLUBS: 1, Suit.DIAMONDS: 2, Suit.HEARTS: 3, Suit.NO_TRUMP: 4}
+                        s_idx = s_map.get(item.suit, 4) if item.bid_type == BidType.SUIT_TRUMP or item.bid_type == BidType.NO_TRUMP else 4
+                        bid_code = 1 + (tr_idx * 5) + s_idx
+                    raw_obs['bidding_history_one_hot'][p_idx] = bid_code
         
         # Publish UI
         if isinstance(raw_obs, dict) and self.game:
