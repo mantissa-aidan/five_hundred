@@ -1,0 +1,6 @@
+# requirements.txt
+# Add your project dependencies here
+numpy
+
+pytest
+torch>=2.0.0

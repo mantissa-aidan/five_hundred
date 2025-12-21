@@ -6,6 +6,8 @@ A Python implementation of the card game Five Hundred.
 
 Five Hundred is a trick-taking card game that is an extension of Euchre with some ideas from Bridge. For four players, it uses a standard 43-card deck (which includes a Joker, sometimes called the Bird). Players play in two partnerships. The game involves bidding, declaring a trump suit (or No Trump/Misère), playing tricks, and scoring points based on the contract.
 
+Detailed rules can be found on [Wikipedia](https://en.wikipedia.org/wiki/500_(card_game)).
+
 ## Features
 
 *   **Core Game Logic:**
