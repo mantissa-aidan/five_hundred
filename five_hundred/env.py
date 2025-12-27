@@ -457,6 +457,9 @@ class FiveHundredEnv:
                 "contract": str(self.game.winning_bid) if self.game.winning_bid else None,
                 "hands": [[{"rank": c.rank.name, "suit": c.suit.name} for c in p.hand] for p in self.game.players],
                 "scores": [t.team_score for t in self.game.teams],
+                "tricks_won": [t.tricks_won_this_round for t in self.game.teams],
+                "contract_level": self.game.winning_bid.tricks if self.game.winning_bid else 0,
+                "contract_suit": str(self.game.winning_bid.suit).replace("Suit.", "") if self.game.winning_bid and self.game.winning_bid.suit else ("NT" if self.game.winning_bid else None),
                 "trick": []
             }
             if 'current_trick' in raw_obs:

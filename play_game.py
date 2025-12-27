@@ -31,9 +31,14 @@ def main():
     set_cmd_queue(action_queue) # Link Server Queue to Player Class
     
     # 2. Find Checkpoint
-    checkpoints = glob.glob("model_checkpoint_*.pth")
+    # 2. Find Checkpoint
+    search_paths = [".", "five_hundred/static", "local_checkpoints"]
+    checkpoints = []
+    for p in search_paths:
+        checkpoints.extend(glob.glob(os.path.join(p, "model_checkpoint_*.pth")))
+        
     if not checkpoints:
-        print("ERROR: No checkpoints found! Train some agents first.")
+        print(f"ERROR: No checkpoints found in {search_paths}! Train some agents first.")
         return
 
     def extract_ep(filename):

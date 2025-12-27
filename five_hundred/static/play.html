@@ -19,6 +19,8 @@
 
         h1 {
             margin-bottom: 5px;
+            text-align: center;
+            width: 100%;
         }
 
         #status-bar {
@@ -143,6 +145,138 @@
             justify-content: center;
             align-items: center;
         }
+
+        .trump-icon {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            /* Darker background */
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            color: white;
+            min-width: 100px;
+            width: auto;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .hud-emoji {
+            font-size: 36px;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 5px 0;
+            color: black;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .hud-text {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+        }
+
+        .hud-sub {
+            margin-top: 8px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .trick-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .trick-dot.won-us {
+            background: #2ecc71;
+            box-shadow: 0 0 5px #2ecc71;
+        }
+
+        .trick-dot.won-them {
+            background: #e74c3c;
+            box-shadow: 0 0 5px #e74c3c;
+        }
+
+        .trick-dot.contract-mark {
+            border: 2px solid gold;
+            transform: scale(1.2);
+        }
+
+        /* Tug of War Bar */
+        .tow-container {
+            width: 100%;
+            height: 12px;
+            background: #34495e;
+            border-radius: 6px;
+            margin: 10px 0;
+            position: relative;
+            overflow: visible;
+            /* Allow marker to overhang */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .tow-bar {
+            height: 100%;
+            width: 50%;
+            /* Default center */
+            background: linear-gradient(90deg, #2ecc71 0%, #2ecc71 100%);
+            border-radius: 6px 0 0 6px;
+            /* Just left side filled? No, let's do marker style */
+            display: none;
+        }
+
+        .tow-marker {
+            width: 4px;
+            height: 18px;
+            background: white;
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 5px white;
+            z-index: 2;
+            transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .tow-fill-left {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: rgba(46, 204, 113, 0.6);
+            border-radius: 6px 0 0 6px;
+            width: 50%;
+            transition: width 0.5s ease;
+        }
+
+        .tow-fill-right {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            background: rgba(231, 76, 60, 0.6);
+            border-radius: 0 6px 6px 0;
+            width: 50%;
+            transition: width 0.5s ease;
+        }
+
+
 
         .trick-card {
             width: 90px;
@@ -447,13 +581,23 @@
 </head>
 
 <body>
-    <h1>The Arena 🏟️</h1>
+    <h1>Play 500 🃏</h1>
     <div id="status-bar">Waiting for server...</div>
 
     <div class="layout-container"
         style="display: flex; gap: 20px; align-items: flex-start; justify-content: center; width: 100%; max-width: 1600px;">
         <div class="game-board">
             <!-- Info Panel was here -->
+
+            <!-- HUD Panel -->
+            <div id="table-hud" class="trump-icon" style="display:none;">
+                <div id="hud-contract" class="hud-text"></div>
+                <div id="hud-icon" class="hud-emoji"></div>
+                <!-- Trick Dots Container -->
+                <div id="hud-progress" class="hud-sub">
+                    <!-- Dots injected by JS -->
+                </div>
+            </div>
 
             <div class="center-table" id="trick-area"></div>
 
@@ -480,8 +624,20 @@
         <div class="info-panel"
             style="position: static; width: 300px; height: 650px; box-sizing: border-box; display:flex; flex-direction:column;">
             <h3 style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.3); padding-bottom:5px;">Game Info</h3>
-            <div>Score You: <span id="my-score">0</span></div>
-            <div>Score Enemy: <span id="opp-score">0</span></div>
+
+            <!-- Score Board -->
+            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
+                <span style="color:#2ecc71">YOU: <span id="my-score">0</span></span>
+                <span style="color:#e74c3c">THEM: <span id="opp-score">0</span></span>
+            </div>
+
+            <!-- Tug of War -->
+            <div class="tow-container" title="Score Balance">
+                <div class="tow-fill-left" id="tow-left"></div>
+                <div class="tow-fill-right" id="tow-right"></div>
+                <div class="tow-marker" id="tow-marker"></div>
+            </div>
+
             <div>Phase: <span id="game-phase">-</span></div>
             <div style="margin-top:10px;"><span id="game-contract-label">Contract:</span> <span
                     id="game-contract">-</span></div>
@@ -746,7 +902,116 @@
                 }
 
                 document.getElementById('game-trump').innerText = state.trump || '-';
+
+                // Update Table HUD
+                const hud = document.getElementById('table-hud');
+                if (state.phase === 'PLAY' && state.contract) {
+                    hud.style.display = 'flex';
+
+                    const suitEmojis = {
+                        'HEARTS': '❤️',
+                        'DIAMONDS': '♦️',
+                        'CLUBS': '♣️',
+                        'SPADES': '♠️',
+                        'NO_TRUMP': '🃏',
+                        'NT': '🃏'
+                    };
+
+                    // Parse contract string from "Bot2 bids 7 Hearts..." or utilize explicit fields
+                    // Using new fields from env.py if available, else regex
+                    let suitStr = state.contract_suit || "";
+                    if (!suitStr && state.trump) suitStr = state.trump.replace('Suit.', '');
+
+                    let level = state.contract_level || "?";
+                    // Fallback parse if env not updated yet (async reload)
+                    if (level === "?" && state.contract) {
+                        const match = state.contract.match(/(\d+)/);
+                        if (match) level = match[1];
+                    }
+
+
+                    // Icon
+                    const emoji = suitEmojis[suitStr] || suitStr;
+                    document.getElementById('hud-icon').innerText = emoji;
+
+                    // Contract Text
+                    document.getElementById('hud-contract').innerText = `${level} ${suitStr}`;
+
+                    // Trick Progression Dots
+                    const pContainer = document.getElementById('hud-progress');
+                    pContainer.innerHTML = ''; // Clear
+
+                    if (state.tricks_won) {
+                        const usWins = state.tricks_won[0];
+                        const themWins = state.tricks_won[1];
+                        const contractTarget = parseInt(level) || 0;
+
+                        // We always have 10 tricks
+                        for (let i = 1; i <= 10; i++) {
+                            const d = document.createElement('div');
+                            d.className = 'trick-dot';
+
+                            // Color logic: "Us" fills from left? Or distinct?
+                            // Let's just color the first N dots Green, next M dots Red?
+                            // Or better: Current trick count?
+                            // Issue: We don't know ORDER of wins from this simple count. 
+                            // But usually you just show counts.
+                            // Left side: Us wins. Right side: Them wins. Middle: Empty
+
+                            // But wait, "Progression" implies sequence. 
+                            // Without history of WHO won WHICH trick, we can't do sequence.
+                            // Stacking is standard.
+
+                            if (i <= usWins) {
+                                d.classList.add('won-us');
+                            } else if (i > (10 - themWins)) {
+                                d.classList.add('won-them');
+                            }
+
+                            // Mark contract goal
+                            // e.g. if contract is 7, the 7th dot is special IF we are attacking.
+                            // Assuming "Us" (Human) is attacking for now or we just highlight 7th dot always?
+                            // Better: Highlight index = contractTarget
+                            if (contractTarget > 0 && i === contractTarget) {
+                                d.classList.add('contract-mark');
+                                d.title = `Contract Target: ${contractTarget}`;
+                            }
+
+                            pContainer.appendChild(d);
+                        }
+                    }
+                } else {
+                    hud.style.display = 'none';
+                }
+
                 document.getElementById('status-bar').innerText = pending.context ? "Waiting for YOU..." : `Status: ${state.phase}`;
+
+                // --- Score Tug of War Logic ---
+                const scoreUs = state.scores ? state.scores[0] : 0;
+                const scoreThem = state.scores ? state.scores[1] : 0;
+                const diff = scoreUs - scoreThem;
+
+                // Clamp diff for visual: +/- 1000 points usually max swing
+                // 0 diff = 50% left.
+                // +500 = 100% left? Or marker moves right for us?
+                // Standard: Left is 0%, Right is 100%.
+                // Let's say Center (50%) is 0 diff.
+                // If Us > Them, marker moves RIGHT (towards "Victory"?) 
+                // Or "Us" is Left side? The bar is green on left.
+                // Let's define: Green Bar expands from Left. Red Bar expands from Right.
+                // Marker stays in middle or moves?
+
+                // Let's do a sliding scale.
+                // Range: -500 to +500.
+                const range = 1000;
+                let percent = 50 + ((diff / range) * 50);
+                percent = Math.max(5, Math.min(95, percent)); // Clamp 5-95%
+
+                document.getElementById('tow-marker').style.left = `${percent}%`;
+
+                // Dynamic Fills (Optional, purely based on marker)
+                document.getElementById('tow-left').style.width = `${percent}%`;
+                document.getElementById('tow-right').style.width = `${100 - percent}%`;
 
                 // Popuplate Bid History (Always visible in Info Panel)
                 const blog = document.getElementById('bid-log');

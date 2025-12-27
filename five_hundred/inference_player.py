@@ -127,7 +127,7 @@ class InferencePlayer(Player):
 
     def decide_play_card(self, playable_cards: List[Card], trick_suit: Optional[Suit], trump_suit: Optional[Suit], current_trick_cards: List[Tuple[Any, Card]]) -> Card:
         from .env import FiveHundredEnv
-        if not hasattr(self, 'env'): self.env = FiveHundredEnv(verbose=False)
+        if not hasattr(self, 'env'): self.env = FiveHundredEnv(verbose=False, start_server=False)
         
         obs = {
             'phase': 'PLAY',
