@@ -14,17 +14,26 @@ local function is_valid_bid(game, bid_tricks, bid_suit, bid_type)
         return temp_bid > game.highest_bid
 end
 
-function BiddingView:init(game)
+function BiddingView:init(game, container_w, container_h)
     self.game = game
     self.width = 600
-    self.height = 450 -- Increased height for Submit button
+    self.height = 450
     self.buttons = {}
-    self.selected_bid = nil -- {tricks, suit, bid_type}
+    self.selected_bid = nil
     
-    -- Layout
-    self.base_x = (love.graphics.getWidth() - self.width) / 2
-    self.base_y = (love.graphics.getHeight() - self.height) / 2
+    -- Layout centering within container (game area)
+    container_w = container_w or love.graphics.getWidth()
+    container_h = container_h or love.graphics.getHeight()
     
+    self.base_x = (container_w - self.width) / 2
+    self.base_y = (container_h - self.height) / 2
+    
+    self:create_buttons()
+end
+
+function BiddingView:resize(container_w, container_h)
+    self.base_x = (container_w - self.width) / 2
+    self.base_y = (container_h - self.height) / 2
     self:create_buttons()
 end
 

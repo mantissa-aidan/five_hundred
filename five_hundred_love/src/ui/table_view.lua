@@ -6,16 +6,18 @@ local TableView = Utils.class("TableView")
 
 function TableView:init(game)
     self.game = game
-    self.width = love.graphics.getWidth()
+    
+    -- Layout Config - table takes left portion, leaving space for chat on right
+    local chat_width = 300
+    self.width = love.graphics.getWidth() - chat_width
     self.height = love.graphics.getHeight()
     
-    -- Layout Config
-    self.card_scale = 1.0  -- Larger cards for better visibility
-    -- Standard positions relative to center
+    self.card_scale = 0.9  -- Slightly smaller to fit
+    -- Center of game area (not full screen)
     self.center_x = self.width / 2
     self.center_y = self.height / 2
     
-    self.bidding_view = BiddingView.new(game)
+    self.bidding_view = BiddingView.new(game, self.width, self.height)
     self.selected_discards = {} -- Set of card indices for P1
     self.animations = {} -- List of {type, card, start_pos, end_pos, t, duration}
     
@@ -23,6 +25,20 @@ function TableView:init(game)
     game:set_on_card_play(function(p_idx, card)
         self:on_card_played(p_idx, card)
     end)
+end
+
+function TableView:resize(w, h)
+    -- Recalculate dimensions (chat log takes fixed 300px)
+    local chat_width = 300
+    self.width = w - chat_width
+    self.height = h
+    self.center_x = self.width / 2
+    self.center_y = self.height / 2
+    
+    -- Resize child views
+    if self.bidding_view then
+        self.bidding_view:resize(self.width, self.height)
+    end
 end
 
 function TableView:on_card_played(p_idx, card)
@@ -211,23 +227,22 @@ function TableView:update(dt)
 end
 
 function TableView:draw()
-    -- Update dimensions dynamically for fullscreen/resize support
-    self.width = love.graphics.getWidth()
-    self.height = love.graphics.getHeight()
-    self.center_x = self.width / 2
-    self.center_y = self.height / 2
     
-    -- Draw Background (Green Felt)
-    love.graphics.clear(0.05, 0.4, 0.1) 
+    -- Clip to game area (don't draw into chat panel)
+    love.graphics.setScissor(0, 0, self.width, self.height)
+    
+    -- Draw Background (Green Felt) - only in game area
+    love.graphics.setColor(0.05, 0.4, 0.1)
+    love.graphics.rectangle("fill", 0, 0, self.width, self.height) 
     
     self:draw_status_info()
     self:draw_tricks_history()
     
     -- Draw Players
     self:draw_player_hand(1, self.center_x, self.height - 100, true) -- Bottom (Human)
-    self:draw_player_hand(2, 50, self.center_y, false, -math.pi/2) -- Left
+    self:draw_player_hand(2, 110, self.center_y, false, -math.pi/2) -- Left (moved in from 50)
     self:draw_player_hand(3, self.center_x, 50, false, 0) -- Top
-    self:draw_player_hand(4, self.width - 50, self.center_y, false, math.pi/2) -- Right
+    self:draw_player_hand(4, self.width - 110, self.center_y, false, math.pi/2) -- Right (moved in from 50)
     
     self:draw_current_trick()
     self:draw_kitty()
@@ -263,6 +278,9 @@ function TableView:draw()
     if gDebugMode then
         self:draw_debug_overlay()
     end
+    
+    -- Reset scissor so chat can render
+    love.graphics.setScissor()
 end
 
 function TableView:draw_debug_overlay()
