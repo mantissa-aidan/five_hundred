@@ -7,12 +7,12 @@ local CardRenderer = {}
 local CardWidth = 80
 local CardHeight = 110
 
--- Simple abbreviated chars or symbols
+-- Unicode suit symbols (requires DejaVu Sans font)
 local SuitChars = {
-    [Suit.CLUBS] = "C",
-    [Suit.DIAMONDS] = "D",
-    [Suit.HEARTS] = "H",
-    [Suit.SPADES] = "S",
+    [Suit.CLUBS] = "♣",
+    [Suit.DIAMONDS] = "♦",
+    [Suit.HEARTS] = "♥",
+    [Suit.SPADES] = "♠",
     [Suit.NO_TRUMP] = "NT"
 }
 

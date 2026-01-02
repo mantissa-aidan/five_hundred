@@ -16,6 +16,10 @@ local ai_timer = 0
 local AI_DELAY = 0.5 -- seconds between bot actions
 
 function love.load()
+    -- Load Unicode font (DejaVu Sans has suit symbols ♠♣♦♥)
+    local font = love.graphics.newFont("assets/fonts/DejaVuSans.ttf", 14)
+    love.graphics.setFont(font)
+    
     -- Initialize Game
     local player_names = {"Human", "Bot 1", "Partner", "Bot 3"}
     local team_names = {"Team A", "Team B"}
