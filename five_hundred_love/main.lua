@@ -5,7 +5,11 @@ local HumanStrategy = require "src.ai.human_strategy"
 local RandomStrategy = require "src.ai.random_strategy"
 
 -- Player strategies (indexed by player position 1-4)
-local strategies = {}
+gStrategies = {}  -- Global so TableView can access for debug info
+
+-- Game state flags
+gPaused = false
+gDebugMode = false
 
 -- AI pacing timer
 local ai_timer = 0
@@ -20,7 +24,7 @@ function love.load()
     
     -- Setup strategies for each player
     -- Player 1 = Human, others = NN bots
-    strategies[1] = HumanStrategy.new()
+    gStrategies[1] = HumanStrategy.new()
     
     -- Try to load NN strategy, fall back to Random if weights not available
     local nn_ok, nn_strat = pcall(function()
@@ -28,14 +32,14 @@ function love.load()
     end)
     
     if nn_ok then
-        strategies[2] = nn_strat
-        strategies[3] = NNStrategy.new("assets/weights.json")
-        strategies[4] = NNStrategy.new("assets/weights.json")
+        gStrategies[2] = nn_strat
+        gStrategies[3] = NNStrategy.new("assets/weights.json")
+        gStrategies[4] = NNStrategy.new("assets/weights.json")
     else
         print("[Controller] NN weights not found, using Random strategy")
-        strategies[2] = RandomStrategy.new()
-        strategies[3] = RandomStrategy.new()
-        strategies[4] = RandomStrategy.new()
+        gStrategies[2] = RandomStrategy.new()
+        gStrategies[3] = RandomStrategy.new()
+        gStrategies[4] = RandomStrategy.new()
     end
     
     gGame:start_new_round()
@@ -44,9 +48,13 @@ function love.load()
     gTableView = TableView.new(gGame)
     
     print("Five Hundred - Love2D Version Started")
+    print("Controls: ESC=Pause, D=Debug Mode, R=Restart Round")
 end
 
 function love.update(dt)
+    -- Don't update if paused
+    if gPaused then return end
+    
     gTableView:update(dt)
     
     -- Get current action request
@@ -56,7 +64,7 @@ function love.update(dt)
         return -- Nothing to do (game over, etc)
     end
     
-    local strategy = strategies[player_idx]
+    local strategy = gStrategies[player_idx]
     
     -- If human strategy, wait for UI input
     if strategy:requires_input() then
@@ -96,7 +104,13 @@ function love.update(dt)
 end
 
 function love.keypressed(key)
-    if key == "space" then
+    if key == "escape" then
+        gPaused = not gPaused
+    elseif key == "d" then
+        gDebugMode = not gDebugMode
+        print("[Debug Mode] " .. (gDebugMode and "ON" or "OFF"))
+    elseif key == "space" then
+        if gPaused then return end
         -- Auto-pass for debugging
         if gGame.state == "BIDDING" and gGame.current_player_idx == 1 then
             gGame:player_pass(1)
@@ -105,15 +119,41 @@ function love.keypressed(key)
         end
     elseif key == "r" then
         gGame:start_new_round()
+        gPaused = false
     end
 end
 
 function love.draw()
     gTableView:draw()
+    
+    -- Draw pause overlay
+    if gPaused then
+        love.graphics.setColor(0, 0, 0, 0.7)
+        love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+        
+        love.graphics.setColor(1, 1, 1)
+        local cx = love.graphics.getWidth() / 2
+        local cy = love.graphics.getHeight() / 2
+        
+        love.graphics.printf("PAUSED", 0, cy - 60, love.graphics.getWidth(), "center")
+        love.graphics.printf("ESC - Resume", 0, cy - 20, love.graphics.getWidth(), "center")
+        love.graphics.printf("D - Toggle Debug Mode (" .. (gDebugMode and "ON" or "OFF") .. ")", 0, cy + 10, love.graphics.getWidth(), "center")
+        love.graphics.printf("R - Restart Round", 0, cy + 40, love.graphics.getWidth(), "center")
+    end
+    
+    -- Debug mode indicator
+    if gDebugMode and not gPaused then
+        love.graphics.setColor(1, 0.5, 0, 0.8)
+        love.graphics.rectangle("fill", 5, 5, 100, 25, 5)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print("DEBUG ON", 15, 10)
+    end
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
+    if gPaused then return end
     if button == 1 then
         gTableView:check_click(x, y)
     end
 end
+

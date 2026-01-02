@@ -258,6 +258,50 @@ function TableView:draw()
             CardRenderer.draw_card(anim.card, curr_x - 40, curr_y, self.card_scale, true, false)
         end
     end
+    
+    -- Debug overlay
+    if gDebugMode then
+        self:draw_debug_overlay()
+    end
+end
+
+function TableView:draw_debug_overlay()
+    -- Get current action type
+    local action_type, player_idx = self.game:get_action_request()
+    if not action_type then return end
+    
+    -- Only show during BID or PLAY phases
+    if action_type ~= "BID" and action_type ~= "PLAY" then return end
+    
+    -- Draw probabilities near each bot's position
+    local bot_positions = {
+        [2] = {x = 120, y = self.center_y - 100},  -- Left bot
+        [3] = {x = self.center_x - 150, y = 120},  -- Top bot  
+        [4] = {x = self.width - 320, y = self.center_y - 100}  -- Right bot
+    }
+    
+    for p_idx, pos in pairs(bot_positions) do
+        local strategy = gStrategies and gStrategies[p_idx]
+        if strategy and strategy.is_nn and strategy:is_nn() then
+            local top_actions = strategy:get_top_actions(self.game, p_idx, action_type, 5)
+            
+            -- Draw semi-transparent background
+            love.graphics.setColor(0, 0, 0, 0.7)
+            love.graphics.rectangle("fill", pos.x, pos.y, 200, 90, 5)
+            
+            -- Draw header
+            love.graphics.setColor(1, 0.5, 0)
+            love.graphics.print(self.game.players[p_idx].name .. " (" .. action_type .. ")", pos.x + 5, pos.y + 3)
+            
+            -- Draw top actions
+            love.graphics.setColor(1, 1, 1)
+            for i, action in ipairs(top_actions) do
+                local pct = string.format("%.1f%%", action.prob * 100)
+                local text = action.label .. ": " .. pct
+                love.graphics.print(text, pos.x + 5, pos.y + 5 + i * 14)
+            end
+        end
+    end
 end
 
 function TableView:draw_next_trick_btn()
@@ -402,7 +446,8 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
             end
             
             -- Determine if we show face
-            local show_face = is_human or (self.game.state == "GAME_OVER")
+            -- In debug mode, show all cards face up
+            local show_face = is_human or gDebugMode or (self.game.state == "GAME_OVER")
             
             CardRenderer.draw_card(card, card_x - 40, card_y, self.card_scale, show_face, false)
             

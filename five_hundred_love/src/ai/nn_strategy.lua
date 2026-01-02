@@ -116,4 +116,88 @@ function NNStrategy:decide_discard(game, player_idx)
     return {sorted[1], sorted[2], sorted[3]}
 end
 
+-- Get top N actions with probabilities for debug display
+-- action_type: "BID" or "PLAY"
+function NNStrategy:get_top_actions(game, player_idx, action_type, n)
+    n = n or 5
+    local vec = FeatureExtractor.get_state_vector(game, player_idx)
+    local logits
+    
+    if action_type == "BID" then
+        logits = self.bid_net:forward(vec)
+    else
+        logits = self.play_net:forward(vec)
+    end
+    
+    -- Compute softmax
+    local max_logit = -1e9
+    for _, v in ipairs(logits) do
+        if v > max_logit then max_logit = v end
+    end
+    
+    local exp_sum = 0
+    local exp_vals = {}
+    for i, v in ipairs(logits) do
+        exp_vals[i] = math.exp(v - max_logit) -- Numerical stability
+        exp_sum = exp_sum + exp_vals[i]
+    end
+    
+    local probs = {}
+    for i, ev in ipairs(exp_vals) do
+        probs[i] = ev / exp_sum
+    end
+    
+    -- Create action list with probabilities
+    local actions = {}
+    for i, prob in ipairs(probs) do
+        local action_idx = i - 1
+        local label = ""
+        
+        if action_type == "BID" then
+            if action_idx == 0 then
+                label = "Pass"
+            elseif action_idx >= 1 and action_idx <= 25 then
+                local adj = action_idx - 1
+                local tricks = 6 + math.floor(adj / 5)
+                local s_idx = adj % 5
+                local suit_chars = {"♠", "♣", "♦", "♥", "NT"}
+                label = tostring(tricks) .. suit_chars[s_idx + 1]
+            elseif action_idx == 26 then
+                label = "Mis"
+            elseif action_idx == 27 then
+                label = "OMis"
+            end
+        else
+            -- PLAY - card index
+            local card = FeatureExtractor.int_to_card(action_idx)
+            if card then
+                local rank_chars = {[4]="4",[5]="5",[6]="6",[7]="7",[8]="8",[9]="9",[10]="10",[11]="J",[12]="Q",[13]="K",[14]="A",[15]="JK"}
+                local suit_chars = {[Suit.SPADES]="♠",[Suit.CLUBS]="♣",[Suit.DIAMONDS]="♦",[Suit.HEARTS]="♥",[Suit.NO_TRUMP]=""}
+                label = (rank_chars[card.rank] or "?") .. (suit_chars[card.suit] or "")
+            else
+                label = "?"
+            end
+        end
+        
+        table.insert(actions, {label = label, prob = prob, idx = action_idx})
+    end
+    
+    -- Sort by probability descending
+    table.sort(actions, function(a, b) return a.prob > b.prob end)
+    
+    -- Return top N
+    local result = {}
+    for i = 1, math.min(n, #actions) do
+        table.insert(result, actions[i])
+    end
+    
+    return result
+end
+
+-- Check if this is an NN strategy (for debug display)
+function NNStrategy:is_nn()
+    return true
+end
+
 return NNStrategy
+
