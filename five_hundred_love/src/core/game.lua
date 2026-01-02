@@ -4,9 +4,6 @@ local Deck = require "src.core.deck"
 local Player = require "src.core.player"
 local Team = require "src.core.team"
 local BidModule = require "src.core.bid"
-local Net = require "src.ai.net"
-local FeatureExtractor = require "src.ai.feature_extractor"
-local json = require "src.ext.json"
 local Card = CardModule.Card
 local Suit = CardModule.Suit
 local Rank = CardModule.Rank
@@ -16,7 +13,7 @@ local BidType = BidModule.BidType
 local Game = Utils.class("Game")
 
 -- Game States
-    Game.STATE = {
+Game.STATE = {
     WAITING = "WAITING",
     BIDDING = "BIDDING",
     KITTY = "KITTY",
@@ -26,10 +23,7 @@ local Game = Utils.class("Game")
     GAME_OVER = "GAME_OVER"
 }
 
--- ... (Keep existing code) ...
-
-
-function Game:init(player_names, team_names, weights_path)
+function Game:init(player_names, team_names)
     self.players = {}
     for _, name in ipairs(player_names) do
         table.insert(self.players, Player.new(name))
@@ -43,46 +37,29 @@ function Game:init(player_names, team_names, weights_path)
     self.deck = Deck.new()
     self.kitty = {}
     self.state = Game.STATE.WAITING
-    self.dealer_idx = 1 -- 1-based index for Lua
+    self.dealer_idx = 1
     self.current_player_idx = 1
     
     self.winning_bid = nil
     self.trump_suit = nil
     
-    -- Load Neural Network Bot Brain (shared by all bots)
-    self.bot_brain = nil
-    if weights_path then
-        local content = love.filesystem.read(weights_path)
-        if not content then
-            local f = io.open(weights_path, "r")
-            if f then content = f:read("*a"); f:close() end
-        end
-        if content then
-            local weights = json.decode(content)
-            self.bot_brain = {
-                bid_net = Net.new(weights["bidding"]),
-                play_net = Net.new(weights["playing"])
-            }
-            print("[AI] Neural network bot brain loaded!")
-        else
-            print("[AI] Warning: Could not load weights, using simple bot")
-        end
-    end
-    
     -- Bidding State
     self.bids_this_round = {}
     self.highest_bid = nil
-    self.passed_players = {} -- Set of players who passed
+    self.passed_players = {}
     self.consecutive_passes = 0
     
     -- Play State
     self.tricks_history = {}
-    self.current_trick = {} -- List of {player=p, card=c}
-    self.lead_suit = nil -- Suit of the first card in trick
+    self.current_trick = {}
+    self.lead_suit = nil
     self.round_history = {}
     
     self.message_log = {}
     self.on_card_play_callback = nil
+    
+    -- AI timer for pacing bot actions (controller manages this)
+    self.ai_timer = 0
 end
 
 function Game:set_on_card_play(callback)
@@ -454,112 +431,30 @@ function Game:get_player_index(player)
     return -1
 end
 
-function Game:update(dt)
-    -- State updates
-    if self.state == Game.STATE.GAME_OVER then return end
-    
-    -- Bot Logic
-    -- If current player is not P1 (Human), take action
-    if self.current_player_idx ~= 1 then
-        self.ai_timer = (self.ai_timer or 0) + dt
-        if self.ai_timer > 1.0 then -- 1 second delay
-            self.ai_timer = 0
-            self:do_bot_action()
-        end
+-- Returns what type of action is currently needed
+-- Used by controller to determine what to do
+function Game:get_action_request()
+    if self.state == Game.STATE.BIDDING then
+        return "BID", self.current_player_idx
+    elseif self.state == Game.STATE.KITTY then
+        return "DISCARD", self.current_player_idx
+    elseif self.state == Game.STATE.PLAYING then
+        return "PLAY", self.current_player_idx
+    elseif self.state == Game.STATE.TRICK_OVER then
+        return "NEXT_TRICK", nil
+    elseif self.state == Game.STATE.ROUND_OVER then
+        return "NEXT_ROUND", nil
+    elseif self.state == Game.STATE.GAME_OVER then
+        return "GAME_OVER", nil
     end
+    return nil, nil
 end
 
-function Game:do_bot_action()
-    local p_idx = self.current_player_idx
-    local player = self.players[p_idx]
-    
-    if self.state == Game.STATE.BIDDING then
-        if self.bot_brain then
-            -- Neural Network Bid Decision
-            local vec = FeatureExtractor.get_state_vector(self, p_idx)
-            local logits = self.bot_brain.bid_net:forward(vec)
-            
-            -- Find best valid bid (mask out Misere 26, 27)
-            -- Also need to mask bids lower than current highest
-            local max_val = -1e9
-            local max_idx = 0 -- 0 = Pass
-            
-            for i = 1, #logits do
-                local action_idx = i - 1 -- 0-based
-                local valid = true
-                
-                -- Mask Misere (not trained)
-                if action_idx == 26 or action_idx == 27 then valid = false end
-                
-                -- Mask lower bids (if there's already a highest bid)
-                if action_idx >= 1 and action_idx <= 25 and self.highest_bid then
-                    local adj = action_idx - 1
-                    local tricks = 6 + math.floor(adj / 5)
-                    local s_idx = adj % 5
-                    local suits = {[0]=Suit.SPADES, [1]=Suit.CLUBS, [2]=Suit.DIAMONDS, [3]=Suit.HEARTS, [4]=Suit.NO_TRUMP}
-                    local suit = suits[s_idx]
-                    local bid_type = (suit == Suit.NO_TRUMP) and BidType.NO_TRUMP or BidType.SUIT_TRUMP
-                    
-                    local temp_bid = Bid.new(player, tricks, suit, bid_type)
-                    if not (temp_bid > self.highest_bid) then
-                        valid = false
-                    end
-                end
-                
-                if valid and logits[i] > max_val then
-                    max_val = logits[i]
-                    max_idx = action_idx
-                end
-            end
-            
-            -- Execute action
-            if max_idx == 0 then
-                self:player_pass(p_idx)
-            else
-                local action, params = FeatureExtractor.decode_action(max_idx, "BID")
-                if action == "bid" and params then
-                    self:player_bid(p_idx, params[1], params[2], params[3])
-                else
-                    self:player_pass(p_idx)
-                end
-            end
-        else
-            -- Fallback: Simple bot always passes
-            self:player_pass(p_idx)
-        end
-        
-    elseif self.state == Game.STATE.KITTY then
-        -- Bot discards first 3 cards (simplified)
-        local discards = {player.hand[1], player.hand[2], player.hand[3]}
-        self:player_discard_kitty(p_idx, discards)
-        
-    elseif self.state == Game.STATE.PLAYING then
-        local playable = self:get_playable_cards(player, self.lead_suit)
-        
-        if self.bot_brain and #playable > 0 then
-            -- Neural Network Play Decision
-            local vec = FeatureExtractor.get_state_vector(self, p_idx)
-            local logits = self.bot_brain.play_net:forward(vec)
-            
-            -- Find best playable card
-            local best_card = playable[1]
-            local max_val = -1e9
-            
-            for _, card in ipairs(playable) do
-                local c_idx = FeatureExtractor.card_to_int(card)
-                local val = logits[c_idx + 1] -- 1-based Lua index
-                if val > max_val then
-                    max_val = val
-                    best_card = card
-                end
-            end
-            
-            self:player_play_card(p_idx, best_card)
-        elseif #playable > 0 then
-            -- Fallback: Play first valid card
-            self:player_play_card(p_idx, playable[1])
-        end
-    end
+-- Check if we're waiting for a specific player
+function Game:is_player_turn(player_idx)
+    local action, idx = self:get_action_request()
+    return idx == player_idx
 end
 
 return Game
+
