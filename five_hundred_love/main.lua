@@ -7,7 +7,10 @@ function love.load()
     local player_names = {"Human", "Bot 1", "Partner", "Bot 3"}
     local team_names = {"Team A", "Team B"}
     
-    gGame = Game.new(player_names, team_names)
+    -- Path to pre-trained neural network weights
+    local weights_path = "assets/weights.json"
+    
+    gGame = Game.new(player_names, team_names, weights_path)
     gGame:start_new_round()
     
     -- Initialize View

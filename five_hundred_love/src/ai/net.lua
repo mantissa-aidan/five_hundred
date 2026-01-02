@@ -1,87 +1,94 @@
 local Utils = require "src.core.utils"
-local json = require "src.ext.json" -- Need a JSON lib. Love2D doesn't have one built-in usually? 
--- Wait, Love2D doesn't have standard JSON lib. I need to add one or use a simple parser.
--- I'll implement a simple JSON generic loader or assume 'dkjson' or similar is available or paste a small one.
--- Actually, for just weights (arrays), I can write a custom format or allow the user to provide a JSON lib.
--- I will add a simple JSON decoder.
+local json = require "src.ext.json"
 
 local Net = Utils.class("Net")
 
+-- Dueling DQN Architecture:
+-- feature: Sequential layers -> embedding
+-- advantage: Sequential layers -> advantage per action
+-- value: Sequential layers -> single value
+
 function Net:init(weights_dict)
-    self.layers = {}
-    -- Reconstruct layers from weights_dict
-    -- Expecting names like "feature.0.weight", "feature.0.bias"
-    -- Sort keys to find order?
-    -- Standard PyTorch Sequential: 0 is Linear, 1 is ReLU...
+    -- Parse feature, advantage, and value heads
+    self.feature_layers = self:parse_sequential(weights_dict, "feature")
+    self.advantage_layers = self:parse_sequential(weights_dict, "advantage")
+    self.value_layers = self:parse_sequential(weights_dict, "value")
+end
+
+function Net:parse_sequential(weights_dict, prefix)
+    local layers = {}
     
-    -- Heuristic reconstruction:
-    -- Find max layer index
+    -- Find max layer index for this prefix
     local max_idx = -1
     for k, _ in pairs(weights_dict) do
-        local parts = {}
-        for p in string.gmatch(k, "[^%.]+") do table.insert(parts, p) end
-        if parts[1] == "feature" and tonumber(parts[2]) then
-            local idx = tonumber(parts[2])
+        local pattern = prefix .. "%.(%d+)%.weight"
+        local idx_str = string.match(k, pattern)
+        if idx_str then
+            local idx = tonumber(idx_str)
             if idx > max_idx then max_idx = idx end
         end
     end
     
-    self.sequence = {}
-    
-    for i=0, max_idx do
-        -- Check if we have weights for this index
-        local w_key = string.format("feature.%d.weight", i)
-        local b_key = string.format("feature.%d.bias", i)
+    -- Build layer sequence
+    for i = 0, max_idx do
+        local w_key = string.format("%s.%d.weight", prefix, i)
+        local b_key = string.format("%s.%d.bias", prefix, i)
         
         if weights_dict[w_key] then
-            -- It's a Linear layer
-            table.insert(self.sequence, {
+            -- Linear layer
+            table.insert(layers, {
                 type = "Linear",
-                weight = weights_dict[w_key], -- 2D array [out_dim][in_dim]
-                bias = weights_dict[b_key]    -- 1D array [out_dim]
+                weight = weights_dict[w_key],
+                bias = weights_dict[b_key]
             })
-        elseif not weights_dict[w_key] and i % 2 == 1 then
-            -- Assume ReLU between Linears?
-            -- PyTorch agent.py: Linear -> ReLU -> Linear...
-            -- Sequential indices: 0=Linear, 1=ReLU, 2=Linear...
-            table.insert(self.sequence, { type = "ReLU" })
+        else
+            -- Check if it's a ReLU (odd indices in PyTorch Sequential with Linear+ReLU pattern)
+            -- Heuristic: If no weight at this index but we have weights at previous odd index
+            if i % 2 == 1 then
+                table.insert(layers, { type = "ReLU" })
+            end
         end
     end
     
-    -- Value head ignored? Or used?
-    -- The request is to play. The output of the network is Policy (logits) or Value?
-    -- Agent uses epsilon-greedy on Q-values? Or is it Policy Gradient?
-    -- Agent checks: `PyTorchAgent`.
-    -- If DQN, output is Q-values for actions.
-    -- The output layer is at the end of `feature`?
-    -- Let's check `agent.py` again.
-    -- `self.feature = nn.Sequential(..., nn.Linear(512, output_dim))`
-    -- Ah, `feature` usually outputs embeddings? 
-    -- `agent.py`: `self.feature = ... Linear(..., output_dim)`. 
-    -- So `feature` contains the whole policy/Q-net.
-    -- `value` is for Value estimation (Dueling DQN?), likely separate. 
-    -- If simple DQN, we just need `feature` output.
+    return layers
 end
 
 function Net:forward(input_vec)
-    local x = input_vec
+    -- Feature embedding
+    local x = self:forward_sequential(input_vec, self.feature_layers)
     
-    for _, layer in ipairs(self.sequence) do
+    -- Advantage stream
+    local advantage = self:forward_sequential(x, self.advantage_layers)
+    
+    -- Value stream
+    local value = self:forward_sequential(x, self.value_layers)
+    
+    -- Dueling combination: Q = V + (A - mean(A))
+    local mean_adv = 0
+    for _, v in ipairs(advantage) do mean_adv = mean_adv + v end
+    mean_adv = mean_adv / #advantage
+    
+    local q_values = {}
+    for i, a in ipairs(advantage) do
+        q_values[i] = value[1] + (a - mean_adv)
+    end
+    
+    return q_values
+end
+
+function Net:forward_sequential(input, layers)
+    local x = input
+    for _, layer in ipairs(layers) do
         if layer.type == "Linear" then
             x = self:linear_forward(x, layer.weight, layer.bias)
         elseif layer.type == "ReLU" then
             x = self:relu_forward(x)
         end
     end
-    
     return x
 end
 
 function Net:linear_forward(input, weight, bias)
-    -- Weight shape: [out_dim][in_dim]
-    -- Input shape: [in_dim]
-    -- Output: [out_dim]
-    local out = {}
     local out_dim = #weight
     local in_dim = #weight[1]
     
@@ -89,10 +96,11 @@ function Net:linear_forward(input, weight, bias)
         error(string.format("Input dim mismatch: expected %d, got %d", in_dim, #input))
     end
     
-    for i=1, out_dim do
+    local out = {}
+    for i = 1, out_dim do
         local sum = 0
         local w_row = weight[i]
-        for j=1, in_dim do
+        for j = 1, in_dim do
             sum = sum + w_row[j] * input[j]
         end
         if bias then sum = sum + bias[i] end

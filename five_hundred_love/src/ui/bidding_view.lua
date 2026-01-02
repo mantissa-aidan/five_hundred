@@ -55,7 +55,9 @@ function BiddingView:create_buttons()
         end
     end
     
-    -- Misere Buttons
+    -- Misere Buttons (DISABLED - Bot not trained on these yet, curriculum learning planned)
+    -- TODO: Re-enable when curriculum learning adds Misere support
+    --[[
     local misc_y = start_y + 5 * (cell_h + 10) + 20
     table.insert(self.buttons, {
         x = start_x, y = misc_y, w = 100, h = 40,
@@ -74,6 +76,8 @@ function BiddingView:create_buttons()
         tricks = 0,
         bid_type = BidType.OPEN_MISERE
     })
+    --]]
+    local misc_y = start_y + 5 * (cell_h + 10) + 20 -- Keep for action button positioning
     
     -- Action Buttons Area
     local action_y = misc_y + 60
