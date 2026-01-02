@@ -10,7 +10,7 @@ function TableView:init(game)
     self.height = love.graphics.getHeight()
     
     -- Layout Config
-    self.card_scale = 0.8
+    self.card_scale = 1.0  -- Larger cards for better visibility
     -- Standard positions relative to center
     self.center_x = self.width / 2
     self.center_y = self.height / 2
@@ -283,11 +283,37 @@ function TableView:draw_debug_overlay()
     for p_idx, pos in pairs(bot_positions) do
         local strategy = gStrategies and gStrategies[p_idx]
         if strategy and strategy.is_nn and strategy:is_nn() then
-            local top_actions = strategy:get_top_actions(self.game, p_idx, action_type, 5)
+            local top_actions
+            local extra_info = ""
+            
+            if action_type == "PLAY" then
+                -- Use filtered probs (only playable cards)
+                local player = self.game.players[p_idx]
+                local playable = self.game:get_playable_cards(player, self.game.lead_suit)
+                if strategy.get_top_actions_filtered and #playable > 0 then
+                    top_actions = strategy:get_top_actions_filtered(self.game, p_idx, playable, 5)
+                else
+                    top_actions = {}
+                end
+            else
+                -- BID phase
+                top_actions = strategy:get_top_actions(self.game, p_idx, action_type, 5)
+                
+                -- Check if Pass is in top 5, if not, add it
+                local has_pass = false
+                for _, a in ipairs(top_actions) do
+                    if a.label == "Pass" then has_pass = true; break end
+                end
+                if not has_pass and strategy.get_pass_prob then
+                    local pass_prob = strategy:get_pass_prob(self.game, p_idx)
+                    extra_info = string.format("Pass: %.1f%%", pass_prob * 100)
+                end
+            end
             
             -- Draw semi-transparent background
             love.graphics.setColor(0, 0, 0, 0.7)
-            love.graphics.rectangle("fill", pos.x, pos.y, 200, 90, 5)
+            local box_height = 90 + (extra_info ~= "" and 15 or 0)
+            love.graphics.rectangle("fill", pos.x, pos.y, 200, box_height, 5)
             
             -- Draw header
             love.graphics.setColor(1, 0.5, 0)
@@ -299,6 +325,12 @@ function TableView:draw_debug_overlay()
                 local pct = string.format("%.1f%%", action.prob * 100)
                 local text = action.label .. ": " .. pct
                 love.graphics.print(text, pos.x + 5, pos.y + 5 + i * 14)
+            end
+            
+            -- Draw extra info (Pass prob if not in top 5)
+            if extra_info ~= "" then
+                love.graphics.setColor(0.7, 0.7, 0.7)
+                love.graphics.print(extra_info, pos.x + 5, pos.y + 5 + (#top_actions + 1) * 14)
             end
         end
     end
@@ -381,7 +413,7 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     
     -- Cards
     local hand_size = #player.hand
-    local spread = 30
+    local spread = 55  -- Increased from 30 for less overlap
     local start_x = -((hand_size - 1) * spread) / 2
     
     -- Store card rects only for Human/Bottom for clicking

@@ -85,6 +85,42 @@ function love.update(dt)
     -- Execute bot action based on action type
     if action_type == "BID" then
         local action, params = strategy:decide_bid(gGame, player_idx)
+        
+        -- Debug logging
+        if gDebugMode then
+            local player = gGame.players[player_idx]
+            local hand_str = ""
+            for _, c in ipairs(player.hand) do
+                hand_str = hand_str .. tostring(c) .. " "
+            end
+            print(string.format("[AI DEBUG] %s Hand: %s", player.name, hand_str))
+            
+            if strategy.get_top_actions then
+                local top = strategy:get_top_actions(gGame, player_idx, "BID", 5)
+                local probs_str = ""
+                local pass_prob = nil
+                
+                for _, a in ipairs(top) do
+                    probs_str = probs_str .. string.format("%s:%.1f%% ", a.label, a.prob * 100)
+                    if a.label == "Pass" then pass_prob = a.prob end
+                end
+                
+                -- Always show Pass prob at end if not in top 5
+                if not pass_prob and strategy.get_pass_prob then
+                    pass_prob = strategy:get_pass_prob(gGame, player_idx)
+                    probs_str = probs_str .. string.format("| Pass:%.1f%%", pass_prob * 100)
+                end
+                
+                print(string.format("[AI DEBUG] %s Top Bids: %s", player.name, probs_str))
+            end
+            
+            if action == "pass" then
+                print(string.format("[AI DEBUG] %s CHOOSES: Pass", player.name))
+            else
+                print(string.format("[AI DEBUG] %s CHOOSES: %d %s", player.name, params[1], tostring(params[2])))
+            end
+        end
+        
         if action == "pass" then
             gGame:player_pass(player_idx)
         elseif action == "bid" and params then
@@ -101,6 +137,34 @@ function love.update(dt)
         local player = gGame.players[player_idx]
         local playable = gGame:get_playable_cards(player, gGame.lead_suit)
         local card = strategy:decide_play(gGame, player_idx, playable)
+        
+        -- Debug logging for play decisions
+        if gDebugMode and card then
+            local hand_str = ""
+            for _, c in ipairs(player.hand) do
+                hand_str = hand_str .. tostring(c) .. " "
+            end
+            print(string.format("[AI DEBUG] %s Hand: %s", player.name, hand_str))
+            
+            local playable_str = ""
+            for _, c in ipairs(playable) do
+                playable_str = playable_str .. tostring(c) .. " "
+            end
+            print(string.format("[AI DEBUG] %s Playable: %s", player.name, playable_str))
+            
+            -- Only show probs for playable cards
+            if strategy.get_top_actions_filtered then
+                local top = strategy:get_top_actions_filtered(gGame, player_idx, playable, 5)
+                local probs_str = ""
+                for _, a in ipairs(top) do
+                    probs_str = probs_str .. string.format("%s:%.1f%% ", a.label, a.prob * 100)
+                end
+                print(string.format("[AI DEBUG] %s Playable Probs: %s", player.name, probs_str))
+            end
+            
+            print(string.format("[AI DEBUG] %s PLAYS: %s", player.name, tostring(card)))
+        end
+        
         if card then
             gGame:player_play_card(player_idx, card)
         end

@@ -171,7 +171,7 @@ function NNStrategy:get_top_actions(game, player_idx, action_type, n)
             -- PLAY - card index
             local card = FeatureExtractor.int_to_card(action_idx)
             if card then
-                local rank_chars = {[4]="4",[5]="5",[6]="6",[7]="7",[8]="8",[9]="9",[10]="10",[11]="J",[12]="Q",[13]="K",[14]="A",[15]="JK"}
+                local rank_chars = {[4]="4",[5]="5",[6]="6",[7]="7",[8]="8",[9]="9",[10]="10",[11]="J",[12]="Q",[13]="K",[14]="A",[100]="JK"}
                 local suit_chars = {[Suit.SPADES]="♠",[Suit.CLUBS]="♣",[Suit.DIAMONDS]="♦",[Suit.HEARTS]="♥",[Suit.NO_TRUMP]=""}
                 label = (rank_chars[card.rank] or "?") .. (suit_chars[card.suit] or "")
             else
@@ -194,10 +194,85 @@ function NNStrategy:get_top_actions(game, player_idx, action_type, n)
     return result
 end
 
+-- Get the probability of Pass action specifically
+function NNStrategy:get_pass_prob(game, player_idx)
+    local vec = FeatureExtractor.get_state_vector(game, player_idx)
+    local logits = self.bid_net:forward(vec)
+    
+    -- Compute softmax
+    local max_logit = -1e9
+    for _, v in ipairs(logits) do
+        if v > max_logit then max_logit = v end
+    end
+    
+    local exp_sum = 0
+    local exp_vals = {}
+    for i, v in ipairs(logits) do
+        exp_vals[i] = math.exp(v - max_logit)
+        exp_sum = exp_sum + exp_vals[i]
+    end
+    
+    -- Pass is action index 0 -> Lua index 1
+    return exp_vals[1] / exp_sum
+end
+
+-- Get top N actions filtered to only playable cards (for PLAY debug display)
+function NNStrategy:get_top_actions_filtered(game, player_idx, playable_cards, n)
+    n = n or 5
+    local vec = FeatureExtractor.get_state_vector(game, player_idx)
+    local logits = self.play_net:forward(vec)
+    
+    -- Build set of playable card indices
+    local playable_set = {}
+    for _, card in ipairs(playable_cards) do
+        local idx = FeatureExtractor.card_to_int(card)
+        playable_set[idx] = card
+    end
+    
+    -- Compute softmax only over playable cards
+    local max_logit = -1e9
+    for idx, _ in pairs(playable_set) do
+        local lua_idx = idx + 1
+        if logits[lua_idx] > max_logit then
+            max_logit = logits[lua_idx]
+        end
+    end
+    
+    local exp_sum = 0
+    local exp_vals = {}
+    for idx, _ in pairs(playable_set) do
+        local lua_idx = idx + 1
+        exp_vals[idx] = math.exp(logits[lua_idx] - max_logit)
+        exp_sum = exp_sum + exp_vals[idx]
+    end
+    
+    -- Build action list with normalized probs
+    local actions = {}
+    for idx, card in pairs(playable_set) do
+        local prob = exp_vals[idx] / exp_sum
+        local rank_chars = {[4]="4",[5]="5",[6]="6",[7]="7",[8]="8",[9]="9",[10]="10",[11]="J",[12]="Q",[13]="K",[14]="A",[100]="JK"}
+        local suit_chars = {[Suit.SPADES]="♠",[Suit.CLUBS]="♣",[Suit.DIAMONDS]="♦",[Suit.HEARTS]="♥",[Suit.NO_TRUMP]=""}
+        local label = (rank_chars[card.rank] or "?") .. (suit_chars[card.suit] or "")
+        table.insert(actions, {label = label, prob = prob, card = card})
+    end
+    
+    -- Sort by probability descending
+    table.sort(actions, function(a, b) return a.prob > b.prob end)
+    
+    -- Return top N
+    local result = {}
+    for i = 1, math.min(n, #actions) do
+        table.insert(result, actions[i])
+    end
+    
+    return result
+end
+
 -- Check if this is an NN strategy (for debug display)
 function NNStrategy:is_nn()
     return true
 end
 
 return NNStrategy
+
 
