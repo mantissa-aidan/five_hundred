@@ -66,6 +66,23 @@ function Game:set_on_card_play(callback)
     self.on_card_play_callback = callback
 end
 
+-- New Event Hooks
+function Game:set_on_phase_change(callback)
+    self.on_phase_change_callback = callback
+end
+
+function Game:set_on_contract_set(callback)
+    self.on_contract_set_callback = callback
+end
+
+function Game:set_on_trick_complete(callback)
+    self.on_trick_complete_callback = callback
+end
+
+function Game:set_on_round_end(callback)
+    self.on_round_end_callback = callback
+end
+
 function Game:log(msg)
     print("[GAME] " .. msg)
     table.insert(self.message_log, msg)
@@ -92,6 +109,10 @@ function Game:start_new_round()
     -- Bidding starts left of dealer
     self.current_player_idx = (self.dealer_idx % 4) + 1
     self:log("Bidding starts with " .. self.players[self.current_player_idx].name)
+    
+    if self.on_phase_change_callback then
+        self.on_phase_change_callback("BIDDING", {dealer_name = self.players[self.dealer_idx].name})
+    end
 end
 
 function Game:deal_cards()
@@ -278,6 +299,11 @@ function Game:check_bidding_end()
     if self.highest_bid and active_count == 1 then
         self.winning_bid = self.highest_bid
         self:log("Winning Bid: " .. tostring(self.winning_bid))
+        
+        if self.on_contract_set_callback then
+            self.on_contract_set_callback(self.winning_bid)
+        end
+        
         self.state = Game.STATE.KITTY
         -- Setup Kitty phase
         self.current_player_idx = self:get_player_index(self.winning_bid.player)
@@ -320,6 +346,10 @@ function Game:player_discard_kitty(player_idx, discards)
     self.state = Game.STATE.PLAYING
     self.lead_suit = nil
     self.current_trick = {}
+    
+    if self.on_phase_change_callback then
+        self.on_phase_change_callback("PLAYING", {})
+    end
     -- Leader is declarer (current player)
 end
 
@@ -372,18 +402,31 @@ end
 function Game:resolve_trick()
     local winner = nil
     local best_score = -1
+    local winning_card = nil
     
     for _, play in ipairs(self.current_trick) do
         local score = self:get_card_strength(play.card, self.lead_suit, self.trump_suit)
         if score > best_score then
             best_score = score
             winner = play.player
+            winning_card = play.card
         end
     end
     
     winner:increment_tricks_won()
     self:log("Trick won by " .. winner.name)
     table.insert(self.tricks_history, {winner=winner, cards=self.current_trick})
+    
+    if self.on_trick_complete_callback then
+        local trick_num = #self.tricks_history
+        self.on_trick_complete_callback({
+            trick_num = trick_num, 
+            winner = winner, 
+            score = best_score,
+            winning_card = winning_card,
+            trump_suit = self.trump_suit
+        })
+    end
     
     if #self.tricks_history == 10 then
         self:score_round()
@@ -400,27 +443,45 @@ function Game:next_trick()
     self.lead_suit = nil
     self.current_player_idx = self:get_player_index(self.last_trick_winner)
     self.state = Game.STATE.PLAYING
+    
+    if self.on_phase_change_callback then
+        self.on_phase_change_callback("TRICK_START", {trick_num = #self.tricks_history + 1})
+    end
+    
     self.last_trick_winner = nil
 end
 
 function Game:score_round()
     self:log("Round Over")
-    -- Scoring logic (simplified)
+    
+    -- Scoring logic
     local declarer = self.winning_bid.player
-    local tricks = declarer.tricks_won_this_round
-    -- Check partner tricks too!
     local declarer_team = nil
     for _, t in ipairs(self.teams) do
         for _, p in ipairs(t.players) do if p == declarer then declarer_team = t end end
     end
-    local total_tricks = declarer_team:get_total_tricks_won_this_round()
     
+    -- Calculate team tricks
+    local total_tricks = 0
+    for _, p in ipairs(declarer_team.players) do
+        total_tricks = total_tricks + (p.tricks_won_round or 0)
+    end
+    
+    -- Update Scores
     if total_tricks >= self.winning_bid.tricks then
         self:log("Contract Made!")
         declarer_team:update_score(self.winning_bid.points)
     else
         self:log("Contract Failed!")
         declarer_team:update_score(-self.winning_bid.points)
+    end
+    
+    -- Trigger Hook with UPDATED scores
+    if self.on_round_end_callback then
+        self.on_round_end_callback({
+            team_a_score = self.teams[1].score, 
+            team_b_score = self.teams[2].score
+        })
     end
     
     self.state = Game.STATE.ROUND_OVER

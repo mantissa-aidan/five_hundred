@@ -16,19 +16,27 @@ local BidType = BidModule.BidType
 local NNStrategy = Utils.class("NNStrategy")
 setmetatable(NNStrategy, {__index = Strategy})
 
-function NNStrategy:init(weights_path)
-    -- Load neural network weights
-    local content = love.filesystem.read(weights_path)
-    if not content then
-        local f = io.open(weights_path, "r")
-        if f then content = f:read("*a"); f:close() end
-    end
+function NNStrategy:init(weights_source)
+    local weights
     
-    if not content then
-        error("NNStrategy: Could not load weights from " .. weights_path)
+    if type(weights_source) == "table" then
+        weights = weights_source
+    else
+        -- Load neural network weights from file
+        local path = weights_source
+        local content = love.filesystem.read(path)
+        if not content then
+            local f = io.open(path, "r")
+            if f then content = f:read("*a"); f:close() end
+        end
+        
+        if not content then
+            error("NNStrategy: Could not load weights from " .. path)
+        end
+        
+        weights = json.decode(content)
     end
-    
-    local weights = json.decode(content)
+
     self.bid_net = Net.new(weights["bidding"])
     self.play_net = Net.new(weights["playing"])
     
@@ -130,27 +138,60 @@ function NNStrategy:get_top_actions(game, player_idx, action_type, n)
     end
     
     -- Compute softmax
+    -- Filter for valid actions and compute softmax over VALID set
+    local valid_logits = {} -- {idx=..., val=...}
+    
+    for i, v in ipairs(logits) do
+        local action_idx = i - 1
+        local is_valid = true
+        
+        if action_type == "BID" then
+            -- Mask Misere
+            if action_idx == 26 or action_idx == 27 then is_valid = false end
+            
+            -- Mask lower bids
+            if action_idx >= 1 and action_idx <= 25 and game.highest_bid then
+                local adj = action_idx - 1
+                local tricks = 6 + math.floor(adj / 5)
+                local s_idx = adj % 5
+                local suits = {[0]=Suit.SPADES, [1]=Suit.CLUBS, [2]=Suit.DIAMONDS, [3]=Suit.HEARTS, [4]=Suit.NO_TRUMP}
+                local suit = suits[s_idx]
+                local bid_type = (suit == Suit.NO_TRUMP) and BidType.NO_TRUMP or BidType.SUIT_TRUMP
+                
+                local temp_bid = Bid.new(game.players[player_idx], tricks, suit, bid_type)
+                if not (temp_bid > game.highest_bid) then
+                    is_valid = false
+                end
+            end
+        end
+        
+        if is_valid then
+            table.insert(valid_logits, {idx = action_idx, val = v})
+        end
+    end
+    
+    -- Compute Softmax on valid logits
     local max_logit = -1e9
-    for _, v in ipairs(logits) do
-        if v > max_logit then max_logit = v end
+    for _, item in ipairs(valid_logits) do
+        if item.val > max_logit then max_logit = item.val end
     end
     
     local exp_sum = 0
-    local exp_vals = {}
-    for i, v in ipairs(logits) do
-        exp_vals[i] = math.exp(v - max_logit) -- Numerical stability
-        exp_sum = exp_sum + exp_vals[i]
+    for _, item in ipairs(valid_logits) do
+        item.exp = math.exp(item.val - max_logit)
+        exp_sum = exp_sum + item.exp
     end
     
-    local probs = {}
-    for i, ev in ipairs(exp_vals) do
-        probs[i] = ev / exp_sum
+    local probs = {} -- Map action_idx -> prob
+    for _, item in ipairs(valid_logits) do
+        probs[item.idx] = item.exp / exp_sum
     end
     
     -- Create action list with probabilities
     local actions = {}
-    for i, prob in ipairs(probs) do
-        local action_idx = i - 1
+    for _, item in ipairs(valid_logits) do
+        local action_idx = item.idx
+        local prob = probs[action_idx]
         local label = ""
         
         if action_type == "BID" then

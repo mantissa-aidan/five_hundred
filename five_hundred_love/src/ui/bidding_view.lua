@@ -20,20 +20,22 @@ function BiddingView:init(game, container_w, container_h)
     self.height = 450
     self.buttons = {}
     self.selected_bid = nil
-    
-    -- Layout centering within container (game area)
-    container_w = container_w or love.graphics.getWidth()
-    container_h = container_h or love.graphics.getHeight()
-    
-    self.base_x = (container_w - self.width) / 2
-    self.base_y = (container_h - self.height) / 2
-    
+
+    -- Layout centering within container (game area, not full screen)
+    self.container_w = container_w or love.graphics.getWidth()
+    self.container_h = container_h or love.graphics.getHeight()
+
+    self.base_x = (self.container_w - self.width) / 2
+    self.base_y = (self.container_h - self.height) / 2
+
     self:create_buttons()
 end
 
 function BiddingView:resize(container_w, container_h)
-    self.base_x = (container_w - self.width) / 2
-    self.base_y = (container_h - self.height) / 2
+    self.container_w = container_w
+    self.container_h = container_h
+    self.base_x = (self.container_w - self.width) / 2
+    self.base_y = (self.container_h - self.height) / 2
     self:create_buttons()
 end
 
@@ -107,9 +109,9 @@ function BiddingView:create_buttons()
 end
 
 function BiddingView:update_layout()
-    -- Recalculate position for fullscreen/resize support
-    self.base_x = (love.graphics.getWidth() - self.width) / 2
-    self.base_y = (love.graphics.getHeight() - self.height) / 2
+    -- Recalculate position using stored container dimensions (game area, not full screen)
+    self.base_x = (self.container_w - self.width) / 2
+    self.base_y = (self.container_h - self.height) / 2
     self:create_buttons()
 end
 
@@ -189,6 +191,7 @@ function BiddingView:check_click(x, y)
         if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
             
             if btn.type == "PASS" then
+                if gChatLog then gChatLog:add_message("You", {"Passed"}, true) end
                 self.game:player_pass(1)
                 self.selected_bid = nil
                 return true
@@ -201,10 +204,14 @@ function BiddingView:check_click(x, y)
                  
             elseif btn.type == "SUBMIT" then
                  if self.selected_bid then
-                     local success, err = self.game:player_bid(1, self.selected_bid.tricks, 
-                                                              self.selected_bid.suit, 
-                                                              self.selected_bid.bid_type)
+                     local tr, s, bt = self.selected_bid.tricks, self.selected_bid.suit, self.selected_bid.bid_type
+                     local success, err = self.game:player_bid(1, tr, s, bt)
                      if success then
+                        if gChatLog then 
+                            local suit_strs = {[0]="Spades",[1]="Clubs",[2]="Diamonds",[3]="Hearts",[4]="No Trump"}
+                            local text = string.format("Bids %d %s", tr, suit_strs[s])
+                            gChatLog:add_message("You", {text}, true) 
+                        end
                         self.selected_bid = nil
                         return true
                      else

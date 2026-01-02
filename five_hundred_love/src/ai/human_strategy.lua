@@ -8,7 +8,7 @@ local HumanStrategy = Utils.class("HumanStrategy")
 setmetatable(HumanStrategy, {__index = Strategy})
 
 function HumanStrategy:init()
-    -- No initialization needed
+    self.is_human = true
 end
 
 function HumanStrategy:decide_bid(game, player_idx)

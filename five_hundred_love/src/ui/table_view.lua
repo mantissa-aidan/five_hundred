@@ -1,6 +1,7 @@
 local CardRenderer = require "src.ui.card_renderer"
 local Utils = require "src.core.utils"
 local BiddingView = require "src.ui.bidding_view"
+local Config = require "src.config"
 
 local TableView = Utils.class("TableView")
 
@@ -8,7 +9,8 @@ function TableView:init(game)
     self.game = game
     
     -- Layout Config - table takes left portion, leaving space for chat on right
-    local chat_width = 300
+    -- Layout Config - table takes left portion, leaving space for chat on right
+    local chat_width = Config.layout.chat_width
     self.width = love.graphics.getWidth() - chat_width
     self.height = love.graphics.getHeight()
     
@@ -29,7 +31,8 @@ end
 
 function TableView:resize(w, h)
     -- Recalculate dimensions (chat log takes fixed 300px)
-    local chat_width = 300
+    -- Recalculate dimensions (chat log takes fixed 300px)
+    local chat_width = Config.layout.chat_width
     self.width = w - chat_width
     self.height = h
     self.center_x = self.width / 2
@@ -103,124 +106,7 @@ end
 
 -- ...
 
-function TableView:check_click(x, y)
-    -- ... (Bidding, Trick Over, Kitty blocks are same) ...
-    if self.game.state == "BIDDING" then
-        return self.bidding_view:check_click(x, y)
-    end
-    
-    if self.game.state == "TRICK_OVER" then
-        if self.next_trick_btn_rect then
-            local b = self.next_trick_btn_rect
-            if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
-                self.game:next_trick()
-                return true
-            end
-        end
-        return false 
-    end
-    
-    if self.game.state == "KITTY" and self.game.current_player_idx == 1 then
-        -- ... (Kitty logic unmodified here, assumed safe) ...
-        -- Copy back original kitty handler if needed visually but I will focus on Playing block
-        if self.discard_btn_rect then
-             -- ... (Same discard btn code)
-             local b = self.discard_btn_rect
-            if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
-                -- Perform Discard
-                local discards = {}
-                local indices = {}
-                for idx, _ in pairs(self.selected_discards) do table.insert(indices, idx) end
-                table.sort(indices, function(a,b) return a > b end) 
-                
-                local p_hand = self.game.players[1].hand
-                for _, idx in ipairs(indices) do
-                    table.insert(discards, p_hand[idx])
-                end
-                
-                self.game:player_discard_kitty(1, discards)
-                self.selected_discards = {}
-                return true
-            end
-        end
-        
-        -- Hand Check Kitty
-        local local_x = x - self.center_x
-        local local_y = y - (self.height - 100)
-        
-         if self.hand_card_rects then
-            for i = #self.hand_card_rects, 1, -1 do
-                local r = self.hand_card_rects[i]
-                if local_x >= r.x and local_x <= r.x + r.w and local_y >= r.y and local_y <= r.y + r.h then
-                    -- Toggle selection
-                    if self.selected_discards[r.idx] then
-                        self.selected_discards[r.idx] = nil
-                    else
-                         local count = 0
-                         for _ in pairs(self.selected_discards) do count = count + 1 end
-                         if count < 3 then
-                             self.selected_discards[r.idx] = true
-                         end
-                    end
-                    return true
-                end
-            end
-        end
-    
-    elseif self.game.state == "PLAYING" and self.game.current_player_idx == 1 then
-        -- Play Card
-        local local_x = x - self.center_x
-        local local_y = y - (self.height - 100)
-        
-        -- Prevent clicking while animating?
-        for _, anim in ipairs(self.animations) do
-             if anim.target_idx then return true end -- Busy
-        end
-        
-        if self.hand_card_rects then
-            for i = #self.hand_card_rects, 1, -1 do
-                local r = self.hand_card_rects[i]
-                if local_x >= r.x and local_x <= r.x + r.w and local_y >= r.y and local_y <= r.y + r.h then
-                    local card = self.game.players[1].hand[r.idx]
-                    
-                    -- PRE-VALIDATE move before animating
-                    -- Hack: We need to see if it's valid.
-                    -- Game:player_play_card does validation but also plays.
-                    -- Let's check validity manually or add a 'dry_run' flag?
-                    -- Or just duplicate logic:
-                    local p = self.game.players[1]
-                    local playable = self.game:get_playable_cards(p, self.game.lead_suit)
-                    local is_valid = false
-                    for _, c in ipairs(playable) do if c == card then is_valid = true break end end
-                    
-                    if not is_valid then
-                        print("Invalid Move: Must follow suit")
-                        return true
-                    end
-                    
-                    -- Start Animation
-                    -- Global Start: x, y (from rect which is local + offset)
-                    -- Rect x,y is relative to (center_x, height-100)
-                    local start_x = self.center_x + r.x 
-                    local start_y = (self.height - 100) + r.y -- r.y includes pop up logic
-                    
-                    -- End Pos: Center of table (center_x, center_y + 50) roughly where Bottom card goes
-                    local end_x = self.center_x 
-                    local end_y = self.center_y + 50
-                    
-                    self:play_card_animation(card, start_x, start_y, end_x, end_y, 0.4, r.idx, function()
-                         local success, err = self.game:player_play_card(1, card)
-                         if not success then print("Error playing: "..tostring(err)) end
-                    end)
-                    
-                    return true
-                end
-            end
-        end
-    end
-    
-    return false
-end
+
 
 function TableView:update(dt)
     self:update_animations(dt)
@@ -232,7 +118,8 @@ function TableView:draw()
     love.graphics.setScissor(0, 0, self.width, self.height)
     
     -- Draw Background (Green Felt) - only in game area
-    love.graphics.setColor(0.05, 0.4, 0.1)
+    -- Draw Background (Green Felt) - only in game area
+    love.graphics.setColor(Config.colors.background)
     love.graphics.rectangle("fill", 0, 0, self.width, self.height) 
     
     self:draw_status_info()
@@ -674,7 +561,11 @@ function TableView:check_click(x, y)
                     
                     self:play_card_animation(card, start_x, start_y, end_x, end_y, 0.4, r.idx, function()
                          local success, err = self.game:player_play_card(1, card)
-                         if not success then print("Error playing: "..tostring(err)) end
+                         if success then
+                             if gChatLog then gChatLog:add_message("You", {string.format("Plays %s", tostring(card))}, true) end
+                         else
+                             print("Error playing: "..tostring(err)) 
+                         end
                     end)
                     
                     return true
