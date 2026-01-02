@@ -211,6 +211,12 @@ function TableView:update(dt)
 end
 
 function TableView:draw()
+    -- Update dimensions dynamically for fullscreen/resize support
+    self.width = love.graphics.getWidth()
+    self.height = love.graphics.getHeight()
+    self.center_x = self.width / 2
+    self.center_y = self.height / 2
+    
     -- Draw Background (Green Felt)
     love.graphics.clear(0.05, 0.4, 0.1) 
     
