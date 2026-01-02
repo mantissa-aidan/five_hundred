@@ -93,8 +93,17 @@ function BiddingView:create_buttons()
     })
 end
 
+function BiddingView:update_layout()
+    -- Recalculate position for fullscreen/resize support
+    self.base_x = (love.graphics.getWidth() - self.width) / 2
+    self.base_y = (love.graphics.getHeight() - self.height) / 2
+    self:create_buttons()
+end
+
 function BiddingView:draw()
     if self.game.state ~= "BIDDING" then return end
+    
+    self:update_layout()
     
     -- Overlay Background
     love.graphics.setColor(0, 0, 0, 0.9)
@@ -159,6 +168,9 @@ end
 function BiddingView:check_click(x, y)
     if self.game.state ~= "BIDDING" then return false end
     if self.game.current_player_idx ~= 1 then return false end
+    
+    -- Ensure positions are up to date before hit testing
+    self:update_layout()
     
     for _, btn in ipairs(self.buttons) do
         if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
