@@ -39,6 +39,17 @@ INITIAL_EPISODE_OFFSET = 0
 BID_HISTOGRAM = {}  # {bid_tricks: count} for current window
 STATE_LOCK = threading.Lock()
 
+# Phase 4: Enhanced metrics
+CONTRACT_WINS = 0  # Wins when agent bid
+CONTRACT_TOTAL = 0
+DEFENSE_WINS = 0   # Wins when opponent bid  
+DEFENSE_TOTAL = 0
+RECENT_GAME_RESULTS = []  # Last 50 for moving average
+
+# Historical buffers for charts
+CONTRACT_HISTORY = _load_persist("contract_history.json", [])
+DEFENSE_HISTORY = _load_persist("defense_history.json", [])
+
 from .strategy_tracker import get_strategy_stats
 TOTAL_STEPS = 0
 INITIAL_EPISODE_OFFSET = 0
@@ -101,6 +112,19 @@ class StateHandler(http.server.SimpleHTTPRequestHandler):
                 combined["strategy_stats"] = get_strategy_stats()
                 combined["eval_history"] = eval_copy
                 combined["bid_histogram"] = BID_HISTOGRAM.copy()  # Send bid distribution
+                
+                # Phase 4.5: Historical Charts
+                combined["contract_history"] = CONTRACT_HISTORY[-500:]  # Send last 500 points
+                combined["defense_history"] = DEFENSE_HISTORY[-500:]    # Send last 500 points
+                
+                # Phase 4: Enhanced metrics
+                contract_wr = (CONTRACT_WINS / CONTRACT_TOTAL * 100) if CONTRACT_TOTAL > 0 else 0
+                defense_wr = (DEFENSE_WINS / DEFENSE_TOTAL * 100) if DEFENSE_TOTAL > 0 else 0
+                moving_avg = (sum(RECENT_GAME_RESULTS) / len(RECENT_GAME_RESULTS) * 100) if RECENT_GAME_RESULTS else 0
+                combined["contract_wr"] = round(contract_wr, 1)
+                combined["defense_wr"] = round(defense_wr, 1)
+                combined["moving_avg_wr"] = round(moving_avg, 1)
+                
                 # Do not send hands/tricks to save bandwidth
                 if "hands" in combined: del combined["hands"]
                 if "trick" in combined: del combined["trick"]
@@ -188,20 +212,55 @@ def record_eval_result(episode, win_rate):
         except Exception as e:
             print(f"Failed to save eval history: {e}")
 
-def record_bid(bid_tricks, is_agent):
-    """Record agent bids for histogram tracking"""
+def record_bid(bid_str, is_agent):
+    """Record agent bids for histogram tracking. bid_str ex: '7-Spades'"""
     if not is_agent:
         return
     with STATE_LOCK:
-        if bid_tricks not in BID_HISTOGRAM:
-            BID_HISTOGRAM[bid_tricks] = 0
-        BID_HISTOGRAM[bid_tricks] += 1
+        if bid_str not in BID_HISTOGRAM:
+            BID_HISTOGRAM[bid_str] = 0
+        BID_HISTOGRAM[bid_str] += 1
 
-def record_win(team_name):
+def record_game_result(won, agent_bid):
+    """Track contract vs defense win rates"""
+    global CONTRACT_WINS, CONTRACT_TOTAL, DEFENSE_WINS, DEFENSE_TOTAL, RECENT_GAME_RESULTS
     with STATE_LOCK:
-        # Standardize keys
-        key = "Agent" if "Agent" in team_name else "Bots"
-        WIN_STATS[key] += 1
+        if agent_bid:
+            CONTRACT_TOTAL += 1
+            if won:
+                CONTRACT_WINS += 1
+        else:
+            DEFENSE_TOTAL += 1
+            if won:
+                DEFENSE_WINS += 1
+        RECENT_GAME_RESULTS.append(1 if won else 0)
+        if len(RECENT_GAME_RESULTS) > 50:
+            RECENT_GAME_RESULTS.pop(0)
+
+def record_history_snapshot(episode):
+    """Record snapshot of contract/defense stats for historical graphing"""
+    global CONTRACT_HISTORY, DEFENSE_HISTORY
+    
+    with STATE_LOCK:
+        contract_wr = (CONTRACT_WINS / CONTRACT_TOTAL * 100) if CONTRACT_TOTAL > 0 else 0
+        defense_wr = (DEFENSE_WINS / DEFENSE_TOTAL * 100) if DEFENSE_TOTAL > 0 else 0
+        
+        # Add to history
+        CONTRACT_HISTORY.append({"episode": episode, "wr": round(contract_wr, 1)})
+        DEFENSE_HISTORY.append({"episode": episode, "wr": round(defense_wr, 1)})
+        
+        # Keep manageable size (last 2000 points)
+        if len(CONTRACT_HISTORY) > 2000:
+            CONTRACT_HISTORY = CONTRACT_HISTORY[-2000:]
+            DEFENSE_HISTORY = DEFENSE_HISTORY[-2000:]
+            
+        # Persist
+        try:
+            with open("contract_history.json", "w") as f:
+                json.dump(CONTRACT_HISTORY, f)
+            with open("defense_history.json", "w") as f:
+                json.dump(DEFENSE_HISTORY, f)
+        except Exception: pass
 
 def increment_steps():
     global TOTAL_STEPS

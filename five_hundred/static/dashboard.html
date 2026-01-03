@@ -188,7 +188,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Agent Progress Dashboard</h1>
+            <h1>Agent Progress Dashboard v2 (Enhanced)</h1>
             <div id="connection-status" style="font-weight:bold; color:#888;">Connecting...</div>
         </div>
 
@@ -213,6 +213,18 @@
                 <div class="stat-value" id="eval-wr">0.0%</div>
                 <div class="stat-label">Eval Win Rate</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-value" id="movingAvg">0%</div>
+                <div class="stat-label">WR (50 eps)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="contractWR">0%</div>
+                <div class="stat-label">Contract WR</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="defenseWR">0%</div>
+                <div class="stat-label">Defense WR</div>
+            </div>
         </div>
 
         <div class="charts-grid">
@@ -229,6 +241,11 @@
         <div class="chart-container" style="margin-bottom: 30px;">
             <div class="chart-title">Evaluation Win Rate (%) Over Time</div>
             <canvas id="evalChart"></canvas>
+        </div>
+
+        <div class="chart-container" style="margin-bottom: 30px;">
+            <div class="chart-title">Win Rate Split: Contract (Active) vs Defense (Passive)</div>
+            <canvas id="splitWrChart"></canvas>
         </div>
 
         <div class="chart-container" style="margin-bottom: 30px;">
@@ -371,17 +388,42 @@
                         document.getElementById('eval-wr').textContent = lastWr.toFixed(1) + "%";
                     }
 
-                    // Update bid histogram
+                    // Update bid histogram (dynamic keys)
                     if (state.bid_histogram) {
-                        const hist = state.bid_histogram;
-                        bidHistogram.data.datasets[0].data = [
-                            hist[6] || 0,
-                            hist[7] || 0,
-                            hist[8] || 0,
-                            hist[9] || 0,
-                            hist[10] || 0
-                        ];
+                        // Sort keys: 6-CLUBS, 6-DIAMONDS... 7-CLUBS...
+                        const keys = Object.keys(state.bid_histogram).sort((a, b) => {
+                            // Extract numeric part for sorting
+                            const numA = parseInt(a.split('-')[0]) || 0;
+                            const numB = parseInt(b.split('-')[0]) || 0;
+                            if (numA !== numB) return numA - numB;
+                            return a.localeCompare(b);
+                        });
+
+                        const data = keys.map(k => state.bid_histogram[k]);
+
+                        bidHistogram.data.labels = keys;
+                        bidHistogram.data.datasets[0].data = data;
                         bidHistogram.update();
+                    }
+
+                    // Phase 4: Enhanced metrics
+                    if (state.moving_avg_wr !== undefined) {
+                        const elem = document.getElementById('movingAvg');
+                        if (elem) elem.textContent = state.moving_avg_wr.toFixed(1) + '%';
+                    }
+                    if (state.contract_wr !== undefined) {
+                        const elem = document.getElementById('contractWR');
+                        if (elem) elem.textContent = state.contract_wr.toFixed(1) + '%';
+                    }
+                    if (state.defense_wr !== undefined) {
+                        const elem = document.getElementById('defenseWR');
+                        if (elem) elem.textContent = state.defense_wr.toFixed(1) + '%';
+                    }
+                    if (state.contract_history && state.contract_history.length > 0) {
+                        splitWrChart.data.labels = state.contract_history.map(h => h.episode);
+                        splitWrChart.data.datasets[0].data = state.contract_history.map(h => h.wr);
+                        splitWrChart.data.datasets[1].data = state.defense_history.map(h => h.wr);
+                        splitWrChart.update();
                     }
                 })
                 .catch(e => {

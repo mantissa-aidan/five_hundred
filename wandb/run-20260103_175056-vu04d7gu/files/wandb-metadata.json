@@ -1,0 +1,37 @@
+{
+  "os": "macOS-15.6.1-arm64-arm-64bit",
+  "python": "CPython 3.10.18",
+  "startedAt": "2026-01-03T06:50:56.302277Z",
+  "program": "/Users/aidanperuch/Code/five_hundred/training/train_agent_wandb.py",
+  "codePath": "training/train_agent_wandb.py",
+  "codePathLocal": "training/train_agent_wandb.py",
+  "git": {
+    "remote": "https://github.com/mantissa-aidan/five_hundred.git",
+    "commit": "fcb58c7eae47042a2a4674067bd02150ea11eada"
+  },
+  "email": "aidanjperuch@gmail.com",
+  "root": "/Users/aidanperuch/Code/five_hundred",
+  "host": "MacBookPro.lan",
+  "executable": "/usr/local/Caskroom/miniforge/base/bin/python",
+  "cpu_count": 10,
+  "cpu_count_logical": 10,
+  "disk": {
+    "/": {
+      "total": "494384795648",
+      "used": "420886622208"
+    }
+  },
+  "memory": {
+    "total": "17179869184"
+  },
+  "apple": {
+    "name": "Apple M1 Pro",
+    "ecpuCores": 2,
+    "pcpuCores": 8,
+    "gpuCores": 16,
+    "memoryGb": 16,
+    "swapTotalBytes": "4294967296",
+    "ramTotalBytes": "17179869184"
+  },
+  "writerId": "vlrq3038g0wlymyu3349vd0thqgt1ie5"
+}

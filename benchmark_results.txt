@@ -1,0 +1,29 @@
+/Users/aidanperuch/Code/five_hundred/training/../five_hundred/agent.py:249: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(name, map_location=self.device)
+============================================================
+BENCHMARKING PRETRAINED AGENT
+============================================================
+Model: pre_training/rules_bot/pretrained_agent.pth
+Games: 100
+Opponents: RulesBot
+
+Agent initialized on device: mps
+Loaded epsilon: 1.0000
+Loaded memory: 0 bid, 0 play transitions.
+✅ Loaded pretrained model (ε=0.0)
+
+Playing games...
+Traceback (most recent call last):
+  File "/Users/aidanperuch/Code/five_hundred/training/benchmark_pretrained.py", line 221, in <module>
+    stats = benchmark_agent(model_path, num_games=100)
+  File "/Users/aidanperuch/Code/five_hundred/training/benchmark_pretrained.py", line 88, in benchmark_agent
+    game.start_new_round()
+  File "/Users/aidanperuch/Code/five_hundred/training/../five_hundred/game.py", line 133, in start_new_round
+    self.run_bidding_round(bidder_idx) # Activate the bidding round
+  File "/Users/aidanperuch/Code/five_hundred/training/../five_hundred/game.py", line 404, in run_bidding_round
+    self._play_round(declarer)
+  File "/Users/aidanperuch/Code/five_hundred/training/../five_hundred/game.py", line 554, in _play_round
+    self._score_round(declarer) # Call scoring after the round
+  File "/Users/aidanperuch/Code/five_hundred/training/../five_hundred/game.py", line 920, in _score_round
+    raise Exception("Could not determine contracting and opponent teams.")
+Exception: Could not determine contracting and opponent teams.

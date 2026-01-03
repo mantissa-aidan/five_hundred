@@ -12,7 +12,7 @@ import numpy as np
 from five_hundred.game import Game
 from five_hundred.agent import PyTorchAgent
 from five_hundred.direct_rl_player import DirectRLPlayer
-from five_hundred.server import record_loss, record_reward, record_eval_result, record_bid, increment_steps, set_initial_episode_count, start_server_thread
+from five_hundred.server import record_loss, record_reward, record_eval_result, record_bid, record_game_result, record_history_snapshot, increment_steps, set_initial_episode_count, start_server_thread
 import torch
 import pickle
 
@@ -88,13 +88,13 @@ def train():
         print("\nWARNING: Dashboard server did not respond on port 8000. Training will continue but dashboard may be unavailable.")
     
     # 1. Main Agent
-    agent = PyTorchAgent(state_dim=600, action_dim=100)
+    agent = PyTorchAgent(state_dim=466, action_dim=100)
     
     # 2. League Manager
     league = LeagueManager(save_dir)
     
-    # 3. Opponent Agents (3 separate for diversity)
-    opponents = [PyTorchAgent(state_dim=600, action_dim=100) for _ in range(3)]
+    # 3. Opponent Agents (3 separate for diversity) - Phase 3: 466 dims
+    opponents = [PyTorchAgent(state_dim=466, action_dim=100) for _ in range(3)]
     for opp in opponents:
         opp.epsilon = 0.05 # Low noise for opponents
     
@@ -102,16 +102,15 @@ def train():
     checkpoints = glob.glob(os.path.join(save_dir, "model_checkpoint_*.pth"))
     start_episode = 0
     
-    # 1. Load pretrained model (new priority order)
-    pretrained_path = "pre_training/rules_bot/model_rules_pretrained.pth"
+    # 1. Load pretrained model (Phase 3: correct path + higher epsilon)
+    pretrained_path = "pre_training/rules_bot/pretrained_agent.pth"  # Fixed path
     if os.path.exists(pretrained_path):
-        print(f"Loading pretrained RulesBot model from {pretrained_path}...")
+        print(f"Loading pretrained model from {pretrained_path}...")
         agent.load(pretrained_path)
-        # Start with low epsilon (0.05) for gentle exploration
-        # This prevents catastrophic forgetting while still allowing improvement
-        agent.epsilon = 0.05
-        print(f"Set epsilon to {agent.epsilon} for conservative exploration from strong baseline")
-        print("Starting RL training from RulesBot baseline!")
+        # Phase 3: Higher epsilon (0.3) for exploration from good baseline
+        agent.epsilon = 0.3
+        print(f"Set epsilon to {agent.epsilon} (Phase 3 fine-tuning)")
+        print(f"Expected baseline: ~70% WR, will improve bidding aggression")
     elif checkpoints:
         def extract_ep(filename):
             match = re.search(r"model_checkpoint_(\d+).pth", filename)
@@ -190,6 +189,9 @@ def train():
         record_reward(float(game.teams[0].team_score))
         increment_steps()
         
+        # Phase 4: Enhanced metrics
+        record_game_result(won=agent_won, agent_bid=agent_won_bid)
+        
         # Extract bid info for logging
         bid_info = "No Bid"
         bid_tricks = 0
@@ -197,15 +199,22 @@ def train():
         if game.winning_bid:
             bid_tricks = game.winning_bid.tricks
             bidder_name = game.winning_bid.player.name
-            bid_info = f"{bid_tricks}T-{game.winning_bid.suit.name if game.winning_bid.suit else game.winning_bid.bid_type.name}"
+            # Format: "7-Spades", "8-NT", "Misere"
+            suit_name = game.winning_bid.suit.name if game.winning_bid.suit else ("Misere" if game.winning_bid.bid_type.name == "MISERE" else "OpenMisere")
+            bid_str = f"{bid_tricks}-{suit_name}"
             
+            bid_info = f"{bid_tricks}T-{suit_name}"
+
             # Track agent's bids for histogram
             if "Agent" in bidder_name:
-                bid_histogram[bid_tricks] += 1
-                record_bid(bid_tricks, is_agent=True)  # Send to dashboard
+                record_bid(bid_str, is_agent=True)  # Send full string to dashboard
         
         if episode_count % 500 == 0:
             print(f"Ep {episode_count}: Score={game.teams[0].team_score}, Bid={bid_info} by {bidder_name}, AgentWon={agent_won}, Eps={agent.epsilon:.3f}")
+            
+        # Record history snapshot every 50 episodes
+        if episode_count % 50 == 0:
+             record_history_snapshot(episode_count)
         
 
 
