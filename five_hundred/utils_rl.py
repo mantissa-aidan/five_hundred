@@ -32,8 +32,8 @@ def int_to_card(idx: int) -> Optional[Card]:
     return Card(curr_suit, curr_rank)
 
 def get_state_vector(obs: Dict) -> np.ndarray:
-    # Size: 600 fixed
-    vec = np.zeros(600, dtype=np.float32)
+    # Size: 466 (458 original + 4 suit counts + 4 void flags)
+    vec = np.zeros(466, dtype=np.float32)
     idx = 0
     
     # 1. Phase [Bid, Play]
@@ -126,6 +126,28 @@ def get_state_vector(obs: Dict) -> np.ndarray:
             # 0=Pass, 1-25=Suits, 26=Misere, 27=OpenMisere
             vec[idx + bid_idx] = 1
         idx += 28
+    
+    # 11. Suit Counts (4 floats - normalized to [0,1]) - NEW 
+    # Critical for void detection and bidding strategy
+    hand = obs.get('hand', [])
+    suit_counts = {Suit.SPADES: 0, Suit.CLUBS: 0, Suit.DIAMONDS: 0, Suit.HEARTS: 0}
+    for card in hand:
+        if card.suit in suit_counts:
+            suit_counts[card.suit] += 1
+    
+    vec[idx] = suit_counts[Suit.SPADES] / 13.0
+    vec[idx+1] = suit_counts[Suit.CLUBS] / 13.0
+    vec[idx+2] = suit_counts[Suit.DIAMONDS] / 13.0
+    vec[idx+3] = suit_counts[Suit.HEARTS] / 13.0
+    idx += 4
+    
+    # 12. Void Indicators (4 binary flags) - NEW
+    # Explicit void signals for faster learning
+    vec[idx] = 1.0 if suit_counts[Suit.SPADES] == 0 else 0.0
+    vec[idx+1] = 1.0 if suit_counts[Suit.CLUBS] == 0 else 0.0
+    vec[idx+2] = 1.0 if suit_counts[Suit.DIAMONDS] == 0 else 0.0
+    vec[idx+3] = 1.0 if suit_counts[Suit.HEARTS] == 0 else 0.0
+    idx += 4
 
     return vec
 

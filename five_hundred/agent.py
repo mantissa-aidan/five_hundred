@@ -65,7 +65,7 @@ class PlayingNetwork(nn.Module):
         return val + adv - adv.mean(dim=1, keepdim=True)
 
 class PyTorchAgent:
-    def __init__(self, state_dim=600, action_dim=100, lr=1e-4, gamma=0.99, buffer_size=50000):
+    def __init__(self, state_dim, action_dim, lr=1e-4, gamma=0.99, epsilon=1.0, buffer_size=50000):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.gamma = gamma
@@ -92,16 +92,15 @@ class PyTorchAgent:
         
         # Optimizers (Adam!)
         self.bid_optimizer = optim.Adam(self.bid_net.parameters(), lr=lr)
-        self.play_optimizer = optim.Adam(self.play_net.parameters(), lr=lr)
+        self.play_optimizer = optim.Adam(self.play_net.parameters(), lr=lr / 100) # Lower LR for playing network
         
         self.criterion = nn.MSELoss(reduction='none') # Return individual losses for PER
         
         # Memory: Prioritized Experience Replay
         self.bid_memory = PrioritizedReplayBuffer(buffer_size)
         self.play_memory = PrioritizedReplayBuffer(buffer_size)
-        
-        # Epsilon
-        self.epsilon = 1.0
+        self.epsilon = epsilon  # For bidding (continues decaying)
+        self.epsilon_play = min(0.05, epsilon)  # PHASE 4.7: Cap play epsilon at 5%
         self.epsilon_min = 0.05 # Lower floor for meaningful play
         self.epsilon_decay = 0.999995  # VERY slow decay - takes ~200k episodes to reach min
 
@@ -119,31 +118,29 @@ class PyTorchAgent:
             brain = self.bid_net
             action_space_size = 28
             # Use bid_epsilon if provided, otherwise use self.epsilon
-            epsilon_to_use = bid_epsilon if bid_epsilon is not None else self.epsilon
-        elif phase in ["PLAY", "KITTY"]:
-            brain = self.play_net
-            action_space_size = 53
-            epsilon_to_use = self.epsilon
-        else:
-            raise ValueError(f"Unknown phase: {phase}")
+    def act(self, state, phase="BID", valid_mask=None):
+        """Select action using epsilon-greedy with phase-specific epsilon"""
+        # PHASE 4.7: Use lower epsilon for play to protect pretrained skills
+        epsilon = self.epsilon if phase == "BID" else self.epsilon_play
         
-        # Epsilon-greedy
-        if random.random() < epsilon_to_use:
-            # Random valid action
+        if np.random.rand() <= epsilon:
+            # Random action from valid set
             if valid_mask is not None:
-                valid_indices = [i for i, v in enumerate(valid_mask[:action_space_size]) if v]
-                if valid_indices:
-                    return random.choice(valid_indices)
-            return random.randint(0, action_space_size - 1)
+                valid_actions = np.where(valid_mask > 0)[0]
+                if len(valid_actions) > 0:
+                    return np.random.choice(valid_actions)
+            brain = self.bid_net if phase == "BID" else self.play_net
+            action_space_size = 28 if phase == "BID" else 53
+            return random.randrange(action_space_size)
         
         # Greedy (use network)
+        brain = self.bid_net if phase == "BID" else self.play_net
+        action_space_size = 28 if phase == "BID" else 53
+        
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         
         with torch.no_grad():
-            if phase == "BID":
-                q_values = brain(state_tensor).squeeze(0) # [28]
-            else:
-                q_values = brain(state_tensor).squeeze(0) # [53]
+            q_values = brain(state_tensor).squeeze(0)
         
         # Apply mask
         if valid_mask is not None:

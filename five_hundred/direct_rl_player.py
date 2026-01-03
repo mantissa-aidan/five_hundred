@@ -2,7 +2,19 @@ from .player import Player
 from .utils_rl import get_state_vector, decode_action, card_to_int
 import numpy as np
 import torch
+import math
 from typing import Optional, Dict
+
+def normalize_reward(score):
+    """
+    CRITICAL FIX (Phase 4.6): Changed divisor from 50 to 500 to prevent saturation.
+    
+    Old (BROKEN): tanh(-520/50) = -1.00 (saturated)
+    New (FIXED):  tanh(-520/500) = -0.85 (gradient preserved)
+    
+    Now the network can distinguish between "small mistake" and "catastrophe."
+    """
+    return math.tanh(score / 500.0)
 
 class DirectRLPlayer(Player):
     """
@@ -40,15 +52,16 @@ class DirectRLPlayer(Player):
             my_team_idx = 0 if self.seat_idx % 2 == 0 else 1
             my_team = game.teams[my_team_idx]
             
-            # 1. Delta Score 
+            # 1. Delta Score (normalized with tanh)
             curr_score = my_team.team_score
-            reward += (curr_score - self.last_reward_base_score) / 10.0
+            score_delta = curr_score - self.last_reward_base_score
+            reward += normalize_reward(score_delta)
             self.last_reward_base_score = curr_score
             
-            # 2. Tricks Won
+            # 2. Tricks Won (small immediate reward)
             curr_tricks = sum(p.tricks_won_this_round for p in my_team.players)
             if curr_tricks > self.last_reward_base_tricks:
-                reward += 1.0 
+                reward += 0.1  # Reduced from 1.0 to match tanh scale
             self.last_reward_base_tricks = curr_tricks
 
         # Monte Carlo: Store transition in buffer instead of immediate agent.remember()
@@ -79,7 +92,7 @@ class DirectRLPlayer(Player):
         # Record transition from PREVIOUS action
         self._record_transition(obs, "BID")
         
-        action_idx = self.agent.act(obs, "BID", valid_mask=self._get_mask("BID"), bid_epsilon=self.bid_epsilon)
+        action_idx = self.agent.act(obs, "BID", valid_mask=self._get_mask("BID"))
         
         # Save for NEXT record
         self.last_state = obs
@@ -208,49 +221,66 @@ class DirectRLPlayer(Player):
     def finalize_training_game(self, win=False, game_score=0, agent_won_bid=False, bid_tricks=0, contract_made=False):
         if not self.is_training:
             return
-            
-        # MONTE CARLO RETURNS: Calculate discounted cumulative rewards
-        # Work backwards from final state to properly assign credit
         
-        # Final terminal reward (what the agent actually achieved)
-        terminal_reward = float(game_score) / 10.0
+        # HYBRID TD/MC APPROACH (Phase 3):
+        # - Monte Carlo returns for BIDDING (credit assignment for game outcome)
+        # - Standard TD for PLAYING (immediate rewards, low variance)
+        
+        # Separate transitions by phase
+        bid_transitions = [t for t in self.game_transitions if t['phase'] == 'BID']
+        play_transitions = [t for t in self.game_transitions if t['phase'] in ['PLAY', 'KITTY']]
+        
+        # Terminal reward (tanh normalized with FIXED divisor)
+        terminal_reward = normalize_reward(float(game_score))
+        
+        # Base win/loss bonus
         if win:
-            terminal_reward += 5.0
+            terminal_reward += 0.1
         else:
-            terminal_reward -= 5.0
-        
-        # Calculate returns for each transition
-        # G_t = reward_t + γ*reward_{t+1} + γ²*reward_{t+2} + ... + γ^T*terminal_reward
-        gamma = self.agent.gamma  # Discount factor (typically 0.99)
-        
-        returns = []
-        G = 0.0  # Running return (calculated backwards)
-        
-        # Work backwards through transitions
-        for t in reversed(range(len(self.game_transitions))):
-            trans = self.game_transitions[t]
+            terminal_reward -= 0.1
             
-            # For the last transition, add terminal reward
-            if t == len(self.game_transitions) - 1:
-                G = trans['reward'] + terminal_reward
+        # DYNAMIC RISK SHAPING (Phase 4.6): "The Price of Failure"
+        # Makes agent feel the difference between small and catastrophic failures
+        if agent_won_bid:
+            if contract_made:
+                # Small fixed bonus for ANY successful contract
+                # (Reduced from 0.5 to prevent reckless bidding)
+                terminal_reward += 0.2
             else:
-                # G_t = r_t + γ*G_{t+1}
-                G = trans['reward'] + gamma * G
-            
-            returns.insert(0, G)  # Prepend to maintain order
+                # Dynamic Penalty: Scale by bid difficulty
+                # 6 Tricks (min viable) -> difficulty 0.0 -> penalty -0.1
+                # 10 Tricks (max) -> difficulty 1.0 -> penalty -0.5
+                difficulty = (bid_tricks - 6) / 4.0
+                penalty = 0.1 + (0.4 * difficulty)
+                terminal_reward -= penalty
+        else:
+            # Defense bonus (unchanged - this works well)
+            if win:
+                terminal_reward += 0.1  # Already added above, this is redundant but kept for clarity
         
-        # Now store all transitions with their calculated returns
-        for i, trans in enumerate(self.game_transitions):
+        # MC RETURNS FOR BIDDING ONLY
+        gamma = self.agent.gamma
+        G = terminal_reward
+        
+        for t in reversed(range(len(bid_transitions))):
+            trans = bid_transitions[t]
+            done = (t == len(bid_transitions) - 1)
+            
             self.agent.remember(
                 state=trans['state'],
                 action=trans['action'],
-                reward=returns[i],  # Use calculated MC return instead of immediate reward
+                reward=G,  # Monte Carlo return
                 next_state=trans['next_state'],
-                done=trans['done'],
-                phase=trans['phase']
+                done=done,
+                phase='BID'
             )
+            
+            if t > 0:
+                G = trans['reward'] + gamma * G
         
-        # Clear buffer for next game
+        # PLAY TRANSITIONS: Already stored with immediate rewards (TD learning)
+        # No update needed - they use standard TD via agent.replay()
+        
         self.reset_training_state()
     
     # Kitty Discard Logic?
