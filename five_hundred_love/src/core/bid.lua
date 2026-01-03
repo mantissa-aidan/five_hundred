@@ -6,7 +6,8 @@ local BidType = {
     SUIT_TRUMP = "Suit Trump",
     NO_TRUMP = "No Trump",
     MISERE = "Misere",
-    OPEN_MISERE = "Open Misere"
+    OPEN_MISERE = "Open Misere",
+    PASS = "Pass"
 }
 
 local MISERE_POINTS = 250
@@ -62,12 +63,15 @@ function Bid:init(player, tricks, suit, bid_type)
     elseif bid_type == BidType.MISERE or bid_type == BidType.OPEN_MISERE then
         if tricks ~= 0 then error("Misere must be 0 tricks") end
         self.suit = Suit.NO_TRUMP -- Canonical for Misere
+    elseif bid_type == BidType.PASS then
+        -- Pass is valid with any/no params, usually tricks=0
     end
     
     self.points = self:calculate_points()
 end
 
 function Bid:calculate_points()
+    if self.bid_type == BidType.PASS then return 0 end
     if self.bid_type == BidType.MISERE then return MISERE_POINTS end
     if self.bid_type == BidType.OPEN_MISERE then return OPEN_MISERE_POINTS end
     
@@ -94,6 +98,7 @@ function Bid:__le(other)
 end
 
 function Bid:__tostring()
+    if self.bid_type == BidType.PASS then return string.format("%s passes", self.player.name) end
     if self.bid_type == BidType.MISERE then return string.format("%s Misere (%d)", self.player.name, self.points) end
     if self.bid_type == BidType.OPEN_MISERE then return string.format("%s Open Misere (%d)", self.player.name, self.points) end
     

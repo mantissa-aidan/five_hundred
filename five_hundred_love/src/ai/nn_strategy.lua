@@ -1,9 +1,8 @@
--- Neural Network Strategy
--- Uses trained Dueling DQN for bid and play decisions
+-- Neural Network Strategy for PPO Agent
+-- Uses trained PPO policy with shared trunk + dual heads
 
 local Utils = require "src.core.utils"
 local Strategy = require "src.ai.strategy"
-local Net = require "src.ai.net"
 local FeatureExtractor = require "src.ai.feature_extractor"
 local json = require "src.ext.json"
 local CardModule = require "src.core.card"
@@ -15,6 +14,37 @@ local BidType = BidModule.BidType
 
 local NNStrategy = Utils.class("NNStrategy")
 setmetatable(NNStrategy, {__index = Strategy})
+
+-- Simple helper for linear layer forward pass
+local function linear_forward(input, weight, bias)
+    local out_dim = #weight
+    local in_dim = #weight[1]
+    
+    if #input ~= in_dim then
+        error(string.format("Input dim mismatch: expected %d, got %d", in_dim, #input))
+    end
+    
+    local out = {}
+    for i = 1, out_dim do
+        local sum = 0
+        local w_row = weight[i]
+        for j = 1, in_dim do
+            sum = sum + w_row[j] * input[j]
+        end
+        if bias then sum = sum + bias[i] end
+        out[i] = sum
+    end
+    return out
+end
+
+-- ReLU activation
+local function relu(input)
+    local out = {}
+    for i, v in ipairs(input) do
+        out[i] = v > 0 and v or 0
+    end
+    return out
+end
 
 function NNStrategy:init(weights_source)
     local weights
@@ -37,16 +67,57 @@ function NNStrategy:init(weights_source)
         weights = json.decode(content)
     end
 
-    self.bid_net = Net.new(weights["bidding"])
-    self.play_net = Net.new(weights["playing"])
+    -- Store PPO weights
+    -- Structure: shared_fc1, shared_fc2, actor_bid, actor_play
     
-    print("[NNStrategy] Neural network loaded successfully")
+    -- DEBUG: Print what keys we actually received
+    print("[NNStrategy] Received weights with keys:")
+    for k, v in pairs(weights) do
+        print("  - " .. tostring(k))
+    end
+    
+    self.shared_fc1 = weights.shared_fc1
+    self.shared_fc2 = weights.shared_fc2
+    self.actor_bid = weights.actor_bid
+    self.actor_play = weights.actor_play
+    
+    if not self.shared_fc1 or not self.shared_fc2 or not self.actor_bid or not self.actor_play then
+        error("NNStrategy: Missing required weights (shared_fc1, shared_fc2, actor_bid, actor_play)")
+    end
+    
+    print("[NNStrategy] PPO neural network loaded successfully")
+end
+
+-- Forward pass through shared trunk
+function NNStrategy:forward_shared(input_vec)
+    -- Layer 1: Linear(466, 256) + ReLU
+    local h1 = linear_forward(input_vec, self.shared_fc1.weight, self.shared_fc1.bias)
+    h1 = relu(h1)
+    
+    -- Layer 2: Linear(256, 128) + ReLU
+    local h2 = linear_forward(h1, self.shared_fc2.weight, self.shared_fc2.bias)
+    h2 = relu(h2)
+    
+    return h2
+end
+
+-- Forward pass through bid head
+function NNStrategy:forward_bid(features)
+    return linear_forward(features, self.actor_bid.weight, self.actor_bid.bias)
+end
+
+-- Forward pass through play head
+function NNStrategy:forward_play(features)
+    return linear_forward(features, self.actor_play.weight, self.actor_play.bias)
 end
 
 function NNStrategy:decide_bid(game, player_idx)
     local player = game.players[player_idx]
     local vec = FeatureExtractor.get_state_vector(game, player_idx)
-    local logits = self.bid_net:forward(vec)
+    
+    -- Forward pass: Input -> Shared -> Actor Bid
+    local features = self:forward_shared(vec)
+    local logits = self:forward_bid(features)
     
     -- Find best valid bid (mask out Misere 26, 27)
     local max_val = -1e9
@@ -91,7 +162,10 @@ end
 
 function NNStrategy:decide_play(game, player_idx, playable_cards)
     local vec = FeatureExtractor.get_state_vector(game, player_idx)
-    local logits = self.play_net:forward(vec)
+    
+    -- Forward pass: Input -> Shared -> Actor Play
+    local features = self:forward_shared(vec)
+    local logits = self:forward_play(features)
     
     -- Find best playable card
     local best_card = playable_cards[1]
@@ -111,7 +185,6 @@ end
 
 function NNStrategy:decide_discard(game, player_idx)
     -- Simple heuristic: discard lowest value cards
-    -- TODO: Could train a dedicated discard network
     local player = game.players[player_idx]
     local hand = player.hand
     
@@ -125,21 +198,20 @@ function NNStrategy:decide_discard(game, player_idx)
 end
 
 -- Get top N actions with probabilities for debug display
--- action_type: "BID" or "PLAY"
 function NNStrategy:get_top_actions(game, player_idx, action_type, n)
     n = n or 5
     local vec = FeatureExtractor.get_state_vector(game, player_idx)
+    local features = self:forward_shared(vec)
     local logits
     
     if action_type == "BID" then
-        logits = self.bid_net:forward(vec)
+        logits = self:forward_bid(features)
     else
-        logits = self.play_net:forward(vec)
+        logits = self:forward_play(features)
     end
     
-    -- Compute softmax
-    -- Filter for valid actions and compute softmax over VALID set
-    local valid_logits = {} -- {idx=..., val=...}
+    -- Compute softmax over valid actions
+    local valid_logits = {}
     
     for i, v in ipairs(logits) do
         local action_idx = i - 1
@@ -170,7 +242,7 @@ function NNStrategy:get_top_actions(game, player_idx, action_type, n)
         end
     end
     
-    -- Compute Softmax on valid logits
+    -- Compute Softmax
     local max_logit = -1e9
     for _, item in ipairs(valid_logits) do
         if item.val > max_logit then max_logit = item.val end
@@ -182,12 +254,12 @@ function NNStrategy:get_top_actions(game, player_idx, action_type, n)
         exp_sum = exp_sum + item.exp
     end
     
-    local probs = {} -- Map action_idx -> prob
+    local probs = {}
     for _, item in ipairs(valid_logits) do
         probs[item.idx] = item.exp / exp_sum
     end
     
-    -- Create action list with probabilities
+    -- Create action list
     local actions = {}
     for _, item in ipairs(valid_logits) do
         local action_idx = item.idx
@@ -203,27 +275,20 @@ function NNStrategy:get_top_actions(game, player_idx, action_type, n)
                 local s_idx = adj % 5
                 local suit_chars = {"♠", "♣", "♦", "♥", "NT"}
                 label = tostring(tricks) .. suit_chars[s_idx + 1]
-            elseif action_idx == 26 then
-                label = "Mis"
-            elseif action_idx == 27 then
-                label = "OMis"
             end
         else
-            -- PLAY - card index
             local card = FeatureExtractor.int_to_card(action_idx)
             if card then
                 local rank_chars = {[4]="4",[5]="5",[6]="6",[7]="7",[8]="8",[9]="9",[10]="10",[11]="J",[12]="Q",[13]="K",[14]="A",[100]="JK"}
                 local suit_chars = {[Suit.SPADES]="♠",[Suit.CLUBS]="♣",[Suit.DIAMONDS]="♦",[Suit.HEARTS]="♥",[Suit.NO_TRUMP]=""}
                 label = (rank_chars[card.rank] or "?") .. (suit_chars[card.suit] or "")
-            else
-                label = "?"
             end
         end
         
         table.insert(actions, {label = label, prob = prob, idx = action_idx})
     end
     
-    -- Sort by probability descending
+    -- Sort by probability
     table.sort(actions, function(a, b) return a.prob > b.prob end)
     
     -- Return top N
@@ -235,59 +300,34 @@ function NNStrategy:get_top_actions(game, player_idx, action_type, n)
     return result
 end
 
--- Get the probability of Pass action specifically
-function NNStrategy:get_pass_prob(game, player_idx)
-    local vec = FeatureExtractor.get_state_vector(game, player_idx)
-    local logits = self.bid_net:forward(vec)
-    
-    -- Compute softmax
-    local max_logit = -1e9
-    for _, v in ipairs(logits) do
-        if v > max_logit then max_logit = v end
-    end
-    
-    local exp_sum = 0
-    local exp_vals = {}
-    for i, v in ipairs(logits) do
-        exp_vals[i] = math.exp(v - max_logit)
-        exp_sum = exp_sum + exp_vals[i]
-    end
-    
-    -- Pass is action index 0 -> Lua index 1
-    return exp_vals[1] / exp_sum
-end
-
--- Get top N actions filtered to only playable cards (for PLAY debug display)
 function NNStrategy:get_top_actions_filtered(game, player_idx, playable_cards, n)
     n = n or 5
     local vec = FeatureExtractor.get_state_vector(game, player_idx)
-    local logits = self.play_net:forward(vec)
+    local features = self:forward_shared(vec)
+    local logits = self:forward_play(features)
     
-    -- Build set of playable card indices
+    -- Build playable set
     local playable_set = {}
     for _, card in ipairs(playable_cards) do
         local idx = FeatureExtractor.card_to_int(card)
         playable_set[idx] = card
     end
     
-    -- Compute softmax only over playable cards
+    -- Softmax over playable
     local max_logit = -1e9
     for idx, _ in pairs(playable_set) do
-        local lua_idx = idx + 1
-        if logits[lua_idx] > max_logit then
-            max_logit = logits[lua_idx]
+        if logits[idx + 1] > max_logit then
+            max_logit = logits[idx + 1]
         end
     end
     
     local exp_sum = 0
     local exp_vals = {}
     for idx, _ in pairs(playable_set) do
-        local lua_idx = idx + 1
-        exp_vals[idx] = math.exp(logits[lua_idx] - max_logit)
+        exp_vals[idx] = math.exp(logits[idx + 1] - max_logit)
         exp_sum = exp_sum + exp_vals[idx]
     end
     
-    -- Build action list with normalized probs
     local actions = {}
     for idx, card in pairs(playable_set) do
         local prob = exp_vals[idx] / exp_sum
@@ -297,10 +337,8 @@ function NNStrategy:get_top_actions_filtered(game, player_idx, playable_cards, n
         table.insert(actions, {label = label, prob = prob, card = card})
     end
     
-    -- Sort by probability descending
     table.sort(actions, function(a, b) return a.prob > b.prob end)
     
-    -- Return top N
     local result = {}
     for i = 1, math.min(n, #actions) do
         table.insert(result, actions[i])
@@ -309,11 +347,8 @@ function NNStrategy:get_top_actions_filtered(game, player_idx, playable_cards, n
     return result
 end
 
--- Check if this is an NN strategy (for debug display)
 function NNStrategy:is_nn()
     return true
 end
 
 return NNStrategy
-
-

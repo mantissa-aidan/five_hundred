@@ -44,18 +44,28 @@ local function register_callbacks()
     end)
     
     gGame:set_on_contract_set(function(bid)
-        local suit_names = {[0]="Spades", [1]="Clubs", [2]="Diamonds", [3]="Hearts", [4]="No Trump"}
+        local suit_names = {[0]="Clubs", [1]="Diamonds", [2]="Hearts", [3]="Spades", [4]="No Trump"}
         local suit_str = suit_names[bid.suit] or tostring(bid.suit)
         gChatLog:add_message("System", {"Contract: " .. bid.tricks .. " " .. suit_str, "By " .. bid.player.name}, false, {0.8, 0.8, 0.2})
     end)
     
     gGame:set_on_trick_complete(function(data)
-        local suit_names = {[0]="Spades", [1]="Clubs", [2]="Diamonds", [3]="Hearts", [4]="No Trump"}
+        local suit_names = {[0]="Clubs", [1]="Diamonds", [2]="Hearts", [3]="Spades", [4]="No Trump"}
         local trump_str = suit_names[data.trump_suit] or "?"
+        local lead_str = suit_names[data.lead_suit] or "?"
         local card_str = tostring(data.winning_card)
         
-        local msg = string.format("%s won with %s", data.winner.name, card_str)
-        local sub_msg = string.format("(Trumps: %s)", trump_str)
+        -- Build message showing all cards
+        local msgs = {string.format("Trick %d: %s won with %s", data.trick_num, data.winner.name, card_str)}
+        table.insert(msgs, string.format("Lead: %s, Trump: %s", lead_str, trump_str))
+        
+        -- Add all cards played (optional, for debugging)
+        if data.all_cards then
+            for i, card_info in ipairs(data.all_cards) do
+                table.insert(msgs, string.format("  %s: %s (str:%d)", 
+                    card_info.player.name, tostring(card_info.card), card_info.strength))
+            end
+        end
         
         local col = {0.5, 0.5, 0.5}
         if data.winner.name == "You" then
@@ -63,7 +73,7 @@ local function register_callbacks()
         elseif data.winner.name == "Partner" then
             col = {0.2, 0.6, 0.2}
         end
-        gChatLog:add_message("System", {msg, sub_msg}, false, col)
+        gChatLog:add_message("System", msgs, false, col)
     end)
     
     gGame:set_on_round_end(function(data)
@@ -254,7 +264,7 @@ function love.update(dt)
                        elseif action == "bid" and params then
                            local success = gGame:player_bid(p_idx, params[1], params[2], params[3])
                            if success then
-                               local suit_names = {[0]="Spades", [1]="Clubs", [2]="Diamonds", [3]="Hearts", [4]="No Trump"}
+                               local suit_names = {[0]="Clubs", [1]="Diamonds", [2]="Hearts", [3]="Spades", [4]="No Trump"}
                                local msg = string.format("Bids %d %s", params[1], suit_names[params[2]] or "?")
                                gChatLog:add_message(gGame.players[p_idx].name, {msg}, false)
                            else

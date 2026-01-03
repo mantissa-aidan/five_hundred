@@ -9,16 +9,17 @@ local FeatureExtractor = {}
 
 function FeatureExtractor.get_state_vector(game, player_idx)
     local vec = {}
-    for i=1, 600 do vec[i] = 0.0 end -- Init 600 slots
+    for i=1, 466 do vec[i] = 0.0 end
     
-    local idx = 1 -- Lua 1-based index
+    local idx = 1
     local player = game.players[player_idx]
     
     -- 1. Phase [Bid, Play] (2)
-    -- Map KITTY to BID for encoding purposes usually
-    if game.state == game.STATE.BIDDING or game.state == game.STATE.KITTY then
+    if game.state == "BIDDING" or game.state == "KITTY" then -- String states in Lua?
+        -- Actually Game.lua uses "BIDDING", "KITTY", "PLAYING"
+        -- Python utils_rl maps BIDDING/KITTY -> BID (vec[0]=1)
         vec[idx] = 1.0
-    elseif game.state == game.STATE.PLAYING then
+    elseif game.state == "PLAYING" then -- Maps to PLAY (vec[1]=1)
         vec[idx + 1] = 1.0
     end
     idx = idx + 2
@@ -26,18 +27,15 @@ function FeatureExtractor.get_state_vector(game, player_idx)
     -- 2. Hand (53)
     for _, card in ipairs(player.hand) do
         local c_idx = FeatureExtractor.card_to_int(card)
-        if c_idx >= 0 then
-            vec[idx + c_idx] = 1.0 -- c_idx is 0-52, so +1 implicit by base idx
-        end
+        if c_idx >= 0 then vec[idx + c_idx] = 1.0 end
     end
     idx = idx + 53
     
-    -- 3. Trump (6: S, C, D, H, NT, None)
-    local t_offset = 5
+    -- 3. Trump (6)
+    local t_offset = 5 -- None
     if game.trump_suit then
         if game.trump_suit == Suit.NO_TRUMP then t_offset = 4
         else
-            -- Map: S=0, C=1, D=2, H=3
             local map = {[Suit.SPADES]=0, [Suit.CLUBS]=1, [Suit.DIAMONDS]=2, [Suit.HEARTS]=3}
             t_offset = map[game.trump_suit]
         end
@@ -45,45 +43,34 @@ function FeatureExtractor.get_state_vector(game, player_idx)
     vec[idx + t_offset] = 1.0
     idx = idx + 6
     
-    -- 4. Trick History (Current Trick) - 4 slots * 53 cards
-    -- Python encoding used ordered slots. game.current_trick is list of {player, card}
+    -- 4. Current Trick (212) - 4 slots * 53
     for i, play in ipairs(game.current_trick) do
         if i > 4 then break end
         local c_int = FeatureExtractor.card_to_int(play.card)
-        -- i is 1-based, Python i was 0-based.
-        -- Python: idx + (i_0 * 53) + c_int
-        -- Lua: idx + ((i-1) * 53) + c_int
+        -- i is 1-based. Python i is 0-based.
+        -- Slot offset: (i-1) * 53
         vec[idx + ((i-1) * 53) + c_int] = 1.0
     end
     idx = idx + (4 * 53)
     
-    -- 5. Winning Bid Info (Placeholder in Python comment, handled later there)
-    -- Actually Python env.py skipped this block implementation or put it later?
-    -- Checked Python: It skipped idx+=0 here. It puts Winning Bid at step 8.
-    
-    -- 6. History (Played Cards in Round) - 53 slots
-    -- game.cards_played_this_round (need to track this in Game class!)
-    -- Assuming game.round_history or similar tracks all cards.
-    -- Game logic I wrote tracks `tricks_history`.
-    if game.tricks_history then
-        for _, trick_data in ipairs(game.tricks_history) do
-            for _, play in ipairs(trick_data.cards) do
-                local c_int = FeatureExtractor.card_to_int(play.card)
-                vec[idx + c_int] = 1.0
-            end
+    -- 6. Played History (53) - Cards played in round
+    if game.cards_played_this_round then
+        for _, card in ipairs(game.cards_played_this_round) do
+             local c_int = FeatureExtractor.card_to_int(card)
+             vec[idx + c_int] = 1.0
         end
     end
-    -- Also add current trick cards to history? Python env logic usually separates them?
-    -- Python `cards_played_this_round` includes cards in finished tricks usually.
     idx = idx + 53
     
     -- 7. Scores (3)
-    -- Need to identify My Team vs Opp Team
-    -- player_idx 1,3 are Team 1. 2,4 are Team 2.
-    local my_team_idx = ((player_idx - 1) % 2) + 1 -- 1 or 2
+    -- Identify Team
+    -- Lua Index 1 (P1) -> Team 1 (Indices 1,3)
+    -- Index 2 (P2) -> Team 2 (Indices 2,4)
+    local my_team_idx = ((player_idx - 1) % 2) + 1
     local opp_team_idx = (my_team_idx == 1) and 2 or 1
-    local my_score = game.teams[my_team_idx].team_score
-    local opp_score = game.teams[opp_team_idx].team_score
+    
+    local my_score = game.teams[my_team_idx].score or 0
+    local opp_score = game.teams[opp_team_idx].score or 0
     
     vec[idx] = my_score / 1000.0
     vec[idx+1] = opp_score / 1000.0
@@ -93,14 +80,14 @@ function FeatureExtractor.get_state_vector(game, player_idx)
     -- 8. Winning Bid (15)
     if game.winning_bid then
         local wb = game.winning_bid
-        -- Tricks (0, 6..10) -> 0..5
+        -- Tricks (0 or 6-10)
         local tr_idx = 0
         if wb.tricks >= 6 then tr_idx = wb.tricks - 5 end
         vec[idx + tr_idx] = 1.0
         idx = idx + 6
         
         -- Suit
-        local s_offset = 4
+        local s_offset = 4 -- NoTrump/None
         if wb.suit and wb.suit ~= Suit.NO_TRUMP then
             local map = {[Suit.SPADES]=0, [Suit.CLUBS]=1, [Suit.DIAMONDS]=2, [Suit.HEARTS]=3}
             s_offset = map[wb.suit]
@@ -108,39 +95,93 @@ function FeatureExtractor.get_state_vector(game, player_idx)
         vec[idx + s_offset] = 1.0
         idx = idx + 5
         
-        -- Bidder Seat Relative (0..3)
+        -- Bidder Seat Relative
         local bidder_seat = game:get_player_index(wb.player)
-        local rel_seat = (bidder_seat - player_idx + 4) % 4 -- +4 to ensure positive
+        -- Lua indices 1-4. Python 0-3.
+        -- Python: (bidder - agent) % 4
+        -- Lua: ((bidder - 1) - (agent - 1)) % 4 => (bidder - agent) % 4
+        -- If result negative, +4.
+        local rel_seat = (bidder_seat - player_idx) % 4
         vec[idx + rel_seat] = 1.0
         idx = idx + 4
     else
         idx = idx + 15
     end
     
-    -- 9. Current Tricks Won (2)
-    local my_tricks = game.teams[my_team_idx]:get_total_tricks_won_this_round()
-    local opp_tricks = game.teams[opp_team_idx]:get_total_tricks_won_this_round()
+    -- 9. Tricks Won (2)
+    -- Need to sum tricks won by team players in current round
+    local my_tricks = 0
+    for _, p in ipairs(game.teams[my_team_idx].players) do my_tricks = my_tricks + (p.tricks_won_round or 0) end
+    local opp_tricks = 0
+    for _, p in ipairs(game.teams[opp_team_idx].players) do opp_tricks = opp_tricks + (p.tricks_won_round or 0) end
+    
     vec[idx] = my_tricks / 10.0
     vec[idx+1] = opp_tricks / 10.0
     idx = idx + 2
     
-    -- 10. Bidding History (112)
-    -- game.bids_this_round should store Bid objects or Pass strings/objects
-    -- game.bids_this_round order ??
-    -- We need "Last bid of each player".
-    -- Iterate history and update state.
+    -- 10. Bidding History One-Hot (112)
+    -- Iterate game.bids_this_round
+    local last_bids = {} -- [seat_idx (1-4)] -> bid_code
     
-    local player_last_bid = {} -- Map seat -> bid_code
-    -- Loop through bids
-    -- Wait, who made the bid? In my Game logic, I appended bids.
-    -- Need to traverse game.bids_this_round if available, but I need to know WHO made it.
-    -- Assuming `game.bids_this_round` is managed. 
-    -- Or just iterate current players?
-    -- My Game implementation resets state per round.
-    -- Let's assume we don't have full history log in Game yet.
-    -- Simplification: Zero for now or assume Game ensures this.
-    -- Ideally Game tracks `last_action` per player.
-    idx = idx + 112
+    if game.bids_this_round then
+        for _, item in ipairs(game.bids_this_round) do
+            -- item is Bid object (with PASS support now)
+            local p_idx_h = game:get_player_index(item.player)
+            local bid_code = 0 -- Pass default
+            
+            if item.bid_type ~= BidType.PASS then
+                 if item.bid_type == BidType.MISERE then bid_code = 26
+                 elseif item.bid_type == BidType.OPEN_MISERE then bid_code = 27
+                 else
+                     -- Suit Bid
+                     local tr_idx = item.tricks - 6
+                     local eff_suit = item.suit
+                     if item.bid_type == BidType.NO_TRUMP then eff_suit = Suit.NO_TRUMP end
+                     
+                     local s_map = {[Suit.SPADES]=0, [Suit.CLUBS]=1, [Suit.DIAMONDS]=2, [Suit.HEARTS]=3, [Suit.NO_TRUMP]=4}
+                     local s_idx = s_map[eff_suit] or 4
+                     bid_code = 1 + (tr_idx * 5) + s_idx
+                 end
+            end
+            
+            last_bids[p_idx_h] = bid_code
+        end
+    end
+    
+    -- Write to vector relative to agent
+    for i=0, 3 do
+        local seat_idx = ((player_idx - 1 + i) % 4) + 1
+        local code = last_bids[seat_idx]
+        if code then
+             vec[idx + code] = 1.0
+        end
+        idx = idx + 28
+    end
+    
+    -- 11. Suit Counts (4)
+    local counts = {[Suit.SPADES]=0, [Suit.CLUBS]=0, [Suit.DIAMONDS]=0, [Suit.HEARTS]=0}
+    for _, card in ipairs(player.hand) do
+        if card.suit ~= Suit.NO_TRUMP and card.rank ~= Rank.JOKER then
+             counts[card.suit] = counts[card.suit] + 1
+        end
+        -- Joker? Python utils_rl assumes Joker suit?
+        -- utils_rl: if card.suit in suit_counts...
+        -- Joker has NO_TRUMP usually. NO_TRUMP is not in suit_counts keys.
+        -- So Joker is skipped in counts. Correct.
+    end
+     
+    vec[idx] = counts[Suit.SPADES] / 13.0
+    vec[idx+1] = counts[Suit.CLUBS] / 13.0
+    vec[idx+2] = counts[Suit.DIAMONDS] / 13.0
+    vec[idx+3] = counts[Suit.HEARTS] / 13.0
+    idx = idx + 4
+    
+    -- 12. Void indicators (4)
+    vec[idx] = (counts[Suit.SPADES] == 0) and 1.0 or 0.0
+    vec[idx+1] = (counts[Suit.CLUBS] == 0) and 1.0 or 0.0
+    vec[idx+2] = (counts[Suit.DIAMONDS] == 0) and 1.0 or 0.0
+    vec[idx+3] = (counts[Suit.HEARTS] == 0) and 1.0 or 0.0
+    idx = idx + 4
     
     return vec
 end
