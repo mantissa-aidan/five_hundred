@@ -1,0 +1,105 @@
+from .bot_player import BotPlayer
+from .card import Card, Suit
+from .bid import Bid, BidType
+from typing import List, Optional, Tuple, Dict, Any
+import queue
+
+class RLPlayer(BotPlayer):
+    def __init__(self, name: str, action_queue: queue.Queue, observation_queue: queue.Queue):
+        super().__init__(name, difficulty="RL")
+        self.action_queue = action_queue
+        self.observation_queue = observation_queue
+
+    def _get_action(self, observation: Dict[str, Any]) -> Any:
+        """Sends observation to env and waits for action."""
+        self.observation_queue.put(observation)
+        return self.action_queue.get(block=True)
+
+    def decide_bid(self, current_highest_bid: Optional[Bid], bids_this_round: List[Bid], player_has_bid_this_round: dict, player_has_passed_auction: dict) -> Tuple[str, Optional[Tuple]]:
+        
+        # Serialize state for RL
+        # Note: In a full implementation, we'd convert this to tensors here or in the env.
+        # Sending raw objects for now to let Env handle encoding.
+        obs = {
+            'phase': 'BID',
+            'hand': self.hand,
+            'current_highest_bid': current_highest_bid,
+            'bids_this_round': bids_this_round,
+            'my_bid_history': player_has_bid_this_round.get(self, False),
+            'has_passed': player_has_passed_auction.get(self, False)
+        }
+        
+        action_data = self._get_action(obs)
+        # action_data expected format: ('bid', (tricks, suit, type)) or ('pass', None)
+        return action_data
+
+    def decide_kitty_exchange(self, kitty: List[Card], winning_bid: Bid) -> List[Card]:
+        # Bot hand already has kitty at this point (13 cards)
+        obs = {
+            'phase': 'KITTY',
+            'hand': self.hand, # 13 cards
+            'winning_bid': winning_bid,
+            'kitty_original': kitty
+        }
+        
+        # Expect 3 sequential actions (one for each card to discard)
+        discards = []
+        for i in range(3):
+            obs['discard_num'] = i + 1
+            # Filter hand for mask: only show cards NOT already in discards
+            remaining_hand = [c for c in self.hand if c not in discards]
+            
+            # Note: The 'env' uses common mask for all 3 steps based on initial hand.
+            # To be 100% perfect, env should re-mask every sub-step, but for now
+            # we just ensure the resulting list is unique here.
+            
+            card = self._get_action(obs)
+            if isinstance(card, Card) and card not in discards:
+                discards.append(card)
+            elif isinstance(card, int):
+                # Fallback for index
+                if card < len(self.hand):
+                    c = self.hand[card]
+                    if c not in discards:
+                        discards.append(c)
+            
+        # Ensure we return 3 cards
+        while len(discards) < 3:
+             # Random fallback for duplicates/failures
+             import random
+             rem = [c for c in self.hand if c not in discards]
+             if not rem: break
+             discards.append(random.choice(rem))
+             
+        return discards[:3]
+
+    def decide_play_card(self, playable_cards: List[Card], trick_suit: Optional[Suit], trump_suit: Optional[Suit], current_trick_cards: List[Tuple[Any, Card]]) -> Card:
+        
+        obs = {
+            'phase': 'PLAY',
+            'hand': self.hand,
+            'playable_cards': playable_cards,
+            'trick_suit': trick_suit,
+            'trump_suit': trump_suit,
+            'current_trick': current_trick_cards
+        }
+        
+        # Expect action to be the Card object to play OR index in playable_cards
+        chosen_card = self._get_action(obs)
+        
+        if isinstance(chosen_card, int):
+            # Legacy or unexpected int
+            if chosen_card < len(self.hand):
+                card = self.hand[chosen_card]
+                if card in playable_cards:
+                    return card
+                    
+        elif isinstance(chosen_card, Card):
+            # New Global ID behavior
+            # We must ensure the card is in our hand AND playable
+            if chosen_card in playable_cards:
+                return chosen_card
+            
+        # Fallback if agent picked unplayable or out-of-bounds
+        # print(f"RLPlayer fallback: {chosen_card} invalid. Playable: {playable_cards}")
+        return playable_cards[0]

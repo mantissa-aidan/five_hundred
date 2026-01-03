@@ -1,0 +1,1056 @@
+wandb: Currently logged in as: donkus123 to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+/usr/local/Caskroom/miniforge/base/lib/python3.10/site-packages/pydantic/main.py:308: UserWarning: Pydantic serializer warnings:
+  Expected `list[str]` but got `tuple` - serialized value may not be as expected
+  Expected `list[str]` but got `tuple` - serialized value may not be as expected
+  return self.__pydantic_serializer__.to_python(
+wandb: setting up run vu04d7gu
+wandb: Tracking run with wandb version 0.23.1
+wandb: Run data is saved locally in /Users/aidanperuch/Code/five_hundred/wandb/run-20260103_175056-vu04d7gu
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run training-20260103-175055
+wandb: ⭐️ View project at https://wandb.ai/donkus123/five-hundred-rl
+wandb: 🚀 View run at https://wandb.ai/donkus123/five-hundred-rl/runs/vu04d7gu
+/Users/aidanperuch/Code/five_hundred/five_hundred/agent.py:246: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(name, map_location=self.device)
+Initializing W&B Trainer...
+Agent initialized on device: mps
+Loaded League pool with 10 snapshots.
+Agent initialized on device: mps
+Agent initialized on device: mps
+Agent initialized on device: mps
+Loading pretrained model from pre_training/rules_bot/pretrained_agent.pth...
+Loaded epsilon: 1.0000
+Loaded memory: 0 bid, 0 play transitions.
+Set epsilon to 0.3 (Phase 3 fine-tuning)
+Expected baseline: ~70% WR, will improve bidding aggression
+Added Episode 200 to League pool. Pool size: 10
+--- Benchmarking Ep 200 ---
+Eval Win Rate: 30.0%
+Added Episode 400 to League pool. Pool size: 10
+--- Benchmarking Ep 400 ---
+Eval Win Rate: 50.0%
+Ep 500: Score=-500, Bid=7T-DIAMONDS by Opp2, AgentWon=False, Eps=0.294
+Added Episode 600 to League pool. Pool size: 10
+--- Benchmarking Ep 600 ---
+Eval Win Rate: 30.0%
+Added Episode 800 to League pool. Pool size: 10
+--- Benchmarking Ep 800 ---
+Eval Win Rate: 50.0%
+Ep 1000: Score=0, Bid=8T-DIAMONDS by Opp1, AgentWon=True, Eps=0.287
+Added Episode 1000 to League pool. Pool size: 10
+--- Benchmarking Ep 1000 ---
+Eval Win Rate: 50.0%
+Saved checkpoint to checkpoints/model_checkpoint_1000.pth
+Added Episode 1200 to League pool. Pool size: 10
+--- Benchmarking Ep 1200 ---
+Eval Win Rate: 45.0%
+Added Episode 1400 to League pool. Pool size: 10
+--- Benchmarking Ep 1400 ---
+Eval Win Rate: 50.0%
+Ep 1500: Score=-660, Bid=8T-DIAMONDS by Opp2, AgentWon=False, Eps=0.280
+Added Episode 1600 to League pool. Pool size: 10
+--- Benchmarking Ep 1600 ---
+Eval Win Rate: 75.0%
+Added Episode 1800 to League pool. Pool size: 10
+--- Benchmarking Ep 1800 ---
+Eval Win Rate: 65.0%
+Ep 2000: Score=-200, Bid=8T-CLUBS by Opp3, AgentWon=False, Eps=0.273
+Added Episode 2000 to League pool. Pool size: 10
+--- Benchmarking Ep 2000 ---
+Eval Win Rate: 65.0%
+Saved checkpoint to checkpoints/model_checkpoint_2000.pth
+Added Episode 2200 to League pool. Pool size: 10
+--- Benchmarking Ep 2200 ---
+Eval Win Rate: 40.0%
+Added Episode 2400 to League pool. Pool size: 10
+--- Benchmarking Ep 2400 ---
+Eval Win Rate: 60.0%
+Ep 2500: Score=0, Bid=8T-CLUBS by Opp1, AgentWon=True, Eps=0.266
+Added Episode 2600 to League pool. Pool size: 10
+--- Benchmarking Ep 2600 ---
+Eval Win Rate: 50.0%
+Added Episode 2800 to League pool. Pool size: 10
+--- Benchmarking Ep 2800 ---
+Eval Win Rate: 40.0%
+Ep 3000: Score=-540, Bid=9T-SPADES by Opp2, AgentWon=False, Eps=0.259
+Added Episode 3000 to League pool. Pool size: 10
+--- Benchmarking Ep 3000 ---
+Eval Win Rate: 80.0%
+Saved checkpoint to checkpoints/model_checkpoint_3000.pth
+Added Episode 3200 to League pool. Pool size: 10
+--- Benchmarking Ep 3200 ---
+Eval Win Rate: 50.0%
+Added Episode 3400 to League pool. Pool size: 10
+--- Benchmarking Ep 3400 ---
+Eval Win Rate: 60.0%
+Ep 3500: Score=-340, Bid=8T-DIAMONDS by Opp1, AgentWon=True, Eps=0.253
+Added Episode 3600 to League pool. Pool size: 10
+--- Benchmarking Ep 3600 ---
+Eval Win Rate: 50.0%
+Added Episode 3800 to League pool. Pool size: 10
+--- Benchmarking Ep 3800 ---
+Eval Win Rate: 65.0%
+Ep 4000: Score=-40, Bid=9T-SPADES by Opp3, AgentWon=True, Eps=0.247
+Added Episode 4000 to League pool. Pool size: 10
+--- Benchmarking Ep 4000 ---
+Eval Win Rate: 45.0%
+Saved checkpoint to checkpoints/model_checkpoint_4000.pth
+Added Episode 4200 to League pool. Pool size: 10
+--- Benchmarking Ep 4200 ---
+Eval Win Rate: 55.00000000000001%
+Added Episode 4400 to League pool. Pool size: 10
+--- Benchmarking Ep 4400 ---
+Eval Win Rate: 50.0%
+Ep 4500: Score=-500, Bid=7T-HEARTS by Agent, AgentWon=False, Eps=0.241
+Added Episode 4600 to League pool. Pool size: 10
+--- Benchmarking Ep 4600 ---
+Eval Win Rate: 70.0%
+Added Episode 4800 to League pool. Pool size: 10
+--- Benchmarking Ep 4800 ---
+Eval Win Rate: 55.00000000000001%
+Ep 5000: Score=-640, Bid=9T-DIAMONDS by Opp2, AgentWon=False, Eps=0.235
+Added Episode 5000 to League pool. Pool size: 10
+--- Benchmarking Ep 5000 ---
+Eval Win Rate: 55.00000000000001%
+Saved checkpoint to checkpoints/model_checkpoint_5000.pth
+Added Episode 5200 to League pool. Pool size: 10
+--- Benchmarking Ep 5200 ---
+Eval Win Rate: 45.0%
+Added Episode 5400 to League pool. Pool size: 10
+--- Benchmarking Ep 5400 ---
+Eval Win Rate: 50.0%
+Ep 5500: Score=-600, Bid=7T-HEARTS by Agent, AgentWon=False, Eps=0.229
+Added Episode 5600 to League pool. Pool size: 10
+--- Benchmarking Ep 5600 ---
+Eval Win Rate: 45.0%
+Added Episode 5800 to League pool. Pool size: 10
+--- Benchmarking Ep 5800 ---
+Eval Win Rate: 35.0%
+Ep 6000: Score=-540, Bid=8T-SPADES by Opp2, AgentWon=False, Eps=0.223
+Added Episode 6000 to League pool. Pool size: 10
+--- Benchmarking Ep 6000 ---
+Eval Win Rate: 40.0%
+Saved checkpoint to checkpoints/model_checkpoint_6000.pth
+Added Episode 6200 to League pool. Pool size: 10
+--- Benchmarking Ep 6200 ---
+Eval Win Rate: 30.0%
+Added Episode 6400 to League pool. Pool size: 10
+--- Benchmarking Ep 6400 ---
+Eval Win Rate: 45.0%
+Ep 6500: Score=-780, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.218
+Added Episode 6600 to League pool. Pool size: 10
+--- Benchmarking Ep 6600 ---
+Eval Win Rate: 20.0%
+Added Episode 6800 to League pool. Pool size: 10
+--- Benchmarking Ep 6800 ---
+Eval Win Rate: 35.0%
+Ep 7000: Score=80, Bid=8T-SPADES by Opp3, AgentWon=True, Eps=0.212
+Added Episode 7000 to League pool. Pool size: 10
+--- Benchmarking Ep 7000 ---
+Eval Win Rate: 35.0%
+Saved checkpoint to checkpoints/model_checkpoint_7000.pth
+Added Episode 7200 to League pool. Pool size: 10
+--- Benchmarking Ep 7200 ---
+Eval Win Rate: 35.0%
+Added Episode 7400 to League pool. Pool size: 10
+--- Benchmarking Ep 7400 ---
+Eval Win Rate: 20.0%
+Ep 7500: Score=-660, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.207
+Added Episode 7600 to League pool. Pool size: 10
+--- Benchmarking Ep 7600 ---
+Eval Win Rate: 30.0%
+Added Episode 7800 to League pool. Pool size: 10
+--- Benchmarking Ep 7800 ---
+Eval Win Rate: 30.0%
+Ep 8000: Score=700, Bid=9T-DIAMONDS by Opp2, AgentWon=True, Eps=0.202
+Added Episode 8000 to League pool. Pool size: 10
+--- Benchmarking Ep 8000 ---
+Eval Win Rate: 25.0%
+Saved checkpoint to checkpoints/model_checkpoint_8000.pth
+Added Episode 8200 to League pool. Pool size: 10
+--- Benchmarking Ep 8200 ---
+Eval Win Rate: 30.0%
+Added Episode 8400 to League pool. Pool size: 10
+--- Benchmarking Ep 8400 ---
+Eval Win Rate: 35.0%
+Ep 8500: Score=-200, Bid=9T-CLUBS by Opp3, AgentWon=True, Eps=0.197
+Added Episode 8600 to League pool. Pool size: 10
+--- Benchmarking Ep 8600 ---
+Eval Win Rate: 15.0%
+Added Episode 8800 to League pool. Pool size: 10
+--- Benchmarking Ep 8800 ---
+Eval Win Rate: 25.0%
+Ep 9000: Score=-600, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.192
+Added Episode 9000 to League pool. Pool size: 10
+--- Benchmarking Ep 9000 ---
+Eval Win Rate: 40.0%
+Saved checkpoint to checkpoints/model_checkpoint_9000.pth
+Added Episode 9200 to League pool. Pool size: 10
+--- Benchmarking Ep 9200 ---
+Eval Win Rate: 10.0%
+Added Episode 9400 to League pool. Pool size: 10
+--- Benchmarking Ep 9400 ---
+Eval Win Rate: 30.0%
+Ep 9500: Score=-320, Bid=9T-DIAMONDS by Opp3, AgentWon=True, Eps=0.187
+Added Episode 9600 to League pool. Pool size: 10
+--- Benchmarking Ep 9600 ---
+Eval Win Rate: 25.0%
+Added Episode 9800 to League pool. Pool size: 10
+--- Benchmarking Ep 9800 ---
+Eval Win Rate: 35.0%
+Ep 10000: Score=-640, Bid=9T-SPADES by Opp2, AgentWon=False, Eps=0.183
+Added Episode 10000 to League pool. Pool size: 10
+--- Benchmarking Ep 10000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_10000.pth
+Added Episode 10200 to League pool. Pool size: 10
+--- Benchmarking Ep 10200 ---
+Eval Win Rate: 40.0%
+Added Episode 10400 to League pool. Pool size: 10
+--- Benchmarking Ep 10400 ---
+Eval Win Rate: 5.0%
+Ep 10500: Score=-600, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.178
+Added Episode 10600 to League pool. Pool size: 10
+--- Benchmarking Ep 10600 ---
+Eval Win Rate: 25.0%
+Added Episode 10800 to League pool. Pool size: 10
+--- Benchmarking Ep 10800 ---
+Eval Win Rate: 25.0%
+Ep 11000: Score=-640, Bid=9T-SPADES by Opp2, AgentWon=False, Eps=0.174
+Added Episode 11000 to League pool. Pool size: 10
+--- Benchmarking Ep 11000 ---
+Eval Win Rate: 25.0%
+Saved checkpoint to checkpoints/model_checkpoint_11000.pth
+Added Episode 11200 to League pool. Pool size: 10
+--- Benchmarking Ep 11200 ---
+Eval Win Rate: 25.0%
+Added Episode 11400 to League pool. Pool size: 10
+--- Benchmarking Ep 11400 ---
+Eval Win Rate: 20.0%
+Ep 11500: Score=-620, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.169
+Added Episode 11600 to League pool. Pool size: 10
+--- Benchmarking Ep 11600 ---
+Eval Win Rate: 40.0%
+Added Episode 11800 to League pool. Pool size: 10
+--- Benchmarking Ep 11800 ---
+Eval Win Rate: 30.0%
+Ep 12000: Score=-620, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.165
+Added Episode 12000 to League pool. Pool size: 10
+--- Benchmarking Ep 12000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_12000.pth
+Added Episode 12200 to League pool. Pool size: 10
+--- Benchmarking Ep 12200 ---
+Eval Win Rate: 20.0%
+Added Episode 12400 to League pool. Pool size: 10
+--- Benchmarking Ep 12400 ---
+Eval Win Rate: 15.0%
+Ep 12500: Score=-800, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.161
+Added Episode 12600 to League pool. Pool size: 10
+--- Benchmarking Ep 12600 ---
+Eval Win Rate: 30.0%
+Added Episode 12800 to League pool. Pool size: 10
+--- Benchmarking Ep 12800 ---
+Eval Win Rate: 30.0%
+Ep 13000: Score=-560, Bid=8T-CLUBS by Opp2, AgentWon=False, Eps=0.157
+Added Episode 13000 to League pool. Pool size: 10
+--- Benchmarking Ep 13000 ---
+Eval Win Rate: 35.0%
+Saved checkpoint to checkpoints/model_checkpoint_13000.pth
+Added Episode 13200 to League pool. Pool size: 10
+--- Benchmarking Ep 13200 ---
+Eval Win Rate: 10.0%
+Added Episode 13400 to League pool. Pool size: 10
+--- Benchmarking Ep 13400 ---
+Eval Win Rate: 30.0%
+Ep 13500: Score=-340, Bid=8T-SPADES by Opp3, AgentWon=True, Eps=0.153
+Added Episode 13600 to League pool. Pool size: 10
+--- Benchmarking Ep 13600 ---
+Eval Win Rate: 25.0%
+Added Episode 13800 to League pool. Pool size: 10
+--- Benchmarking Ep 13800 ---
+Eval Win Rate: 25.0%
+Ep 14000: Score=-540, Bid=8T-SPADES by Opp2, AgentWon=False, Eps=0.149
+Added Episode 14000 to League pool. Pool size: 10
+--- Benchmarking Ep 14000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_14000.pth
+Added Episode 14200 to League pool. Pool size: 10
+--- Benchmarking Ep 14200 ---
+Eval Win Rate: 15.0%
+Added Episode 14400 to League pool. Pool size: 10
+--- Benchmarking Ep 14400 ---
+Eval Win Rate: 25.0%
+Ep 14500: Score=-660, Bid=9T-CLUBS by Opp2, AgentWon=False, Eps=0.146
+Added Episode 14600 to League pool. Pool size: 10
+--- Benchmarking Ep 14600 ---
+Eval Win Rate: 35.0%
+Added Episode 14800 to League pool. Pool size: 10
+--- Benchmarking Ep 14800 ---
+Eval Win Rate: 40.0%
+Ep 15000: Score=-300, Bid=8T-DIAMONDS by Opp1, AgentWon=True, Eps=0.142
+Added Episode 15000 to League pool. Pool size: 10
+--- Benchmarking Ep 15000 ---
+Eval Win Rate: 25.0%
+Saved checkpoint to checkpoints/model_checkpoint_15000.pth
+Added Episode 15200 to League pool. Pool size: 10
+--- Benchmarking Ep 15200 ---
+Eval Win Rate: 10.0%
+Added Episode 15400 to League pool. Pool size: 10
+--- Benchmarking Ep 15400 ---
+Eval Win Rate: 25.0%
+Ep 15500: Score=-620, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.139
+Added Episode 15600 to League pool. Pool size: 10
+--- Benchmarking Ep 15600 ---
+Eval Win Rate: 25.0%
+Added Episode 15800 to League pool. Pool size: 10
+--- Benchmarking Ep 15800 ---
+Eval Win Rate: 15.0%
+Ep 16000: Score=-620, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.135
+Added Episode 16000 to League pool. Pool size: 10
+--- Benchmarking Ep 16000 ---
+Eval Win Rate: 25.0%
+Saved checkpoint to checkpoints/model_checkpoint_16000.pth
+Added Episode 16200 to League pool. Pool size: 10
+--- Benchmarking Ep 16200 ---
+Eval Win Rate: 35.0%
+Added Episode 16400 to League pool. Pool size: 10
+--- Benchmarking Ep 16400 ---
+Eval Win Rate: 25.0%
+Ep 16500: Score=-500, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.132
+Added Episode 16600 to League pool. Pool size: 10
+--- Benchmarking Ep 16600 ---
+Eval Win Rate: 30.0%
+Added Episode 16800 to League pool. Pool size: 10
+--- Benchmarking Ep 16800 ---
+Eval Win Rate: 30.0%
+Ep 17000: Score=-620, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.129
+Added Episode 17000 to League pool. Pool size: 10
+--- Benchmarking Ep 17000 ---
+Eval Win Rate: 40.0%
+Saved checkpoint to checkpoints/model_checkpoint_17000.pth
+Added Episode 17200 to League pool. Pool size: 10
+--- Benchmarking Ep 17200 ---
+Eval Win Rate: 10.0%
+Added Episode 17400 to League pool. Pool size: 10
+--- Benchmarking Ep 17400 ---
+Eval Win Rate: 25.0%
+Ep 17500: Score=-380, Bid=8T-DIAMONDS by Opp3, AgentWon=True, Eps=0.125
+Added Episode 17600 to League pool. Pool size: 10
+--- Benchmarking Ep 17600 ---
+Eval Win Rate: 25.0%
+Added Episode 17800 to League pool. Pool size: 10
+--- Benchmarking Ep 17800 ---
+Eval Win Rate: 30.0%
+Ep 18000: Score=-580, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.122
+Added Episode 18000 to League pool. Pool size: 10
+--- Benchmarking Ep 18000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_18000.pth
+Added Episode 18200 to League pool. Pool size: 10
+--- Benchmarking Ep 18200 ---
+Eval Win Rate: 15.0%
+Added Episode 18400 to League pool. Pool size: 10
+--- Benchmarking Ep 18400 ---
+Eval Win Rate: 15.0%
+Ep 18500: Score=-560, Bid=8T-SPADES by Opp2, AgentWon=False, Eps=0.119
+Added Episode 18600 to League pool. Pool size: 10
+--- Benchmarking Ep 18600 ---
+Eval Win Rate: 10.0%
+Added Episode 18800 to League pool. Pool size: 10
+--- Benchmarking Ep 18800 ---
+Eval Win Rate: 25.0%
+Ep 19000: Score=-580, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.116
+Added Episode 19000 to League pool. Pool size: 10
+--- Benchmarking Ep 19000 ---
+Eval Win Rate: 30.0%
+Saved checkpoint to checkpoints/model_checkpoint_19000.pth
+Added Episode 19200 to League pool. Pool size: 10
+--- Benchmarking Ep 19200 ---
+Eval Win Rate: 15.0%
+Added Episode 19400 to League pool. Pool size: 10
+--- Benchmarking Ep 19400 ---
+Eval Win Rate: 30.0%
+Ep 19500: Score=-700, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.113
+Added Episode 19600 to League pool. Pool size: 10
+--- Benchmarking Ep 19600 ---
+Eval Win Rate: 10.0%
+Added Episode 19800 to League pool. Pool size: 10
+--- Benchmarking Ep 19800 ---
+Eval Win Rate: 25.0%
+Ep 20000: Score=-440, Bid=9T-HEARTS by Opp1, AgentWon=True, Eps=0.111
+Added Episode 20000 to League pool. Pool size: 10
+--- Benchmarking Ep 20000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_20000.pth
+Added Episode 20200 to League pool. Pool size: 10
+--- Benchmarking Ep 20200 ---
+Eval Win Rate: 20.0%
+Added Episode 20400 to League pool. Pool size: 10
+--- Benchmarking Ep 20400 ---
+Eval Win Rate: 30.0%
+Ep 20500: Score=-600, Bid=7T-CLUBS by Opp2, AgentWon=False, Eps=0.108
+Added Episode 20600 to League pool. Pool size: 10
+--- Benchmarking Ep 20600 ---
+Eval Win Rate: 30.0%
+Added Episode 20800 to League pool. Pool size: 10
+--- Benchmarking Ep 20800 ---
+Eval Win Rate: 10.0%
+Ep 21000: Score=-640, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.105
+Added Episode 21000 to League pool. Pool size: 10
+--- Benchmarking Ep 21000 ---
+Eval Win Rate: 10.0%
+Saved checkpoint to checkpoints/model_checkpoint_21000.pth
+Added Episode 21200 to League pool. Pool size: 10
+--- Benchmarking Ep 21200 ---
+Eval Win Rate: 30.0%
+Added Episode 21400 to League pool. Pool size: 10
+--- Benchmarking Ep 21400 ---
+Eval Win Rate: 30.0%
+Ep 21500: Score=-620, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.103
+Added Episode 21600 to League pool. Pool size: 10
+--- Benchmarking Ep 21600 ---
+Eval Win Rate: 40.0%
+Added Episode 21800 to League pool. Pool size: 10
+--- Benchmarking Ep 21800 ---
+Eval Win Rate: 15.0%
+Ep 22000: Score=-560, Bid=8T-SPADES by Opp2, AgentWon=False, Eps=0.100
+Added Episode 22000 to League pool. Pool size: 10
+--- Benchmarking Ep 22000 ---
+Eval Win Rate: 10.0%
+Saved checkpoint to checkpoints/model_checkpoint_22000.pth
+Added Episode 22200 to League pool. Pool size: 10
+--- Benchmarking Ep 22200 ---
+Eval Win Rate: 25.0%
+Added Episode 22400 to League pool. Pool size: 10
+--- Benchmarking Ep 22400 ---
+Eval Win Rate: 35.0%
+Ep 22500: Score=-180, Bid=9T-HEARTS by Opp3, AgentWon=True, Eps=0.098
+Added Episode 22600 to League pool. Pool size: 10
+--- Benchmarking Ep 22600 ---
+Eval Win Rate: 10.0%
+Added Episode 22800 to League pool. Pool size: 10
+--- Benchmarking Ep 22800 ---
+Eval Win Rate: 35.0%
+Ep 23000: Score=-720, Bid=10T-NO_TRUMP by Agent, AgentWon=False, Eps=0.095
+Added Episode 23000 to League pool. Pool size: 10
+--- Benchmarking Ep 23000 ---
+Eval Win Rate: 10.0%
+Saved checkpoint to checkpoints/model_checkpoint_23000.pth
+Added Episode 23200 to League pool. Pool size: 10
+--- Benchmarking Ep 23200 ---
+Eval Win Rate: 15.0%
+Added Episode 23400 to League pool. Pool size: 10
+--- Benchmarking Ep 23400 ---
+Eval Win Rate: 20.0%
+Ep 23500: Score=-660, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.093
+Added Episode 23600 to League pool. Pool size: 10
+--- Benchmarking Ep 23600 ---
+Eval Win Rate: 20.0%
+Added Episode 23800 to League pool. Pool size: 10
+--- Benchmarking Ep 23800 ---
+Eval Win Rate: 5.0%
+Ep 24000: Score=-600, Bid=8T-HEARTS by Opp2, AgentWon=False, Eps=0.091
+Added Episode 24000 to League pool. Pool size: 10
+--- Benchmarking Ep 24000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_24000.pth
+Added Episode 24200 to League pool. Pool size: 10
+--- Benchmarking Ep 24200 ---
+Eval Win Rate: 10.0%
+Added Episode 24400 to League pool. Pool size: 10
+--- Benchmarking Ep 24400 ---
+Eval Win Rate: 40.0%
+Ep 24500: Score=-500, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.088
+Added Episode 24600 to League pool. Pool size: 10
+--- Benchmarking Ep 24600 ---
+Eval Win Rate: 10.0%
+Added Episode 24800 to League pool. Pool size: 10
+--- Benchmarking Ep 24800 ---
+Eval Win Rate: 35.0%
+Ep 25000: Score=-600, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.086
+Added Episode 25000 to League pool. Pool size: 10
+--- Benchmarking Ep 25000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_25000.pth
+Added Episode 25200 to League pool. Pool size: 10
+--- Benchmarking Ep 25200 ---
+Eval Win Rate: 20.0%
+Added Episode 25400 to League pool. Pool size: 10
+--- Benchmarking Ep 25400 ---
+Eval Win Rate: 20.0%
+Ep 25500: Score=-320, Bid=8T-SPADES by Opp3, AgentWon=True, Eps=0.084
+Added Episode 25600 to League pool. Pool size: 10
+--- Benchmarking Ep 25600 ---
+Eval Win Rate: 15.0%
+Added Episode 25800 to League pool. Pool size: 10
+--- Benchmarking Ep 25800 ---
+Eval Win Rate: 35.0%
+Ep 26000: Score=-680, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.082
+Added Episode 26000 to League pool. Pool size: 10
+--- Benchmarking Ep 26000 ---
+Eval Win Rate: 30.0%
+Saved checkpoint to checkpoints/model_checkpoint_26000.pth
+Added Episode 26200 to League pool. Pool size: 10
+--- Benchmarking Ep 26200 ---
+Eval Win Rate: 15.0%
+Added Episode 26400 to League pool. Pool size: 10
+--- Benchmarking Ep 26400 ---
+Eval Win Rate: 30.0%
+Ep 26500: Score=-580, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.080
+Added Episode 26600 to League pool. Pool size: 10
+--- Benchmarking Ep 26600 ---
+Eval Win Rate: 20.0%
+Added Episode 26800 to League pool. Pool size: 10
+--- Benchmarking Ep 26800 ---
+Eval Win Rate: 20.0%
+Ep 27000: Score=-740, Bid=8T-HEARTS by Opp2, AgentWon=False, Eps=0.078
+Added Episode 27000 to League pool. Pool size: 10
+--- Benchmarking Ep 27000 ---
+Eval Win Rate: 30.0%
+Saved checkpoint to checkpoints/model_checkpoint_27000.pth
+Added Episode 27200 to League pool. Pool size: 10
+--- Benchmarking Ep 27200 ---
+Eval Win Rate: 45.0%
+Added Episode 27400 to League pool. Pool size: 10
+--- Benchmarking Ep 27400 ---
+Eval Win Rate: 25.0%
+Ep 27500: Score=-520, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.076
+Added Episode 27600 to League pool. Pool size: 10
+--- Benchmarking Ep 27600 ---
+Eval Win Rate: 15.0%
+Added Episode 27800 to League pool. Pool size: 10
+--- Benchmarking Ep 27800 ---
+Eval Win Rate: 25.0%
+Ep 28000: Score=0, Bid=8T-HEARTS by Opp1, AgentWon=True, Eps=0.074
+Added Episode 28000 to League pool. Pool size: 10
+--- Benchmarking Ep 28000 ---
+Eval Win Rate: 0.0%
+Saved checkpoint to checkpoints/model_checkpoint_28000.pth
+Added Episode 28200 to League pool. Pool size: 10
+--- Benchmarking Ep 28200 ---
+Eval Win Rate: 30.0%
+Added Episode 28400 to League pool. Pool size: 10
+--- Benchmarking Ep 28400 ---
+Eval Win Rate: 25.0%
+Ep 28500: Score=-640, Bid=8T-DIAMONDS by Opp2, AgentWon=False, Eps=0.072
+Added Episode 28600 to League pool. Pool size: 10
+--- Benchmarking Ep 28600 ---
+Eval Win Rate: 20.0%
+Added Episode 28800 to League pool. Pool size: 10
+--- Benchmarking Ep 28800 ---
+Eval Win Rate: 45.0%
+Ep 29000: Score=-600, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.070
+Added Episode 29000 to League pool. Pool size: 10
+--- Benchmarking Ep 29000 ---
+Eval Win Rate: 25.0%
+Saved checkpoint to checkpoints/model_checkpoint_29000.pth
+Added Episode 29200 to League pool. Pool size: 10
+--- Benchmarking Ep 29200 ---
+Eval Win Rate: 15.0%
+Added Episode 29400 to League pool. Pool size: 10
+--- Benchmarking Ep 29400 ---
+Eval Win Rate: 20.0%
+Ep 29500: Score=-320, Bid=8T-HEARTS by Opp1, AgentWon=True, Eps=0.069
+Added Episode 29600 to League pool. Pool size: 10
+--- Benchmarking Ep 29600 ---
+Eval Win Rate: 20.0%
+Added Episode 29800 to League pool. Pool size: 10
+--- Benchmarking Ep 29800 ---
+Eval Win Rate: 20.0%
+Ep 30000: Score=200, Bid=9T-DIAMONDS by Opp3, AgentWon=True, Eps=0.067
+Added Episode 30000 to League pool. Pool size: 10
+--- Benchmarking Ep 30000 ---
+Eval Win Rate: 30.0%
+Saved checkpoint to checkpoints/model_checkpoint_30000.pth
+Added Episode 30200 to League pool. Pool size: 10
+--- Benchmarking Ep 30200 ---
+Eval Win Rate: 15.0%
+Added Episode 30400 to League pool. Pool size: 10
+--- Benchmarking Ep 30400 ---
+Eval Win Rate: 15.0%
+Ep 30500: Score=-620, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.065
+Added Episode 30600 to League pool. Pool size: 10
+--- Benchmarking Ep 30600 ---
+Eval Win Rate: 20.0%
+Added Episode 30800 to League pool. Pool size: 10
+--- Benchmarking Ep 30800 ---
+Eval Win Rate: 20.0%
+Ep 31000: Score=-780, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.064
+Added Episode 31000 to League pool. Pool size: 10
+--- Benchmarking Ep 31000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_31000.pth
+Added Episode 31200 to League pool. Pool size: 10
+--- Benchmarking Ep 31200 ---
+Eval Win Rate: 40.0%
+Added Episode 31400 to League pool. Pool size: 10
+--- Benchmarking Ep 31400 ---
+Eval Win Rate: 15.0%
+Ep 31500: Score=-620, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.062
+Added Episode 31600 to League pool. Pool size: 10
+--- Benchmarking Ep 31600 ---
+Eval Win Rate: 25.0%
+Added Episode 31800 to League pool. Pool size: 10
+--- Benchmarking Ep 31800 ---
+Eval Win Rate: 15.0%
+Ep 32000: Score=-660, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.061
+Added Episode 32000 to League pool. Pool size: 10
+--- Benchmarking Ep 32000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_32000.pth
+Added Episode 32200 to League pool. Pool size: 10
+--- Benchmarking Ep 32200 ---
+Eval Win Rate: 20.0%
+Added Episode 32400 to League pool. Pool size: 10
+--- Benchmarking Ep 32400 ---
+Eval Win Rate: 35.0%
+Ep 32500: Score=-520, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.059
+Added Episode 32600 to League pool. Pool size: 10
+--- Benchmarking Ep 32600 ---
+Eval Win Rate: 10.0%
+Added Episode 32800 to League pool. Pool size: 10
+--- Benchmarking Ep 32800 ---
+Eval Win Rate: 20.0%
+Ep 33000: Score=-720, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.058
+Added Episode 33000 to League pool. Pool size: 10
+--- Benchmarking Ep 33000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_33000.pth
+Added Episode 33200 to League pool. Pool size: 10
+--- Benchmarking Ep 33200 ---
+Eval Win Rate: 10.0%
+Added Episode 33400 to League pool. Pool size: 10
+--- Benchmarking Ep 33400 ---
+Eval Win Rate: 25.0%
+Ep 33500: Score=-560, Bid=9T-DIAMONDS by Agent, AgentWon=False, Eps=0.056
+Added Episode 33600 to League pool. Pool size: 10
+--- Benchmarking Ep 33600 ---
+Eval Win Rate: 20.0%
+Added Episode 33800 to League pool. Pool size: 10
+--- Benchmarking Ep 33800 ---
+Eval Win Rate: 15.0%
+Ep 34000: Score=-500, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.055
+Added Episode 34000 to League pool. Pool size: 10
+--- Benchmarking Ep 34000 ---
+Eval Win Rate: 35.0%
+Saved checkpoint to checkpoints/model_checkpoint_34000.pth
+Added Episode 34200 to League pool. Pool size: 10
+--- Benchmarking Ep 34200 ---
+Eval Win Rate: 10.0%
+Added Episode 34400 to League pool. Pool size: 10
+--- Benchmarking Ep 34400 ---
+Eval Win Rate: 50.0%
+Ep 34500: Score=-820, Bid=9T-DIAMONDS by Agent, AgentWon=False, Eps=0.053
+Added Episode 34600 to League pool. Pool size: 10
+--- Benchmarking Ep 34600 ---
+Eval Win Rate: 30.0%
+Added Episode 34800 to League pool. Pool size: 10
+--- Benchmarking Ep 34800 ---
+Eval Win Rate: 25.0%
+Ep 35000: Score=0, Bid=9T-DIAMONDS by Opp3, AgentWon=True, Eps=0.052
+Added Episode 35000 to League pool. Pool size: 10
+--- Benchmarking Ep 35000 ---
+Eval Win Rate: 35.0%
+Saved checkpoint to checkpoints/model_checkpoint_35000.pth
+Added Episode 35200 to League pool. Pool size: 10
+--- Benchmarking Ep 35200 ---
+Eval Win Rate: 20.0%
+Added Episode 35400 to League pool. Pool size: 10
+--- Benchmarking Ep 35400 ---
+Eval Win Rate: 10.0%
+Ep 35500: Score=-800, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.051
+Added Episode 35600 to League pool. Pool size: 10
+--- Benchmarking Ep 35600 ---
+Eval Win Rate: 20.0%
+Added Episode 35800 to League pool. Pool size: 10
+--- Benchmarking Ep 35800 ---
+Eval Win Rate: 10.0%
+Ep 36000: Score=-720, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 36000 to League pool. Pool size: 10
+--- Benchmarking Ep 36000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_36000.pth
+Added Episode 36200 to League pool. Pool size: 10
+--- Benchmarking Ep 36200 ---
+Eval Win Rate: 15.0%
+Added Episode 36400 to League pool. Pool size: 10
+--- Benchmarking Ep 36400 ---
+Eval Win Rate: 15.0%
+Ep 36500: Score=-580, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 36600 to League pool. Pool size: 10
+--- Benchmarking Ep 36600 ---
+Eval Win Rate: 20.0%
+Added Episode 36800 to League pool. Pool size: 10
+--- Benchmarking Ep 36800 ---
+Eval Win Rate: 5.0%
+Ep 37000: Score=-620, Bid=7T-NO_TRUMP by Agent, AgentWon=False, Eps=0.050
+Added Episode 37000 to League pool. Pool size: 10
+--- Benchmarking Ep 37000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_37000.pth
+Added Episode 37200 to League pool. Pool size: 10
+--- Benchmarking Ep 37200 ---
+Eval Win Rate: 15.0%
+Added Episode 37400 to League pool. Pool size: 10
+--- Benchmarking Ep 37400 ---
+Eval Win Rate: 20.0%
+Ep 37500: Score=-520, Bid=7T-NO_TRUMP by Agent, AgentWon=False, Eps=0.050
+Added Episode 37600 to League pool. Pool size: 10
+--- Benchmarking Ep 37600 ---
+Eval Win Rate: 20.0%
+Added Episode 37800 to League pool. Pool size: 10
+--- Benchmarking Ep 37800 ---
+Eval Win Rate: 15.0%
+Ep 38000: Score=-520, Bid=7T-NO_TRUMP by Agent, AgentWon=False, Eps=0.050
+Added Episode 38000 to League pool. Pool size: 10
+--- Benchmarking Ep 38000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_38000.pth
+Added Episode 38200 to League pool. Pool size: 10
+--- Benchmarking Ep 38200 ---
+Eval Win Rate: 30.0%
+Added Episode 38400 to League pool. Pool size: 10
+--- Benchmarking Ep 38400 ---
+Eval Win Rate: 20.0%
+Ep 38500: Score=-800, Bid=9T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 38600 to League pool. Pool size: 10
+--- Benchmarking Ep 38600 ---
+Eval Win Rate: 25.0%
+Added Episode 38800 to League pool. Pool size: 10
+--- Benchmarking Ep 38800 ---
+Eval Win Rate: 20.0%
+Ep 39000: Score=-880, Bid=9T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 39000 to League pool. Pool size: 10
+--- Benchmarking Ep 39000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_39000.pth
+Added Episode 39200 to League pool. Pool size: 10
+--- Benchmarking Ep 39200 ---
+Eval Win Rate: 15.0%
+Added Episode 39400 to League pool. Pool size: 10
+--- Benchmarking Ep 39400 ---
+Eval Win Rate: 20.0%
+Ep 39500: Score=-800, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.050
+Added Episode 39600 to League pool. Pool size: 10
+--- Benchmarking Ep 39600 ---
+Eval Win Rate: 15.0%
+Added Episode 39800 to League pool. Pool size: 10
+--- Benchmarking Ep 39800 ---
+Eval Win Rate: 25.0%
+Ep 40000: Score=-800, Bid=9T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 40000 to League pool. Pool size: 10
+--- Benchmarking Ep 40000 ---
+Eval Win Rate: 30.0%
+Saved checkpoint to checkpoints/model_checkpoint_40000.pth
+Added Episode 40200 to League pool. Pool size: 10
+--- Benchmarking Ep 40200 ---
+Eval Win Rate: 5.0%
+Added Episode 40400 to League pool. Pool size: 10
+--- Benchmarking Ep 40400 ---
+Eval Win Rate: 5.0%
+Ep 40500: Score=-840, Bid=9T-NO_TRUMP by Agent, AgentWon=False, Eps=0.050
+Added Episode 40600 to League pool. Pool size: 10
+--- Benchmarking Ep 40600 ---
+Eval Win Rate: 20.0%
+Added Episode 40800 to League pool. Pool size: 10
+--- Benchmarking Ep 40800 ---
+Eval Win Rate: 10.0%
+Ep 41000: Score=-780, Bid=9T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 41000 to League pool. Pool size: 10
+--- Benchmarking Ep 41000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_41000.pth
+Added Episode 41200 to League pool. Pool size: 10
+--- Benchmarking Ep 41200 ---
+Eval Win Rate: 5.0%
+Added Episode 41400 to League pool. Pool size: 10
+--- Benchmarking Ep 41400 ---
+Eval Win Rate: 15.0%
+Ep 41500: Score=-720, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.050
+Added Episode 41600 to League pool. Pool size: 10
+--- Benchmarking Ep 41600 ---
+Eval Win Rate: 15.0%
+Added Episode 41800 to League pool. Pool size: 10
+--- Benchmarking Ep 41800 ---
+Eval Win Rate: 10.0%
+Ep 42000: Score=-600, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 42000 to League pool. Pool size: 10
+--- Benchmarking Ep 42000 ---
+Eval Win Rate: 10.0%
+Saved checkpoint to checkpoints/model_checkpoint_42000.pth
+Added Episode 42200 to League pool. Pool size: 10
+--- Benchmarking Ep 42200 ---
+Eval Win Rate: 35.0%
+Added Episode 42400 to League pool. Pool size: 10
+--- Benchmarking Ep 42400 ---
+Eval Win Rate: 15.0%
+Ep 42500: Score=400, Bid=8T-DIAMONDS by Opp1, AgentWon=True, Eps=0.050
+Added Episode 42600 to League pool. Pool size: 10
+--- Benchmarking Ep 42600 ---
+Eval Win Rate: 15.0%
+Added Episode 42800 to League pool. Pool size: 10
+--- Benchmarking Ep 42800 ---
+Eval Win Rate: 20.0%
+Ep 43000: Score=-500, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.050
+Added Episode 43000 to League pool. Pool size: 10
+--- Benchmarking Ep 43000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_43000.pth
+Added Episode 43200 to League pool. Pool size: 10
+--- Benchmarking Ep 43200 ---
+Eval Win Rate: 15.0%
+Added Episode 43400 to League pool. Pool size: 10
+--- Benchmarking Ep 43400 ---
+Eval Win Rate: 25.0%
+Ep 43500: Score=-800, Bid=8T-NO_TRUMP by Agent, AgentWon=False, Eps=0.050
+Added Episode 43600 to League pool. Pool size: 10
+--- Benchmarking Ep 43600 ---
+Eval Win Rate: 10.0%
+Added Episode 43800 to League pool. Pool size: 10
+--- Benchmarking Ep 43800 ---
+Eval Win Rate: 10.0%
+Ep 44000: Score=120, Bid=9T-CLUBS by Opp3, AgentWon=True, Eps=0.050
+Added Episode 44000 to League pool. Pool size: 10
+--- Benchmarking Ep 44000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_44000.pth
+Added Episode 44200 to League pool. Pool size: 10
+--- Benchmarking Ep 44200 ---
+Eval Win Rate: 10.0%
+Added Episode 44400 to League pool. Pool size: 10
+--- Benchmarking Ep 44400 ---
+Eval Win Rate: 45.0%
+Ep 44500: Score=-520, Bid=8T-SPADES by Opp2, AgentWon=False, Eps=0.050
+Added Episode 44600 to League pool. Pool size: 10
+--- Benchmarking Ep 44600 ---
+Eval Win Rate: 30.0%
+Added Episode 44800 to League pool. Pool size: 10
+--- Benchmarking Ep 44800 ---
+Eval Win Rate: 20.0%
+Ep 45000: Score=-800, Bid=9T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 45000 to League pool. Pool size: 10
+--- Benchmarking Ep 45000 ---
+Eval Win Rate: 25.0%
+Saved checkpoint to checkpoints/model_checkpoint_45000.pth
+Added Episode 45200 to League pool. Pool size: 10
+--- Benchmarking Ep 45200 ---
+Eval Win Rate: 15.0%
+Added Episode 45400 to League pool. Pool size: 10
+--- Benchmarking Ep 45400 ---
+Eval Win Rate: 20.0%
+Ep 45500: Score=-720, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 45600 to League pool. Pool size: 10
+--- Benchmarking Ep 45600 ---
+Eval Win Rate: 35.0%
+Added Episode 45800 to League pool. Pool size: 10
+--- Benchmarking Ep 45800 ---
+Eval Win Rate: 5.0%
+Ep 46000: Score=-600, Bid=9T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 46000 to League pool. Pool size: 10
+--- Benchmarking Ep 46000 ---
+Eval Win Rate: 25.0%
+Saved checkpoint to checkpoints/model_checkpoint_46000.pth
+Added Episode 46200 to League pool. Pool size: 10
+--- Benchmarking Ep 46200 ---
+Eval Win Rate: 25.0%
+Added Episode 46400 to League pool. Pool size: 10
+--- Benchmarking Ep 46400 ---
+Eval Win Rate: 25.0%
+Ep 46500: Score=-580, Bid=9T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 46600 to League pool. Pool size: 10
+--- Benchmarking Ep 46600 ---
+Eval Win Rate: 20.0%
+Added Episode 46800 to League pool. Pool size: 10
+--- Benchmarking Ep 46800 ---
+Eval Win Rate: 10.0%
+Ep 47000: Score=0, Bid=8T-DIAMONDS by Opp3, AgentWon=True, Eps=0.050
+Added Episode 47000 to League pool. Pool size: 10
+--- Benchmarking Ep 47000 ---
+Eval Win Rate: 30.0%
+Saved checkpoint to checkpoints/model_checkpoint_47000.pth
+Added Episode 47200 to League pool. Pool size: 10
+--- Benchmarking Ep 47200 ---
+Eval Win Rate: 20.0%
+Added Episode 47400 to League pool. Pool size: 10
+--- Benchmarking Ep 47400 ---
+Eval Win Rate: 20.0%
+Ep 47500: Score=-540, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 47600 to League pool. Pool size: 10
+--- Benchmarking Ep 47600 ---
+Eval Win Rate: 20.0%
+Added Episode 47800 to League pool. Pool size: 10
+--- Benchmarking Ep 47800 ---
+Eval Win Rate: 10.0%
+Ep 48000: Score=-600, Bid=7T-HEARTS by Opp2, AgentWon=False, Eps=0.050
+Added Episode 48000 to League pool. Pool size: 10
+--- Benchmarking Ep 48000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_48000.pth
+Added Episode 48200 to League pool. Pool size: 10
+--- Benchmarking Ep 48200 ---
+Eval Win Rate: 0.0%
+Added Episode 48400 to League pool. Pool size: 10
+--- Benchmarking Ep 48400 ---
+Eval Win Rate: 15.0%
+Ep 48500: Score=-700, Bid=8T-HEARTS by Opp2, AgentWon=False, Eps=0.050
+Added Episode 48600 to League pool. Pool size: 10
+--- Benchmarking Ep 48600 ---
+Eval Win Rate: 15.0%
+Added Episode 48800 to League pool. Pool size: 10
+--- Benchmarking Ep 48800 ---
+Eval Win Rate: 25.0%
+Ep 49000: Score=-620, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 49000 to League pool. Pool size: 10
+--- Benchmarking Ep 49000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_49000.pth
+Added Episode 49200 to League pool. Pool size: 10
+--- Benchmarking Ep 49200 ---
+Eval Win Rate: 15.0%
+Added Episode 49400 to League pool. Pool size: 10
+--- Benchmarking Ep 49400 ---
+Eval Win Rate: 5.0%
+Ep 49500: Score=-600, Bid=8T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 49600 to League pool. Pool size: 10
+--- Benchmarking Ep 49600 ---
+Eval Win Rate: 35.0%
+Added Episode 49800 to League pool. Pool size: 10
+--- Benchmarking Ep 49800 ---
+Eval Win Rate: 20.0%
+Ep 50000: Score=-400, Bid=8T-DIAMONDS by Opp1, AgentWon=True, Eps=0.050
+Added Episode 50000 to League pool. Pool size: 10
+--- Benchmarking Ep 50000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_50000.pth
+Added Episode 50200 to League pool. Pool size: 10
+--- Benchmarking Ep 50200 ---
+Eval Win Rate: 35.0%
+Added Episode 50400 to League pool. Pool size: 10
+--- Benchmarking Ep 50400 ---
+Eval Win Rate: 30.0%
+Ep 50500: Score=-400, Bid=8T-CLUBS by Opp1, AgentWon=True, Eps=0.050
+Added Episode 50600 to League pool. Pool size: 10
+--- Benchmarking Ep 50600 ---
+Eval Win Rate: 20.0%
+Added Episode 50800 to League pool. Pool size: 10
+--- Benchmarking Ep 50800 ---
+Eval Win Rate: 15.0%
+Ep 51000: Score=-640, Bid=8T-SPADES by Opp2, AgentWon=False, Eps=0.050
+Added Episode 51000 to League pool. Pool size: 10
+--- Benchmarking Ep 51000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_51000.pth
+Added Episode 51200 to League pool. Pool size: 10
+--- Benchmarking Ep 51200 ---
+Eval Win Rate: 10.0%
+Added Episode 51400 to League pool. Pool size: 10
+--- Benchmarking Ep 51400 ---
+Eval Win Rate: 10.0%
+Ep 51500: Score=-860, Bid=9T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 51600 to League pool. Pool size: 10
+--- Benchmarking Ep 51600 ---
+Eval Win Rate: 20.0%
+Added Episode 51800 to League pool. Pool size: 10
+--- Benchmarking Ep 51800 ---
+Eval Win Rate: 15.0%
+Ep 52000: Score=-480, Bid=8T-HEARTS by Opp3, AgentWon=True, Eps=0.050
+Added Episode 52000 to League pool. Pool size: 10
+--- Benchmarking Ep 52000 ---
+Eval Win Rate: 35.0%
+Saved checkpoint to checkpoints/model_checkpoint_52000.pth
+Added Episode 52200 to League pool. Pool size: 10
+--- Benchmarking Ep 52200 ---
+Eval Win Rate: 10.0%
+Added Episode 52400 to League pool. Pool size: 10
+--- Benchmarking Ep 52400 ---
+Eval Win Rate: 15.0%
+Ep 52500: Score=-680, Bid=8T-DIAMONDS by Opp2, AgentWon=False, Eps=0.050
+Added Episode 52600 to League pool. Pool size: 10
+--- Benchmarking Ep 52600 ---
+Eval Win Rate: 10.0%
+Added Episode 52800 to League pool. Pool size: 10
+--- Benchmarking Ep 52800 ---
+Eval Win Rate: 25.0%
+Ep 53000: Score=-400, Bid=6T-DIAMONDS by Opp1, AgentWon=True, Eps=0.050
+Added Episode 53000 to League pool. Pool size: 10
+--- Benchmarking Ep 53000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_53000.pth
+Added Episode 53200 to League pool. Pool size: 10
+--- Benchmarking Ep 53200 ---
+Eval Win Rate: 25.0%
+Added Episode 53400 to League pool. Pool size: 10
+--- Benchmarking Ep 53400 ---
+Eval Win Rate: 35.0%
+Ep 53500: Score=600, Bid=9T-HEARTS by Opp2, AgentWon=True, Eps=0.050
+Added Episode 53600 to League pool. Pool size: 10
+--- Benchmarking Ep 53600 ---
+Eval Win Rate: 15.0%
+Added Episode 53800 to League pool. Pool size: 10
+--- Benchmarking Ep 53800 ---
+Eval Win Rate: 35.0%
+Ep 54000: Score=-640, Bid=9T-HEARTS by Agent, AgentWon=False, Eps=0.050
+Added Episode 54000 to League pool. Pool size: 10
+--- Benchmarking Ep 54000 ---
+Eval Win Rate: 15.0%
+Saved checkpoint to checkpoints/model_checkpoint_54000.pth
+Added Episode 54200 to League pool. Pool size: 10
+--- Benchmarking Ep 54200 ---
+Eval Win Rate: 20.0%
+Added Episode 54400 to League pool. Pool size: 10
+--- Benchmarking Ep 54400 ---
+Eval Win Rate: 30.0%
+Ep 54500: Score=-380, Bid=8T-HEARTS by Opp1, AgentWon=True, Eps=0.050
+Added Episode 54600 to League pool. Pool size: 10
+--- Benchmarking Ep 54600 ---
+Eval Win Rate: 25.0%
+Added Episode 54800 to League pool. Pool size: 10
+--- Benchmarking Ep 54800 ---
+Eval Win Rate: 20.0%
+Ep 55000: Score=-580, Bid=9T-DIAMONDS by Opp2, AgentWon=False, Eps=0.050
+Added Episode 55000 to League pool. Pool size: 10
+--- Benchmarking Ep 55000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_55000.pth
+Added Episode 55200 to League pool. Pool size: 10
+--- Benchmarking Ep 55200 ---
+Eval Win Rate: 30.0%
+Added Episode 55400 to League pool. Pool size: 10
+--- Benchmarking Ep 55400 ---
+Eval Win Rate: 25.0%
+Ep 55500: Score=-400, Bid=8T-HEARTS by Opp1, AgentWon=True, Eps=0.050
+Added Episode 55600 to League pool. Pool size: 10
+--- Benchmarking Ep 55600 ---
+Eval Win Rate: 5.0%
+Added Episode 55800 to League pool. Pool size: 10
+--- Benchmarking Ep 55800 ---
+Eval Win Rate: 25.0%
+Ep 56000: Score=-660, Bid=9T-CLUBS by Opp2, AgentWon=False, Eps=0.050
+Added Episode 56000 to League pool. Pool size: 10
+--- Benchmarking Ep 56000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_56000.pth
+Added Episode 56200 to League pool. Pool size: 10
+--- Benchmarking Ep 56200 ---
+Eval Win Rate: 15.0%
+Added Episode 56400 to League pool. Pool size: 10
+--- Benchmarking Ep 56400 ---
+Eval Win Rate: 5.0%
+Ep 56500: Score=-400, Bid=9T-HEARTS by Opp1, AgentWon=True, Eps=0.050
+Added Episode 56600 to League pool. Pool size: 10
+--- Benchmarking Ep 56600 ---
+Eval Win Rate: 15.0%
+Added Episode 56800 to League pool. Pool size: 10
+--- Benchmarking Ep 56800 ---
+Eval Win Rate: 25.0%
+Ep 57000: Score=-200, Bid=8T-DIAMONDS by Opp1, AgentWon=False, Eps=0.050
+Added Episode 57000 to League pool. Pool size: 10
+--- Benchmarking Ep 57000 ---
+Eval Win Rate: 20.0%
+Saved checkpoint to checkpoints/model_checkpoint_57000.pth
+Added Episode 57200 to League pool. Pool size: 10
+--- Benchmarking Ep 57200 ---
+Eval Win Rate: 15.0%
+Added Episode 57400 to League pool. Pool size: 10
+--- Benchmarking Ep 57400 ---

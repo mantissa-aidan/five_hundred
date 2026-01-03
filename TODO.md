@@ -1,0 +1,34 @@
+# TODO
+
+- [x] Define Card class (suit, rank, value)
+- [x] Define Deck class (standard 43-card deck, shuffling, dealing)
+- [x] Define Player class (hand, score)
+- [x] Define Team class (players, team score)
+- [x] Implement Bidding logic 
+    - [x] Define Bid class (represents all bid types, calculates points, handles comparisons)
+    - [x] Standard bids (6-10 in Spades, Clubs, Diamonds, Hearts, No Trump) - Covered by Bid class
+    - [x] Misère bid - Covered by Bid class
+    - [x] Open Misère bid - Covered by Bid class
+    - [x] Order of seniority of suits - Covered by Bid class point system
+    - [x] Implement bidding round process (in Game class) - Robust auction logic implemented, tracks passed players, placeholder for actual player input.
+    - [x] Kitty handling (in Game class) - Strategic (automated) discard logic implemented for Misere and Suit/NT bids.
+- [x] Implement Play logic
+    - [x] Trick-taking (Define trick object, manage card play per trick) - `_play_trick` method implemented and tested.
+    - [x] Following suit (Enforce rules for playing cards) - Basic logic in `_get_playable_cards` tested.
+    - [x] Trump suit rules (Right Bower, Left Bower, Joker, trump suit strength) - Card strength logic in `_get_card_strength_in_trick` refined and tested.
+    - [x] No Trump rules (Joker as only trump, Ace high) - Covered by card strength logic and Joker lead in `_play_trick`, tested.
+    - [x] Determine trick winner - Implemented in `_play_trick` using card strength, tested.
+    - [x] Manage play for a full round (10 tricks) - `_play_round` calls `_play_trick` for 10 tricks, tested in integration.
+- [x] Implement Scoring logic
+    - [x] Points for tricks won based on bid - Implemented in `_score_round` and tested.
+    - [x] Points for Misère/Open Misère - Implemented in `_score_round` and tested.
+    - [x] Winning/losing the game (reaching 500 points or -500 points) - `check_game_over` implemented and called, tested.
+- [x] Define Game class to manage game flow
+    - [x] Setup (dealing, kitty, players, teams, dealer tracking)
+    - [x] Bidding round (implement full auction logic) - Robust auction logic implemented, placeholder for player input.
+    - [x] Discarding from kitty (after successful bid) - Strategic (automated) discard logic implemented.
+    - [x] Playing tricks (implement `play_round` and `play_trick` methods) - Core logic for playing a round of 10 tricks is complete and tested.
+    - [x] Scoring round - `_score_round` implemented and tested.
+    - [x] Checking for game end conditions - `check_game_over` implemented and tested.
+- [x] Add unit tests for all components - Core logic (Card, Deck, Player, Team, Bid) tested. Game logic for card strength, playable cards, trick play, scoring, and full round integration (various bid scenarios) now has comprehensive unit tests. All tests passing.
+- [x] Add examples of usage to README.md 

@@ -9,7 +9,7 @@ setup(
     long_description_content_type='text/markdown',
     author='Aidan Peruch',
     author_email='your.email@example.com', # Replace with your email
-    url='https://github.com/yourusername/five_hundred', # Replace with your GitHub repo URL
+    url='https://github.com/mantissa-aidan/five_hundred',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
