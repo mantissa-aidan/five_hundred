@@ -1,0 +1,991 @@
+Resuming from LATEST checkpoint: checkpoints/ppo_latest.pth
+/Users/aidanperuch/Code/five_hundred/training/train_ppo.py:77: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(latest_path, map_location=device)
+Resuming at Step 998400 (Update 1951)
+Update 1951/2441: Reward=-1.352, SPS=98309, OffWin=0.00, DefWin=1.00
+Top Bids: 6D:40, 6H:7, 6S:5, 7S:5, 6C:3
+Update 1952/2441: Reward=-1.156, SPS=69448, OffWin=0.20, DefWin=1.00
+Top Bids: 6D:32, 6S:8, 6H:4, 7C:3, 6C:2
+Update 1953/2441: Reward=-0.839, SPS=58227, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:41, 6S:7, 6H:7, 6NT:5, 6C:2
+Update 1954/2441: Reward=-1.093, SPS=50959, OffWin=0.36, DefWin=0.92
+Top Bids: 6D:27, 6S:13, 6NT:6, 7C:4, 6H:3
+Update 1955/2441: Reward=-0.869, SPS=46001, OffWin=0.41, DefWin=0.95
+Top Bids: 6D:24, 6S:9, 6H:9, 7S:4, 7H:4
+Update 1956/2441: Reward=-0.897, SPS=41154, OffWin=0.00, DefWin=1.00
+Top Bids: 6D:31, 6H:7, 6S:6, 7H:4, 6NT:2
+Update 1957/2441: Reward=-0.836, SPS=37618, OffWin=0.36, DefWin=0.92
+Top Bids: 6D:25, 6S:11, 6H:9, 7S:5, 6NT:4
+Update 1958/2441: Reward=-1.479, SPS=34911, OffWin=0.30, DefWin=0.95
+Top Bids: 6D:31, 6H:11, 6S:7, 6NT:4, 7C:3
+Update 1959/2441: Reward=-1.261, SPS=32337, OffWin=0.14, DefWin=1.00
+Top Bids: 6D:35, 6H:7, 6S:6, Pass:3, 7S:3
+Update 1960/2441: Reward=-1.001, SPS=29900, OffWin=0.27, DefWin=0.96
+Top Bids: 6D:27, 6S:12, 6H:4, Pass:2, 7C:2
+Update 1961/2441: Reward=-1.393, SPS=27907, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:23, 6H:12, 6S:10, 6NT:5, 7S:5
+Update 1962/2441: Reward=-1.081, SPS=26311, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:22, 6S:13, 6H:7, 6NT:4, Pass:2
+Update 1963/2441: Reward=-0.994, SPS=24622, OffWin=0.42, DefWin=0.96
+Top Bids: 6D:27, 6H:10, 6S:9, 7H:5, 7S:4
+Update 1964/2441: Reward=-1.470, SPS=23180, OffWin=0.24, DefWin=1.00
+Top Bids: 6D:24, 6S:14, 6H:7, 6NT:4, 7H:3
+Update 1965/2441: Reward=-1.208, SPS=21811, OffWin=0.29, DefWin=0.95
+Top Bids: 6D:28, 6S:10, 6H:4, 7S:4, 7H:3
+Update 1966/2441: Reward=-1.405, SPS=20702, OffWin=0.07, DefWin=1.00
+Top Bids: 6D:25, 6S:12, 6H:7, Pass:3, 6NT:3
+Update 1967/2441: Reward=-1.170, SPS=19798, OffWin=0.43, DefWin=0.96
+Top Bids: 6D:32, 6S:13, 6H:5, Pass:2, 7S:2
+Update 1968/2441: Reward=-1.006, SPS=18960, OffWin=0.47, DefWin=1.00
+Top Bids: 6D:26, 6S:12, 6H:11, 6NT:5, 7H:5
+Update 1969/2441: Reward=-1.161, SPS=18187, OffWin=0.44, DefWin=0.95
+Top Bids: 6D:24, 6S:13, 6H:5, 6NT:4, 7S:2
+Update 1970/2441: Reward=-1.152, SPS=17482, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:25, 6S:16, 6H:9, 6NT:5, Pass:1
+Update 1971/2441: Reward=-1.149, SPS=16813, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:31, 6S:12, 6NT:4, Pass:3, 6H:3
+Update 1972/2441: Reward=-1.198, SPS=16163, OffWin=0.35, DefWin=1.00
+Top Bids: 6D:33, 6H:9, 6NT:5, 7H:4, 6C:3
+Update 1973/2441: Reward=-0.779, SPS=15559, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:32, 6H:7, 6S:6, 6NT:6, 7S:3
+Update 1974/2441: Reward=-0.827, SPS=15044, OffWin=0.30, DefWin=0.88
+Top Bids: 6D:28, 6S:12, 6NT:9, 6H:6, 7C:3
+Update 1975/2441: Reward=-1.144, SPS=14526, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:32, 6H:9, 6NT:7, Pass:3, 7S:3
+Update 1976/2441: Reward=-0.732, SPS=14033, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:33, 6S:9, 7S:5, 6C:3, 6H:3
+Update 1977/2441: Reward=-0.634, SPS=13612, OffWin=0.36, DefWin=1.00
+Top Bids: 6S:17, 6D:17, 6H:7, 6NT:5, 7C:4
+Update 1978/2441: Reward=-1.193, SPS=13228, OffWin=0.22, DefWin=0.94
+Top Bids: 6D:28, 6H:12, 6S:4, 7H:4, 7S:3
+Update 1979/2441: Reward=-0.545, SPS=12876, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:27, 6S:10, 6H:9, 6NT:3, 7S:3
+Update 1980/2441: Reward=-0.932, SPS=12548, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:15, 6S:10, 6H:10, 7S:6, Pass:5
+Update 1981/2441: Reward=-0.707, SPS=12216, OffWin=0.41, DefWin=1.00
+Top Bids: 6D:17, 6S:16, 6H:9, Pass:3, 6C:2
+Update 1982/2441: Reward=-0.766, SPS=11896, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:31, 6S:10, 7S:6, 6H:5, Pass:2
+Update 1983/2441: Reward=-1.262, SPS=11589, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:29, 6H:11, 6S:7, Pass:5, 7H:5
+Update 1984/2441: Reward=-1.138, SPS=11223, OffWin=0.25, DefWin=0.95
+Top Bids: 6D:35, 6H:6, Pass:4, 7H:4, 6C:3
+Update 1985/2441: Reward=-1.011, SPS=10945, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:28, 6H:10, 6S:7, 6C:4, 6NT:4
+Update 1986/2441: Reward=-0.740, SPS=10705, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:23, 6S:12, 6H:6, 6NT:5, 6C:3
+Update 1987/2441: Reward=-0.898, SPS=10459, OffWin=0.39, DefWin=0.94
+Top Bids: 6D:34, 6S:8, 6H:6, 7S:3, 7C:3
+Update 1988/2441: Reward=-1.013, SPS=10215, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:23, 6H:9, 6S:8, 7H:5, 7S:3
+Update 1989/2441: Reward=-1.095, SPS=9985, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:35, 6H:10, 6S:8, 7S:3, 6C:2
+Update 1990/2441: Reward=-0.837, SPS=9762, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:34, 6H:11, 7S:4, 6S:3, 7D:2
+Update 1991/2441: Reward=-0.789, SPS=9580, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:19, 6S:11, 6H:9, Pass:3, 6C:3
+Update 1992/2441: Reward=-0.957, SPS=9383, OffWin=0.39, DefWin=1.00
+Top Bids: 6D:37, 6S:8, 7H:8, 6H:6, 6NT:2
+Update 1993/2441: Reward=-0.965, SPS=9190, OffWin=0.33, DefWin=0.96
+Top Bids: 6D:29, 6H:14, 6S:9, 7S:4, 6C:3
+Update 1994/2441: Reward=-1.096, SPS=9009, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:23, 6S:10, 6H:8, 7S:5, 9H:2
+Update 1995/2441: Reward=-1.211, SPS=8829, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:40, 6S:11, 6H:7, 6C:2, 6NT:2
+Update 1996/2441: Reward=-0.881, SPS=8681, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:24, 6H:7, 6S:6, Pass:5, 6NT:3
+Update 1997/2441: Reward=-0.720, SPS=8521, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:33, 6S:11, 6H:5, 6NT:3, 7H:2
+Update 1998/2441: Reward=-0.852, SPS=8375, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:31, 6S:11, Pass:3, 6C:3, 6NT:3
+Update 1999/2441: Reward=-1.035, SPS=8214, OffWin=0.27, DefWin=0.96
+Top Bids: 6D:37, 6H:5, 9C:5, 7S:4, 6S:3
+Update 2000/2441: Reward=-0.652, SPS=8082, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:28, 6H:13, 6NT:7, 6S:5, Pass:2
+ -> Saved League Snapshot: checkpoints/league/step_1024000.pth
+Update 2001/2441: Reward=-0.835, SPS=7958, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:33, 6S:12, 7S:7, 6H:6, Pass:2
+Update 2002/2441: Reward=-0.496, SPS=7827, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:29, 6H:9, 6S:7, 6NT:4, 7H:3
+Update 2003/2441: Reward=-0.972, SPS=7699, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:31, 6S:6, 6H:6, Pass:4, 6NT:4
+Update 2004/2441: Reward=-0.636, SPS=7577, OffWin=0.33, DefWin=0.91
+Top Bids: 6D:32, 6S:5, 6H:5, 6NT:5, 7H:3
+Update 2005/2441: Reward=-1.049, SPS=7467, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:36, 6S:9, 6H:4, Pass:3, 6C:2
+Update 2006/2441: Reward=-0.808, SPS=7352, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:36, 6S:10, 6NT:5, 7C:5, 6H:4
+Update 2007/2441: Reward=-0.796, SPS=7240, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:33, 6H:5, 7S:4, 7H:3, 6S:2
+Update 2008/2441: Reward=-1.015, SPS=7130, OffWin=0.17, DefWin=1.00
+Top Bids: 6D:36, 6S:6, 7S:5, 6H:4, 6NT:3
+Update 2009/2441: Reward=-0.552, SPS=7024, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:33, 6S:7, 7S:6, 6NT:4, 6C:3
+Update 2010/2441: Reward=-0.932, SPS=6928, OffWin=0.19, DefWin=1.00
+Top Bids: 6D:37, 6S:5, 6H:5, Pass:4, 6NT:2
+Update 2011/2441: Reward=-0.700, SPS=6826, OffWin=0.47, DefWin=1.00
+Top Bids: 6D:31, 6S:8, 7S:6, 7H:5, Pass:3
+Update 2012/2441: Reward=-1.124, SPS=6731, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:30, 6S:9, Pass:4, 7S:4, 7H:4
+Update 2013/2441: Reward=-0.931, SPS=6609, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:25, 7S:11, 6S:9, 6H:6, 6NT:3
+Update 2014/2441: Reward=-0.632, SPS=6524, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:28, 6H:7, 7S:7, 6S:5, Pass:3
+Update 2015/2441: Reward=-0.848, SPS=6439, OffWin=0.22, DefWin=1.00
+Top Bids: 6D:35, 6S:8, 7S:6, 7H:3, 6C:2
+Update 2016/2441: Reward=-0.695, SPS=6358, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:23, 7H:7, 6S:6, 6C:6, 6H:5
+Update 2017/2441: Reward=-0.763, SPS=6265, OffWin=0.46, DefWin=0.96
+Top Bids: 6D:30, 6S:7, 7S:7, 6H:6, 6NT:4
+Update 2018/2441: Reward=-0.853, SPS=6187, OffWin=0.31, DefWin=0.95
+Top Bids: 6D:30, 6S:6, 7H:6, 7S:4, 6H:3
+Update 2019/2441: Reward=-0.563, SPS=6086, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:26, 7S:13, 6S:10, 6H:6, 6NT:3
+Update 2020/2441: Reward=-0.726, SPS=6011, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:25, 6S:9, 6H:8, 6NT:6, 7S:4
+Update 2021/2441: Reward=-0.700, SPS=5936, OffWin=0.20, DefWin=1.00
+Top Bids: 6D:29, 7S:8, 6S:7, 6H:7, 7C:3
+Update 2022/2441: Reward=-0.865, SPS=5867, OffWin=0.21, DefWin=0.96
+Top Bids: 6D:33, 7S:7, 6S:6, 7H:4, 6C:3
+Update 2023/2441: Reward=-0.557, SPS=5803, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:35, 6S:14, 7S:4, Pass:2, 6H:2
+Update 2024/2441: Reward=-0.414, SPS=5740, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:23, 6S:13, 7S:10, 6H:6, 6NT:4
+Update 2025/2441: Reward=-0.604, SPS=5676, OffWin=0.47, DefWin=1.00
+Top Bids: 6D:27, 6S:8, 7S:8, 6H:4, 6NT:4
+Update 2026/2441: Reward=-0.788, SPS=5609, OffWin=0.32, DefWin=1.00
+Top Bids: 6D:27, 6S:11, 6H:4, 7S:4, 7H:4
+Update 2027/2441: Reward=-0.487, SPS=5546, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:29, 6S:11, 6H:5, 7S:5, 6C:4
+Update 2028/2441: Reward=-0.689, SPS=5486, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:23, 6S:9, 6H:7, 6NT:5, 7S:5
+Update 2029/2441: Reward=-1.021, SPS=5430, OffWin=0.13, DefWin=1.00
+Top Bids: 6D:27, 6S:9, 6NT:5, 6H:4, 7S:4
+Update 2030/2441: Reward=-0.558, SPS=5369, OffWin=0.50, DefWin=0.96
+Top Bids: 6D:25, 6S:8, 6NT:7, 6H:5, 7S:4
+Update 2031/2441: Reward=-0.695, SPS=5312, OffWin=0.17, DefWin=1.00
+Top Bids: 6D:22, 6S:8, Pass:6, 6H:6, 7S:5
+Update 2032/2441: Reward=-0.999, SPS=5259, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:31, 6S:11, 6H:8, 6NT:3, 7S:3
+Update 2033/2441: Reward=-0.711, SPS=5204, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:29, 6H:9, 7S:8, 6S:6, 6NT:3
+Update 2034/2441: Reward=-0.976, SPS=5150, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:32, 6S:10, 6H:6, 7H:6, 7S:4
+Update 2035/2441: Reward=-0.695, SPS=5093, OffWin=0.33, DefWin=0.93
+Top Bids: 6D:30, 7S:10, 6S:8, 6H:6, 7H:5
+Update 2036/2441: Reward=-0.801, SPS=5040, OffWin=0.35, DefWin=1.00
+Top Bids: 6D:34, 6S:11, 7S:4, 6H:3, 7H:3
+Update 2037/2441: Reward=-0.843, SPS=4990, OffWin=0.35, DefWin=1.00
+Top Bids: 6D:30, 6S:11, 6H:8, 6C:3, 6NT:3
+Update 2038/2441: Reward=-0.546, SPS=4942, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:24, 6S:11, 6H:5, 6NT:5, 6C:4
+Update 2039/2441: Reward=-0.702, SPS=4891, OffWin=0.47, DefWin=1.00
+Top Bids: 6D:29, 6S:13, 6C:4, 7S:4, 6H:2
+Update 2040/2441: Reward=-1.052, SPS=4829, OffWin=0.07, DefWin=1.00
+Top Bids: 6D:33, 7S:6, 6H:4, 6NT:4, Pass:3
+Update 2041/2441: Reward=-0.805, SPS=4784, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:31, 6S:10, 6H:7, 7S:4, 6C:3
+Update 2042/2441: Reward=-0.996, SPS=4740, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:30, 6H:5, 6NT:5, 7S:5, 6C:4
+Update 2043/2441: Reward=-1.165, SPS=4700, OffWin=0.19, DefWin=1.00
+Top Bids: 6D:36, 6S:7, 6H:4, 7S:4, 6NT:3
+Update 2044/2441: Reward=-0.881, SPS=4652, OffWin=0.39, DefWin=0.94
+Top Bids: 6D:25, 6S:11, 6H:6, 7S:5, 6NT:3
+Update 2045/2441: Reward=-0.735, SPS=4612, OffWin=0.54, DefWin=1.00
+Top Bids: 6D:23, 6S:11, 6H:11, 7S:6, 6NT:5
+Update 2046/2441: Reward=-0.855, SPS=4569, OffWin=0.25, DefWin=0.95
+Top Bids: 6D:19, 6S:12, 6H:7, 7S:6, 6NT:5
+Update 2047/2441: Reward=-1.034, SPS=4526, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:30, 7S:8, 6H:7, 6S:4, 7H:4
+Update 2048/2441: Reward=-1.230, SPS=4490, OffWin=0.14, DefWin=0.96
+Top Bids: 6D:31, 6S:9, 6H:7, 7S:3, 6C:2
+Update 2049/2441: Reward=-1.056, SPS=4452, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:26, 6S:10, 6H:10, 7S:6, 7C:3
+Update 2050/2441: Reward=-0.677, SPS=4414, OffWin=0.58, DefWin=1.00
+Top Bids: 6D:22, 6S:13, 6C:6, 6H:6, 7S:6
+Update 2051/2441: Reward=-0.926, SPS=4379, OffWin=0.23, DefWin=0.95
+Top Bids: 6D:24, 6S:12, 6NT:7, 7S:6, 6H:3
+Update 2052/2441: Reward=-0.984, SPS=4335, OffWin=0.15, DefWin=1.00
+Top Bids: 6D:38, 6S:7, 6H:5, Pass:2, 7S:2
+Update 2053/2441: Reward=-0.714, SPS=4297, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:32, 6S:8, 6H:6, Pass:5, 6NT:4
+Update 2054/2441: Reward=-0.842, SPS=4262, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:18, 6S:12, 7H:6, 6H:4, 7S:4
+Update 2055/2441: Reward=-0.359, SPS=4226, OffWin=0.50, DefWin=0.95
+Top Bids: 6D:22, 6S:15, 7S:7, 6H:5, 6NT:4
+Update 2056/2441: Reward=-0.611, SPS=4190, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:25, 6S:17, 6H:6, 7S:5, 7C:5
+Update 2057/2441: Reward=-0.709, SPS=4158, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:28, 6S:14, 7S:5, 6C:4, 6H:3
+Update 2058/2441: Reward=-0.860, SPS=4125, OffWin=0.29, DefWin=0.96
+Top Bids: 6D:37, 6S:8, 6H:6, 7S:3, Pass:2
+Update 2059/2441: Reward=-0.648, SPS=4082, OffWin=0.56, DefWin=1.00
+Top Bids: 6D:26, 6S:10, 6H:9, 7S:7, 6NT:5
+Update 2060/2441: Reward=-0.636, SPS=4049, OffWin=0.36, DefWin=0.94
+Top Bids: 6D:26, 6S:9, 6H:7, 6NT:4, 7S:3
+Update 2061/2441: Reward=-0.605, SPS=4019, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:28, 6S:10, 7S:10, 6C:4, 6NT:4
+Update 2062/2441: Reward=-0.822, SPS=3987, OffWin=0.22, DefWin=0.94
+Top Bids: 6D:33, 6S:7, 7S:5, 6C:4, 9C:3
+Update 2063/2441: Reward=-0.895, SPS=3954, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:36, 6H:7, 7S:7, 6S:4, 6NT:4
+Update 2064/2441: Reward=-0.947, SPS=3922, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:27, 6H:5, 6NT:5, 6S:4, 7S:4
+Update 2065/2441: Reward=-1.178, SPS=3889, OffWin=0.24, DefWin=1.00
+Top Bids: 6D:39, 6H:5, 6S:4, 6NT:3, 7S:3
+Update 2066/2441: Reward=-0.507, SPS=3855, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:31, 7S:8, 6H:6, 6S:5, 6NT:3
+Update 2067/2441: Reward=-1.228, SPS=3823, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:38, 7S:6, 6S:4, Pass:3, 6H:3
+Update 2068/2441: Reward=-0.978, SPS=3794, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:34, 6S:10, 6H:7, Pass:4, 7S:4
+Update 2069/2441: Reward=-1.185, SPS=3765, OffWin=0.37, DefWin=1.00
+Top Bids: 6D:31, 7S:10, 6S:4, 6NT:4, 6C:3
+Update 2070/2441: Reward=-1.028, SPS=3736, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:29, 6S:11, 7S:7, 6H:3, 6NT:3
+Update 2071/2441: Reward=-1.085, SPS=3709, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:34, 6H:7, 6NT:5, Pass:3, 6S:2
+Update 2072/2441: Reward=-0.747, SPS=3685, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:35, 6H:5, 6S:4, 6NT:4, 6C:3
+Update 2073/2441: Reward=-1.059, SPS=3659, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:40, 6S:6, 6H:6, 7S:5, 6NT:3
+Update 2074/2441: Reward=-0.719, SPS=3632, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:33, 7S:7, 6S:6, 6H:3, Pass:2
+Update 2075/2441: Reward=-0.663, SPS=3607, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:26, 6S:10, 6H:7, 7S:6, 6NT:2
+Update 2076/2441: Reward=-0.929, SPS=3579, OffWin=0.30, DefWin=1.00
+Top Bids: 6D:34, 6S:9, 6H:8, 6NT:4, 7S:4
+Update 2077/2441: Reward=-0.632, SPS=3553, OffWin=0.33, DefWin=0.96
+Top Bids: 6D:27, 6S:7, 6H:4, 7H:4, 6C:3
+Update 2078/2441: Reward=-1.096, SPS=3528, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:39, 6S:6, 6H:6, 7S:3, Pass:1
+Update 2079/2441: Reward=-0.699, SPS=3503, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:37, 6H:7, 6NT:4, 6S:3, 6C:3
+Update 2080/2441: Reward=-0.619, SPS=3480, OffWin=0.35, DefWin=1.00
+Top Bids: 6D:30, 6S:7, 6H:7, 7S:4, Pass:3
+Update 2081/2441: Reward=-0.699, SPS=3455, OffWin=0.11, DefWin=1.00
+Top Bids: 6D:30, 6S:16, 6H:3, 6C:2, 6NT:2
+Update 2082/2441: Reward=-0.732, SPS=3431, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:29, 6S:6, 6H:4, 6NT:4, 7C:4
+Update 2083/2441: Reward=-0.513, SPS=3408, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:34, 6S:5, 6H:5, Pass:4, 7C:3
+Update 2084/2441: Reward=-0.716, SPS=3383, OffWin=0.09, DefWin=0.96
+Top Bids: 6D:26, 6S:11, 6H:9, 7S:5, Pass:3
+Update 2085/2441: Reward=-0.747, SPS=3355, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:29, 6S:14, 7S:6, 6NT:5, 6C:2
+Update 2086/2441: Reward=-0.680, SPS=3335, OffWin=0.22, DefWin=1.00
+Top Bids: 6D:27, 6S:13, 7S:7, 6H:5, Pass:3
+Update 2087/2441: Reward=-0.815, SPS=3313, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:20, 6S:13, 6NT:7, 6H:4, 7S:3
+Update 2088/2441: Reward=-0.454, SPS=3293, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:22, 6S:15, 7S:7, 6H:5, 7C:3
+Update 2089/2441: Reward=-0.851, SPS=3273, OffWin=0.12, DefWin=1.00
+Top Bids: 6D:25, 6S:14, 6H:6, 7S:5, Pass:3
+Update 2090/2441: Reward=-0.575, SPS=3253, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:23, 6H:13, 6S:11, 7S:5, 6C:3
+Update 2091/2441: Reward=-0.456, SPS=3233, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:22, 6S:13, 6H:7, 6NT:4, Pass:3
+Update 2092/2441: Reward=-0.944, SPS=3214, OffWin=0.24, DefWin=0.95
+Top Bids: 6D:32, 6S:15, 6H:4, 7S:3, Pass:2
+Update 2093/2441: Reward=-0.571, SPS=3194, OffWin=0.53, DefWin=1.00
+Top Bids: 6D:22, 6S:15, 7S:6, Pass:4, 6H:4
+Update 2094/2441: Reward=-0.835, SPS=3174, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:30, 6S:10, 6H:6, 7S:4, 6C:2
+Update 2095/2441: Reward=-0.542, SPS=3154, OffWin=0.50, DefWin=0.95
+Top Bids: 6D:26, 6S:17, 7S:8, 6NT:5, 10NT:2
+Update 2096/2441: Reward=-1.039, SPS=3134, OffWin=0.15, DefWin=0.96
+Top Bids: 6D:30, 6S:7, Pass:5, 7H:4, 7S:3
+Update 2097/2441: Reward=-0.428, SPS=3117, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:29, 6S:11, 6H:4, 6NT:4, 7C:4
+Update 2098/2441: Reward=-0.617, SPS=3100, OffWin=0.38, DefWin=0.95
+Top Bids: 6D:26, 6S:10, 6H:8, Pass:4, 7S:2
+Update 2099/2441: Reward=-0.591, SPS=3082, OffWin=0.29, DefWin=0.96
+Top Bids: 6D:30, 6S:11, 6H:5, 7C:3, 7H:2
+Update 2100/2441: Reward=-0.751, SPS=3063, OffWin=0.20, DefWin=1.00
+Top Bids: 6D:33, 6S:7, Pass:4, 6H:3, 6NT:2
+ -> Saved League Snapshot: checkpoints/league/step_1075200.pth
+Update 2101/2441: Reward=-0.455, SPS=3046, OffWin=0.45, DefWin=0.96
+Top Bids: 6D:22, 6S:15, 7S:7, Pass:3, 6NT:3
+Update 2102/2441: Reward=-0.661, SPS=3030, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:34, 6S:7, 6H:6, 7S:6, Pass:3
+Update 2103/2441: Reward=-0.809, SPS=3010, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:25, 6S:7, 6H:7, 7S:6, 6NT:4
+Update 2104/2441: Reward=-0.905, SPS=2992, OffWin=0.35, DefWin=1.00
+Top Bids: 6D:32, 6S:6, 6H:6, 6NT:3, 7S:3
+Update 2105/2441: Reward=-0.849, SPS=2976, OffWin=0.29, DefWin=0.95
+Top Bids: 6D:28, 6S:11, 7S:9, 6H:3, 7C:3
+Update 2106/2441: Reward=-0.864, SPS=2961, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:32, 6S:6, 7S:5, 6H:4, 6NT:2
+Update 2107/2441: Reward=-0.623, SPS=2944, OffWin=0.47, DefWin=1.00
+Top Bids: 6D:32, 6S:7, 6H:6, Pass:2, 6NT:2
+Update 2108/2441: Reward=-0.653, SPS=2927, OffWin=0.52, DefWin=1.00
+Top Bids: 6D:27, 6S:11, 7S:6, 6NT:5, 6H:4
+Update 2109/2441: Reward=-0.633, SPS=2910, OffWin=0.32, DefWin=0.94
+Top Bids: 6D:29, 6S:14, 7S:7, 6H:4, Pass:2
+Update 2110/2441: Reward=-0.765, SPS=2896, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:27, 6S:9, 6H:6, 7C:5, 6NT:4
+Update 2111/2441: Reward=-0.753, SPS=2881, OffWin=0.17, DefWin=0.96
+Top Bids: 6D:30, 6S:9, 6H:6, 7S:6, 7H:4
+Update 2112/2441: Reward=-0.618, SPS=2865, OffWin=0.31, DefWin=0.95
+Top Bids: 6D:32, 6S:9, 6NT:5, 7S:4, 7C:4
+Update 2113/2441: Reward=-0.810, SPS=2848, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:32, 6S:12, 7S:7, 6NT:3, 10S:3
+Update 2114/2441: Reward=-0.726, SPS=2830, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:28, 6S:13, Pass:4, 6H:4, 7H:3
+Update 2115/2441: Reward=-0.696, SPS=2815, OffWin=0.38, DefWin=0.95
+Top Bids: 6D:28, 6S:10, 7S:7, 6H:5, 6C:2
+Update 2116/2441: Reward=-1.144, SPS=2800, OffWin=0.07, DefWin=1.00
+Top Bids: 6D:36, 6S:10, 6H:3, 7C:2, 7H:2
+Update 2117/2441: Reward=-0.826, SPS=2785, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:29, 6S:11, 7S:6, 6NT:3, 7H:3
+Update 2118/2441: Reward=-0.860, SPS=2771, OffWin=0.09, DefWin=1.00
+Top Bids: 6D:35, 6S:6, 7D:4, 6H:3, 7S:3
+Update 2119/2441: Reward=-0.979, SPS=2756, OffWin=0.19, DefWin=0.90
+Top Bids: 6D:31, 6S:11, 7S:7, Pass:4, 6H:4
+Update 2120/2441: Reward=-1.075, SPS=2742, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:30, 6S:6, 6NT:6, 6C:4, 7H:3
+Update 2121/2441: Reward=-0.860, SPS=2728, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:37, 6S:10, 7S:5, 6H:3, 6NT:2
+Update 2122/2441: Reward=-1.132, SPS=2714, OffWin=0.22, DefWin=1.00
+Top Bids: 6D:31, 6S:9, 7S:6, 6H:4, 7H:3
+Update 2123/2441: Reward=-0.967, SPS=2700, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:41, 6S:10, 6NT:5, 7S:5, Pass:2
+Update 2124/2441: Reward=-0.707, SPS=2687, OffWin=0.40, DefWin=0.95
+Top Bids: 6D:28, 6S:8, 6H:4, 6NT:4, Pass:2
+Update 2125/2441: Reward=-0.803, SPS=2673, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:32, 6S:13, Pass:6, 6H:3, 7S:3
+Update 2126/2441: Reward=-0.936, SPS=2661, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:29, 6S:10, 7S:7, 6NT:4, Pass:1
+Update 2127/2441: Reward=-0.802, SPS=2647, OffWin=0.46, DefWin=1.00
+Top Bids: 6D:21, 6S:10, Pass:7, 6NT:5, 7S:4
+Update 2128/2441: Reward=-0.797, SPS=2635, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:22, 6S:8, 6H:6, 7S:6, 6NT:4
+Update 2129/2441: Reward=-0.810, SPS=2622, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:32, 6S:6, 6C:5, 6H:5, 6NT:5
+Update 2130/2441: Reward=-0.659, SPS=2610, OffWin=0.50, DefWin=0.95
+Top Bids: 6D:25, 6S:15, 6H:5, Pass:4, 6NT:4
+Update 2131/2441: Reward=-0.582, SPS=2598, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:21, 6S:14, 6H:8, 7S:6, 6NT:5
+Update 2132/2441: Reward=-1.201, SPS=2586, OffWin=0.07, DefWin=0.96
+Top Bids: 6D:32, 6S:9, 6NT:5, 6H:3, Pass:2
+Update 2133/2441: Reward=-1.105, SPS=2574, OffWin=0.23, DefWin=0.96
+Top Bids: 6D:34, 6S:10, 7S:5, 6H:2, 7C:2
+Update 2134/2441: Reward=-0.863, SPS=2563, OffWin=0.25, DefWin=0.95
+Top Bids: 6D:23, 6S:11, 6H:7, 7S:5, Pass:3
+Update 2135/2441: Reward=-0.820, SPS=2551, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:41, 6S:9, 7S:5, 6C:2, 7H:2
+Update 2136/2441: Reward=-0.719, SPS=2539, OffWin=0.45, DefWin=1.00
+Top Bids: 6D:24, 6S:12, 7S:6, 6H:5, 6NT:4
+Update 2137/2441: Reward=-0.551, SPS=2527, OffWin=0.41, DefWin=0.94
+Top Bids: 6D:29, 6S:12, 7S:5, Pass:3, 6H:3
+Update 2138/2441: Reward=-1.255, SPS=2515, OffWin=0.24, DefWin=1.00
+Top Bids: 6D:33, 6S:6, 6H:5, 6NT:5, Pass:4
+Update 2139/2441: Reward=-1.014, SPS=2504, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:26, 6S:7, 6H:7, 7S:3, 7H:3
+Update 2140/2441: Reward=-0.794, SPS=2491, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:26, 6S:17, 6H:6, Pass:5, 7S:5
+Update 2141/2441: Reward=-0.835, SPS=2478, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:34, 6S:6, 6H:6, 7S:4, Pass:2
+Update 2142/2441: Reward=-0.656, SPS=2467, OffWin=0.54, DefWin=1.00
+Top Bids: 6D:21, 6S:10, 6NT:10, 7S:7, 6C:4
+Update 2143/2441: Reward=-0.568, SPS=2456, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:26, 6H:11, 6S:8, Pass:6, 6NT:5
+Update 2144/2441: Reward=-0.600, SPS=2445, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:37, 6S:8, 6H:4, 6C:3, 7S:3
+Update 2145/2441: Reward=-0.622, SPS=2434, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:24, 6S:13, 6H:8, 6NT:4, 7S:3
+Update 2146/2441: Reward=-0.841, SPS=2423, OffWin=0.17, DefWin=1.00
+Top Bids: 6D:30, 6S:13, 6H:7, Pass:3, 6NT:3
+Update 2147/2441: Reward=-0.750, SPS=2413, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:34, 6S:7, 6H:3, 7S:3, 7C:3
+Update 2148/2441: Reward=-0.775, SPS=2403, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:31, 6S:17, 6C:4, 6NT:4, 6H:2
+Update 2149/2441: Reward=-0.589, SPS=2393, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:32, 6S:11, 6NT:5, 6H:4, Pass:3
+Update 2150/2441: Reward=-0.897, SPS=2381, OffWin=0.26, DefWin=1.00
+Top Bids: 6D:23, 6S:12, 6NT:5, 6H:4, Pass:3
+Update 2151/2441: Reward=-0.808, SPS=2371, OffWin=0.46, DefWin=1.00
+Top Bids: 6D:23, 6S:13, 6NT:5, 8S:4, 7S:3
+Update 2152/2441: Reward=-0.850, SPS=2359, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:21, 6S:20, 6NT:4, 7S:4, 6H:2
+Update 2153/2441: Reward=-0.948, SPS=2349, OffWin=0.29, DefWin=0.95
+Top Bids: 6D:28, 6S:8, 7S:5, 6H:4, Pass:3
+Update 2154/2441: Reward=-0.723, SPS=2338, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:21, 6S:18, 6H:5, Pass:2, 6NT:2
+Update 2155/2441: Reward=-0.980, SPS=2328, OffWin=0.24, DefWin=1.00
+Top Bids: 6D:24, 6S:14, 6H:5, 6C:4, Pass:2
+Update 2156/2441: Reward=-0.525, SPS=2319, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:24, 6S:13, 6NT:5, 7S:4, Pass:3
+Update 2157/2441: Reward=-0.848, SPS=2310, OffWin=0.20, DefWin=1.00
+Top Bids: 6D:28, 6S:12, 7S:7, Pass:2, 6C:2
+Update 2158/2441: Reward=-1.350, SPS=2300, OffWin=0.22, DefWin=1.00
+Top Bids: 6D:28, 6S:10, 6NT:5, 6H:4, Pass:2
+Update 2159/2441: Reward=-0.474, SPS=2290, OffWin=0.60, DefWin=1.00
+Top Bids: 6D:27, 6S:16, 7S:7, 6NT:4, 6C:2
+Update 2160/2441: Reward=-0.922, SPS=2281, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:35, 6S:13, 7S:5, 6C:2, 6NT:2
+Update 2161/2441: Reward=-0.995, SPS=2271, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:34, 6S:7, 7S:4, 6C:3, 6H:3
+Update 2162/2441: Reward=-1.163, SPS=2262, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:36, Pass:4, 6S:4, 7S:4, 6NT:3
+Update 2163/2441: Reward=-0.757, SPS=2253, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:27, 6S:20, 6NT:4, 6H:3, 7H:3
+Update 2164/2441: Reward=-0.953, SPS=2244, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:29, 6S:11, 6NT:4, 7C:4, 6H:3
+Update 2165/2441: Reward=-1.058, SPS=2235, OffWin=0.30, DefWin=0.94
+Top Bids: 6D:36, 6S:14, 6NT:4, Pass:3, 6C:2
+Update 2166/2441: Reward=-0.693, SPS=2226, OffWin=0.47, DefWin=1.00
+Top Bids: 6D:32, 6S:6, 6H:6, Pass:4, 6NT:2
+Update 2167/2441: Reward=-0.715, SPS=2217, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:25, 6S:13, 6C:5, 7C:4, 7S:3
+Update 2168/2441: Reward=-0.653, SPS=2208, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:33, 6S:11, 6H:4, 6NT:4, 7S:4
+Update 2169/2441: Reward=-0.469, SPS=2200, OffWin=0.44, DefWin=0.96
+Top Bids: 6D:28, 6S:15, 7S:6, Pass:4, 6NT:3
+Update 2170/2441: Reward=-1.117, SPS=2192, OffWin=0.17, DefWin=1.00
+Top Bids: 6D:30, 6S:14, Pass:2, 6C:2, 6H:2
+Update 2171/2441: Reward=-0.820, SPS=2184, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:27, 6S:14, 6NT:4, 7S:3, 6C:2
+Update 2172/2441: Reward=-0.819, SPS=2175, OffWin=0.21, DefWin=0.95
+Top Bids: 6D:29, 6S:14, 7S:6, 6NT:3, Pass:2
+Update 2173/2441: Reward=-0.749, SPS=2167, OffWin=0.43, DefWin=0.96
+Top Bids: 6D:32, 6S:16, 6H:5, Pass:3, 7S:2
+Update 2174/2441: Reward=-1.046, SPS=2160, OffWin=0.19, DefWin=1.00
+Top Bids: 6D:28, 6S:17, Pass:4, 6C:3, 6NT:3
+Update 2175/2441: Reward=-0.853, SPS=2151, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:23, 6S:14, 6NT:5, 6C:4, 7S:3
+Update 2176/2441: Reward=-1.021, SPS=2143, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:30, 6S:12, 7S:3, Pass:2, 6C:2
+Update 2177/2441: Reward=-0.922, SPS=2135, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:37, 6S:13, 6H:4, Pass:3, 6C:2
+Update 2178/2441: Reward=-0.896, SPS=2127, OffWin=0.14, DefWin=1.00
+Top Bids: 6D:43, 6S:9, Pass:2, 6H:2, 6NT:2
+Update 2179/2441: Reward=-0.967, SPS=2120, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:26, 6S:13, 7S:5, Pass:4, 6NT:2
+Update 2180/2441: Reward=-0.823, SPS=2112, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:27, 6S:9, Pass:6, 6C:5, 6NT:4
+Update 2181/2441: Reward=-0.599, SPS=2105, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:31, 6S:18, 7S:4, 6NT:3, Pass:2
+Update 2182/2441: Reward=-0.760, SPS=2097, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:23, 6S:19, 7S:4, Pass:3, 6H:3
+Update 2183/2441: Reward=-1.093, SPS=2090, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:22, 6S:17, 6NT:7, 7C:3, Pass:2
+Update 2184/2441: Reward=-1.141, SPS=2082, OffWin=0.10, DefWin=1.00
+Top Bids: 6D:30, 6S:16, 7S:7, Pass:3, 6C:3
+Update 2185/2441: Reward=-0.601, SPS=2075, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:18, 6S:17, 7S:5, 6H:3, 6NT:3
+Update 2186/2441: Reward=-0.884, SPS=2066, OffWin=0.25, DefWin=1.00
+Top Bids: 6S:20, 6D:20, 7C:5, Pass:3, 6H:3
+Update 2187/2441: Reward=-0.591, SPS=2059, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:29, 6S:12, Pass:6, 6H:5, 6C:2
+Update 2188/2441: Reward=-0.641, SPS=2052, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:27, 6S:13, 6NT:5, 7S:4, Pass:3
+Update 2189/2441: Reward=-0.767, SPS=2044, OffWin=0.47, DefWin=1.00
+Top Bids: 6D:25, 6S:15, 6H:6, Pass:5, 6NT:4
+Update 2190/2441: Reward=-0.497, SPS=2037, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:24, 6S:16, Pass:6, 6H:2, 6NT:2
+Update 2191/2441: Reward=-0.837, SPS=2031, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:22, 6S:14, 7S:8, 6NT:5, 6H:3
+Update 2192/2441: Reward=-0.818, SPS=2024, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:23, 6S:14, Pass:8, 6H:6, 7S:5
+Update 2193/2441: Reward=-0.747, SPS=2017, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:23, 6S:16, 7S:6, 7C:3, 7H:3
+Update 2194/2441: Reward=-0.530, SPS=2011, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:28, 6S:11, Pass:5, 6C:4, 6H:4
+Update 2195/2441: Reward=-0.642, SPS=2004, OffWin=0.17, DefWin=1.00
+Top Bids: 6S:20, 6D:11, 7S:6, 6NT:4, 7C:4
+Update 2196/2441: Reward=-0.955, SPS=1997, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:25, 6S:16, 7S:3, Pass:2, 6H:2
+Update 2197/2441: Reward=-0.856, SPS=1991, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:26, 6S:17, Pass:7, 6NT:3, 6H:2
+Update 2198/2441: Reward=-0.504, SPS=1984, OffWin=0.44, DefWin=0.96
+Top Bids: 6D:26, 6S:14, 6H:7, 6NT:7, 7S:4
+Update 2199/2441: Reward=-1.004, SPS=1978, OffWin=0.25, DefWin=0.96
+Top Bids: 6D:23, 7S:11, 6S:10, 6H:4, Pass:3
+Update 2200/2441: Reward=-0.890, SPS=1971, OffWin=0.14, DefWin=1.00
+Top Bids: 6D:30, 6S:14, 6H:3, 6NT:3, 7C:3
+ -> Saved League Snapshot: checkpoints/league/step_1126400.pth
+Update 2201/2441: Reward=-0.760, SPS=1965, OffWin=0.33, DefWin=0.95
+Top Bids: 6D:32, 6S:9, 6NT:4, 6C:3, 6H:3
+Update 2202/2441: Reward=-0.857, SPS=1958, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:34, 6S:12, 7S:5, 6NT:3, Pass:2
+Update 2203/2441: Reward=-0.911, SPS=1952, OffWin=0.09, DefWin=1.00
+Top Bids: 6D:22, 6S:11, 6NT:5, 7S:4, Pass:3
+Update 2204/2441: Reward=-0.332, SPS=1946, OffWin=0.45, DefWin=1.00
+Top Bids: 6S:22, 6D:18, 7S:5, Pass:4, 7D:3
+Update 2205/2441: Reward=-0.734, SPS=1939, OffWin=0.38, DefWin=0.89
+Top Bids: 6D:19, 6S:13, 6C:7, 6H:5, 6NT:5
+Update 2206/2441: Reward=-0.715, SPS=1933, OffWin=0.37, DefWin=1.00
+Top Bids: 6D:22, 6S:15, 7S:5, Pass:4, 6C:2
+Update 2207/2441: Reward=-0.581, SPS=1927, OffWin=0.35, DefWin=1.00
+Top Bids: 6D:26, 6S:15, 6H:5, Pass:3, 6C:3
+Update 2208/2441: Reward=-0.879, SPS=1921, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:31, 6S:9, 7S:6, 6NT:5, 6H:4
+Update 2209/2441: Reward=-0.794, SPS=1915, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:33, 6S:10, 6C:4, 6NT:4, 7S:3
+Update 2210/2441: Reward=-0.813, SPS=1909, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:29, 6S:11, 7S:6, Pass:3, 6C:3
+Update 2211/2441: Reward=-0.782, SPS=1903, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:29, 6S:14, 7S:6, Pass:4, 6NT:3
+Update 2212/2441: Reward=-0.746, SPS=1897, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:26, 6S:8, 7S:8, 6H:4, 6NT:4
+Update 2213/2441: Reward=-0.767, SPS=1891, OffWin=0.39, DefWin=1.00
+Top Bids: 6D:28, 6S:14, 6H:6, 7S:5, Pass:3
+Update 2214/2441: Reward=-0.718, SPS=1885, OffWin=0.41, DefWin=1.00
+Top Bids: 6D:31, 6S:15, 6NT:5, 7S:4, 6C:2
+Update 2215/2441: Reward=-0.955, SPS=1879, OffWin=0.08, DefWin=1.00
+Top Bids: 6D:30, 6S:13, 6H:5, 6NT:5, 7S:3
+Update 2216/2441: Reward=-0.707, SPS=1873, OffWin=0.46, DefWin=1.00
+Top Bids: 6D:28, 6S:15, 6NT:6, 7S:5, 6H:3
+Update 2217/2441: Reward=-0.831, SPS=1867, OffWin=0.21, DefWin=0.96
+Top Bids: 6D:25, 6S:8, 6H:6, 7S:5, Pass:4
+Update 2218/2441: Reward=-0.834, SPS=1861, OffWin=0.20, DefWin=1.00
+Top Bids: 6D:32, 6S:9, 6NT:7, Pass:3, 6C:3
+Update 2219/2441: Reward=-1.034, SPS=1855, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:34, 6S:6, 6H:6, 7S:4, Pass:3
+Update 2220/2441: Reward=-0.979, SPS=1850, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:33, 6S:9, 6H:5, 7S:3, Pass:2
+Update 2221/2441: Reward=-0.946, SPS=1844, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:21, 6S:15, 6NT:5, 7S:5, Pass:4
+Update 2222/2441: Reward=-0.802, SPS=1838, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:24, 6S:11, 7S:7, 6H:6, 6C:3
+Update 2223/2441: Reward=-0.748, SPS=1833, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:25, 6S:12, 7S:6, 6H:5, 6NT:5
+Update 2224/2441: Reward=-0.716, SPS=1826, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:24, 7S:12, 6S:10, 6C:4, 6H:4
+Update 2225/2441: Reward=-0.609, SPS=1821, OffWin=0.29, DefWin=0.95
+Top Bids: 6D:27, 6S:13, 7S:5, 6C:4, Pass:3
+Update 2226/2441: Reward=-0.673, SPS=1816, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:19, 6S:17, Pass:6, 6NT:5, 7S:5
+Update 2227/2441: Reward=-0.701, SPS=1811, OffWin=0.10, DefWin=0.96
+Top Bids: 6D:30, 6NT:9, 6S:5, 6H:4, 7S:4
+Update 2228/2441: Reward=-0.763, SPS=1806, OffWin=0.44, DefWin=0.95
+Top Bids: 6D:27, 6S:14, 6NT:8, 7S:4, Pass:3
+Update 2229/2441: Reward=-0.658, SPS=1800, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:30, 6S:7, 7S:5, 6H:3, Pass:2
+Update 2230/2441: Reward=-0.832, SPS=1795, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:20, 6H:10, 6S:9, 6NT:7, 7S:6
+Update 2231/2441: Reward=-0.754, SPS=1790, OffWin=0.17, DefWin=1.00
+Top Bids: 6D:27, 6S:12, 7S:10, 6H:3, Pass:2
+Update 2232/2441: Reward=-1.193, SPS=1784, OffWin=0.15, DefWin=1.00
+Top Bids: 6D:32, 6S:8, 7S:5, 6C:3, 6H:3
+Update 2233/2441: Reward=-0.770, SPS=1779, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:36, 6S:10, 7H:4, Pass:3, 6C:2
+Update 2234/2441: Reward=-0.574, SPS=1774, OffWin=0.47, DefWin=0.94
+Top Bids: 6D:28, 6S:11, 7S:7, Pass:3, 6NT:3
+Update 2235/2441: Reward=-0.463, SPS=1769, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:28, 6S:9, 7S:7, 6H:6, 6NT:3
+Update 2236/2441: Reward=-0.440, SPS=1764, OffWin=0.45, DefWin=1.00
+Top Bids: 6D:16, 6S:14, 6H:8, 6NT:8, Pass:6
+Update 2237/2441: Reward=-0.676, SPS=1759, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:19, 6S:14, 6H:8, 7S:5, Pass:4
+Update 2238/2441: Reward=-0.515, SPS=1754, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:19, 6S:17, 7S:6, 7C:4, 6H:3
+Update 2239/2441: Reward=-0.610, SPS=1748, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:23, 6S:14, 7S:6, 6H:5, 7C:3
+Update 2240/2441: Reward=-0.646, SPS=1744, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:28, 6S:7, 6H:7, 6NT:5, Pass:3
+Update 2241/2441: Reward=-0.459, SPS=1739, OffWin=0.43, DefWin=0.95
+Top Bids: 6D:26, 6H:12, 6S:9, 6NT:4, 7S:4
+Update 2242/2441: Reward=-0.325, SPS=1734, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:29, 6S:11, 7S:4, 6C:3, 6H:3
+Update 2243/2441: Reward=-0.526, SPS=1729, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:24, 6S:19, Pass:3, 7S:3, 6H:2
+Update 2244/2441: Reward=-0.596, SPS=1724, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:20, 6S:13, 6H:7, Pass:6, 7C:5
+Update 2245/2441: Reward=-0.366, SPS=1720, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:28, 6S:15, Pass:5, 7S:4, 7C:3
+Update 2246/2441: Reward=-0.940, SPS=1715, OffWin=0.15, DefWin=1.00
+Top Bids: 6D:30, 6S:14, 6H:5, 7S:4, Pass:3
+Update 2247/2441: Reward=-0.692, SPS=1710, OffWin=0.46, DefWin=1.00
+Top Bids: 6S:17, 6D:17, 6H:8, 6NT:5, Pass:4
+Update 2248/2441: Reward=-0.683, SPS=1706, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:16, 6S:12, 6H:9, 6NT:5, 7C:4
+Update 2249/2441: Reward=-0.454, SPS=1701, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:23, 6S:18, 7S:12, 6H:6, 6NT:4
+Update 2250/2441: Reward=-1.008, SPS=1697, OffWin=0.25, DefWin=1.00
+Top Bids: 6S:22, 6D:17, 7S:5, 6H:4, Pass:2
+Update 2251/2441: Reward=-0.673, SPS=1692, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:27, 6S:15, 6H:6, 7S:5, 6C:4
+Update 2252/2441: Reward=-0.623, SPS=1687, OffWin=0.41, DefWin=0.91
+Top Bids: 6D:24, 6S:10, 7S:7, Pass:5, 6H:5
+Update 2253/2441: Reward=-0.685, SPS=1682, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:20, 6S:14, 7S:7, 6NT:5, 6H:3
+Update 2254/2441: Reward=-0.367, SPS=1678, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:26, 6S:16, 7S:7, Pass:4, 6H:4
+Update 2255/2441: Reward=-0.697, SPS=1674, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:22, 6S:13, 6H:6, 6NT:6, 7S:5
+Update 2256/2441: Reward=-0.804, SPS=1669, OffWin=0.29, DefWin=0.96
+Top Bids: 6D:23, 6S:15, 7S:6, 6NT:5, Pass:2
+Update 2257/2441: Reward=-0.782, SPS=1665, OffWin=0.32, DefWin=1.00
+Top Bids: 6D:35, 6S:7, 7S:6, 6H:4, Pass:2
+Update 2258/2441: Reward=-0.586, SPS=1661, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:29, 6S:12, 6H:6, 6NT:6, 6C:2
+Update 2259/2441: Reward=-0.550, SPS=1656, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:22, 6S:21, 6H:8, 6C:3, 6NT:3
+Update 2260/2441: Reward=-0.747, SPS=1652, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:22, 6S:11, 6H:8, 6NT:4, Pass:3
+Update 2261/2441: Reward=-0.325, SPS=1648, OffWin=0.57, DefWin=1.00
+Top Bids: 6S:23, 6D:12, 7S:10, 6H:6, 6NT:3
+Update 2262/2441: Reward=-0.703, SPS=1643, OffWin=0.17, DefWin=1.00
+Top Bids: 6D:24, 6S:8, 7S:8, 6H:6, Pass:5
+Update 2263/2441: Reward=-0.466, SPS=1639, OffWin=0.35, DefWin=0.95
+Top Bids: 6D:28, 6S:14, 6H:5, 6NT:3, 7S:3
+Update 2264/2441: Reward=-0.937, SPS=1634, OffWin=0.09, DefWin=1.00
+Top Bids: 6D:25, 6S:12, 6H:5, 6NT:5, 7S:4
+Update 2265/2441: Reward=-0.802, SPS=1629, OffWin=0.15, DefWin=0.96
+Top Bids: 6D:33, 6S:11, 6H:8, 7S:3, Pass:2
+Update 2266/2441: Reward=-1.024, SPS=1625, OffWin=0.20, DefWin=1.00
+Top Bids: 6D:42, 6S:5, 7S:4, Pass:1, 6H:1
+Update 2267/2441: Reward=-0.652, SPS=1621, OffWin=0.57, DefWin=1.00
+Top Bids: 6D:30, 6S:10, 6H:4, 7S:4, 6C:3
+Update 2268/2441: Reward=-0.624, SPS=1616, OffWin=0.23, DefWin=0.96
+Top Bids: 6D:23, 6S:13, 7S:7, Pass:6, 7C:4
+Update 2269/2441: Reward=-0.938, SPS=1612, OffWin=0.00, DefWin=1.00
+Top Bids: 6D:26, 6S:14, 6H:4, 6NT:4, 6C:3
+Update 2270/2441: Reward=-0.381, SPS=1608, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:36, 6S:12, 6H:7, 7S:4, 6NT:3
+Update 2271/2441: Reward=-0.784, SPS=1604, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:23, 6S:12, 6H:6, 6NT:4, 7S:4
+Update 2272/2441: Reward=-0.915, SPS=1600, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:29, 6S:12, 6H:6, 7S:6, Pass:2
+Update 2273/2441: Reward=-0.780, SPS=1596, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:21, 6S:15, 7S:6, 6NT:4, 7C:4
+Update 2274/2441: Reward=-0.965, SPS=1592, OffWin=0.14, DefWin=1.00
+Top Bids: 6D:27, 6S:8, 7S:7, 6H:5, 6C:2
+Update 2275/2441: Reward=-0.861, SPS=1588, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:34, 6S:9, 6H:4, 7S:4, 6NT:3
+Update 2276/2441: Reward=-0.806, SPS=1583, OffWin=0.29, DefWin=0.96
+Top Bids: 6D:29, 6S:8, 6NT:5, 7S:4, Pass:3
+Update 2277/2441: Reward=-0.858, SPS=1579, OffWin=0.25, DefWin=0.95
+Top Bids: 6D:31, 6S:12, Pass:6, 6H:4, 6NT:4
+Update 2278/2441: Reward=-0.799, SPS=1575, OffWin=0.25, DefWin=0.95
+Top Bids: 6D:36, 6S:6, 7S:5, 6C:4, 6H:4
+Update 2279/2441: Reward=-0.787, SPS=1571, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:29, 6S:12, 6H:4, 6NT:4, 7S:4
+Update 2280/2441: Reward=-0.757, SPS=1567, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:34, 6S:10, 6H:5, 7C:5, 6C:2
+Update 2281/2441: Reward=-1.132, SPS=1563, OffWin=0.20, DefWin=1.00
+Top Bids: 6D:25, 6S:11, 6NT:4, 6H:3, 7S:2
+Update 2282/2441: Reward=-0.626, SPS=1559, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:38, 6S:6, 6H:4, 7S:3, 6NT:2
+Update 2283/2441: Reward=-1.522, SPS=1556, OffWin=0.16, DefWin=0.95
+Top Bids: 6D:33, 6S:9, 7S:4, Pass:3, 6H:3
+Update 2284/2441: Reward=-0.583, SPS=1552, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:33, 6S:12, 6H:4, 7S:4, 7C:4
+Update 2285/2441: Reward=-1.036, SPS=1548, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:29, 6S:11, 7S:7, Pass:5, 6H:3
+Update 2286/2441: Reward=-0.767, SPS=1544, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:24, 6S:11, 6NT:6, 6C:3, 7S:3
+Update 2287/2441: Reward=-0.771, SPS=1540, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:26, 6S:16, 6H:6, Pass:3, 6NT:3
+Update 2288/2441: Reward=-0.789, SPS=1537, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:24, 6S:15, 6C:6, 7S:5, 6H:4
+Update 2289/2441: Reward=-0.718, SPS=1533, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:28, 6S:10, 6H:5, 6NT:4, 7S:4
+Update 2290/2441: Reward=-0.909, SPS=1529, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:23, 6S:9, 7S:9, 6H:7, 6NT:4
+Update 2291/2441: Reward=-0.666, SPS=1526, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:25, 6S:10, 7S:7, Pass:4, 6C:4
+Update 2292/2441: Reward=-0.428, SPS=1522, OffWin=0.55, DefWin=0.95
+Top Bids: 6D:19, 6S:13, Pass:7, 6H:7, 7S:6
+Update 2293/2441: Reward=-0.492, SPS=1518, OffWin=0.21, DefWin=1.00
+Top Bids: 6D:28, 6S:10, Pass:5, 7S:4, 6NT:3
+Update 2294/2441: Reward=-0.549, SPS=1514, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:24, 6S:12, 6H:6, 7S:3, 7C:3
+Update 2295/2441: Reward=-0.835, SPS=1510, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:38, 6S:16, 7S:4, 6NT:2, 6H:1
+Update 2296/2441: Reward=-0.571, SPS=1507, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:31, 7S:8, 6H:5, Pass:4, 6S:4
+Update 2297/2441: Reward=-0.762, SPS=1503, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:32, 6S:8, Pass:3, 6C:3, 6H:2
+Update 2298/2441: Reward=-0.891, SPS=1499, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:36, 6S:8, 7S:7, 6C:3, Pass:2
+Update 2299/2441: Reward=-0.677, SPS=1496, OffWin=0.31, DefWin=0.96
+Top Bids: 6D:40, 7S:7, 6S:5, 6NT:3, 7H:3
+Update 2300/2441: Reward=-1.011, SPS=1491, OffWin=0.30, DefWin=1.00
+Top Bids: 6D:36, 6S:9, 7S:4, 6C:3, 6H:3
+ -> Saved League Snapshot: checkpoints/league/step_1177600.pth
+Update 2301/2441: Reward=-0.782, SPS=1488, OffWin=0.35, DefWin=0.95
+Top Bids: 6D:26, 6S:8, 6H:5, 7S:5, 6NT:3
+Update 2302/2441: Reward=-0.430, SPS=1484, OffWin=0.62, DefWin=0.94
+Top Bids: 6D:32, 6S:9, 7S:4, 6H:3, 6NT:3
+Update 2303/2441: Reward=-0.914, SPS=1481, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:26, 6S:10, 7S:7, 6NT:5, 6H:4
+Update 2304/2441: Reward=-0.896, SPS=1477, OffWin=0.23, DefWin=0.95
+Top Bids: 6D:21, 6S:12, 7S:9, 6H:4, 8S:4
+Update 2305/2441: Reward=-0.916, SPS=1474, OffWin=0.17, DefWin=1.00
+Top Bids: 6S:21, 6D:21, 7S:5, Pass:4, 6H:3
+Update 2306/2441: Reward=-0.670, SPS=1471, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:26, Pass:7, 7S:7, 6C:6, 6S:4
+Update 2307/2441: Reward=-0.602, SPS=1467, OffWin=0.41, DefWin=0.90
+Top Bids: 6D:27, 6S:12, 6H:5, 7S:5, Pass:3
+Update 2308/2441: Reward=-0.821, SPS=1464, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:22, 6S:14, 6H:7, 6C:5, 7S:4
+Update 2309/2441: Reward=-0.834, SPS=1461, OffWin=0.29, DefWin=0.95
+Top Bids: 6D:36, 6S:9, 6H:6, 7S:5, Pass:3
+Update 2310/2441: Reward=-0.565, SPS=1457, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:24, 6S:15, 6H:6, 6NT:4, 6C:3
+Update 2311/2441: Reward=-0.691, SPS=1454, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:32, 6S:8, 6H:6, 7S:6, Pass:4
+Update 2312/2441: Reward=-0.890, SPS=1451, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:31, 6S:12, 6H:7, 7S:4, 6NT:3
+Update 2313/2441: Reward=-0.927, SPS=1447, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:30, 6S:10, 6NT:5, 7S:5, Pass:4
+Update 2314/2441: Reward=-0.959, SPS=1444, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:34, 6S:12, 6NT:5, 7S:5, Pass:4
+Update 2315/2441: Reward=-0.462, SPS=1441, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:27, 6S:12, 6H:6, 7S:5, 7C:4
+Update 2316/2441: Reward=-0.782, SPS=1438, OffWin=0.33, DefWin=0.96
+Top Bids: 6D:27, 7S:10, 6S:9, Pass:4, 6H:4
+Update 2317/2441: Reward=-0.904, SPS=1435, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:25, 6H:8, 6S:6, 7S:6, Pass:3
+Update 2318/2441: Reward=-1.034, SPS=1432, OffWin=0.26, DefWin=1.00
+Top Bids: 6D:23, 6S:13, 6NT:4, Pass:3, 6C:3
+Update 2319/2441: Reward=-0.975, SPS=1428, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:26, 6S:10, 7S:9, 6NT:4, Pass:2
+Update 2320/2441: Reward=-0.939, SPS=1425, OffWin=0.15, DefWin=1.00
+Top Bids: 6D:29, 6S:11, 6NT:6, 7S:6, Pass:4
+Update 2321/2441: Reward=-0.653, SPS=1422, OffWin=0.43, DefWin=0.96
+Top Bids: 6D:35, 6S:7, 6NT:6, 6H:4, Pass:3
+Update 2322/2441: Reward=-0.823, SPS=1419, OffWin=0.47, DefWin=0.96
+Top Bids: 6D:24, 7S:9, 6S:7, Pass:6, 6H:5
+Update 2323/2441: Reward=-0.676, SPS=1416, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:23, 6S:11, 6H:10, 7S:3, 6C:2
+Update 2324/2441: Reward=-1.006, SPS=1413, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:28, 6S:8, Pass:6, 6H:5, 6NT:3
+Update 2325/2441: Reward=-0.885, SPS=1410, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:31, 6S:7, 6H:5, Pass:4, 6C:4
+Update 2326/2441: Reward=-0.759, SPS=1407, OffWin=0.33, DefWin=0.96
+Top Bids: 6D:36, 6S:8, 6H:5, Pass:4, 6C:3
+Update 2327/2441: Reward=-1.064, SPS=1404, OffWin=0.08, DefWin=0.95
+Top Bids: 6D:25, 7S:6, Pass:5, 6S:5, 6NT:5
+Update 2328/2441: Reward=-0.565, SPS=1401, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:26, 6S:8, 7S:8, Pass:4, 6H:4
+Update 2329/2441: Reward=-0.509, SPS=1398, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:31, 6S:10, 6H:5, 7S:4, Pass:3
+Update 2330/2441: Reward=-1.049, SPS=1395, OffWin=0.28, DefWin=0.95
+Top Bids: 6D:23, 6S:10, 6H:7, 7S:7, 6C:5
+Update 2331/2441: Reward=-0.884, SPS=1392, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:25, 6S:8, 6H:6, 7S:5, Pass:4
+Update 2332/2441: Reward=-0.995, SPS=1389, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:22, 7S:11, 6S:10, 6H:5, Pass:3
+Update 2333/2441: Reward=-0.893, SPS=1386, OffWin=0.27, DefWin=0.96
+Top Bids: 6D:32, 6S:8, 6NT:5, 6C:3, 6H:3
+Update 2334/2441: Reward=-0.493, SPS=1383, OffWin=0.47, DefWin=1.00
+Top Bids: 6D:30, 6S:8, 6NT:6, 6C:3, 6H:3
+Update 2335/2441: Reward=-0.904, SPS=1380, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:31, 6S:13, Pass:4, 6H:3, 7S:3
+Update 2336/2441: Reward=-0.671, SPS=1377, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:27, 6S:9, 7S:7, 6NT:5, 7C:3
+Update 2337/2441: Reward=-1.018, SPS=1374, OffWin=0.30, DefWin=1.00
+Top Bids: 6D:39, 6S:7, 7S:4, Pass:3, 6NT:3
+Update 2338/2441: Reward=-0.504, SPS=1370, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:33, 6S:7, 7S:5, 6H:4, Pass:3
+Update 2339/2441: Reward=-0.721, SPS=1368, OffWin=0.35, DefWin=1.00
+Top Bids: 6D:30, 6S:8, 7S:8, 6H:4, 7H:4
+Update 2340/2441: Reward=-0.692, SPS=1365, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:28, 6S:11, 6H:6, 7S:4, Pass:3
+Update 2341/2441: Reward=-0.680, SPS=1362, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:26, 6S:10, 6H:6, Pass:3, 6NT:3
+Update 2342/2441: Reward=-0.895, SPS=1359, OffWin=0.14, DefWin=1.00
+Top Bids: 6D:28, 6S:12, 7S:11, 6H:4, 6NT:4
+Update 2343/2441: Reward=-0.723, SPS=1357, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:23, 6S:9, 7S:7, 6H:4, 7H:3
+Update 2344/2441: Reward=-0.745, SPS=1353, OffWin=0.30, DefWin=1.00
+Top Bids: 6D:17, 6S:12, 7S:9, Pass:6, 6C:6
+Update 2345/2441: Reward=-0.726, SPS=1351, OffWin=0.39, DefWin=0.95
+Top Bids: 6D:34, 6H:9, 6S:8, 6NT:4, 6C:2
+Update 2346/2441: Reward=-0.854, SPS=1348, OffWin=0.52, DefWin=0.94
+Top Bids: 6D:33, 7S:7, 6S:6, 6NT:3, 6C:2
+Update 2347/2441: Reward=-0.385, SPS=1345, OffWin=0.58, DefWin=1.00
+Top Bids: 6D:25, 6S:11, 6H:7, 7S:5, Pass:4
+Update 2348/2441: Reward=-0.955, SPS=1342, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:23, 6S:11, 7S:11, 6H:4, 7H:3
+Update 2349/2441: Reward=-0.401, SPS=1340, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:28, 6S:16, 6NT:6, 6H:4, 7S:4
+Update 2350/2441: Reward=-0.548, SPS=1337, OffWin=0.36, DefWin=0.96
+Top Bids: 6D:22, 6S:10, 7S:10, Pass:5, 6H:4
+Update 2351/2441: Reward=-0.793, SPS=1334, OffWin=0.11, DefWin=1.00
+Top Bids: 6D:26, 6S:14, 7S:8, 6H:6, 6C:3
+Update 2352/2441: Reward=-0.409, SPS=1332, OffWin=0.50, DefWin=0.95
+Top Bids: 6D:16, 6S:12, 7S:9, 6H:4, 6NT:3
+Update 2353/2441: Reward=-0.553, SPS=1329, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:24, 6S:17, 6H:5, 7S:5, Pass:4
+Update 2354/2441: Reward=-0.717, SPS=1326, OffWin=0.35, DefWin=1.00
+Top Bids: 6D:28, 6S:7, 6H:5, 7S:5, 7C:5
+Update 2355/2441: Reward=-0.258, SPS=1323, OffWin=0.45, DefWin=1.00
+Top Bids: 6D:20, 6S:17, 6H:10, 6NT:6, 7S:5
+Update 2356/2441: Reward=-0.599, SPS=1320, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:20, 6S:18, 6NT:9, 6H:5, 7C:3
+Update 2357/2441: Reward=-0.626, SPS=1317, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:28, 6S:13, 6NT:3, 7S:3, 7H:3
+Update 2358/2441: Reward=-0.652, SPS=1315, OffWin=0.31, DefWin=0.96
+Top Bids: 6D:29, 6H:9, 6S:8, Pass:3, 6C:3
+Update 2359/2441: Reward=-1.009, SPS=1312, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:31, 6S:9, 7S:6, 6H:5, Pass:2
+Update 2360/2441: Reward=-0.376, SPS=1309, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:28, 6S:13, 6H:6, 7C:5, 7S:4
+Update 2361/2441: Reward=-1.118, SPS=1306, OffWin=0.17, DefWin=0.89
+Top Bids: 6D:32, 6S:9, 7S:4, Pass:3, 7C:3
+Update 2362/2441: Reward=-0.978, SPS=1304, OffWin=0.14, DefWin=1.00
+Top Bids: 6D:28, 6S:7, 7S:5, Pass:4, 6C:4
+Update 2363/2441: Reward=-0.959, SPS=1301, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:25, 7S:12, 6S:10, 6H:3, Pass:2
+Update 2364/2441: Reward=-0.609, SPS=1298, OffWin=0.39, DefWin=1.00
+Top Bids: 6D:29, 6S:9, 6NT:5, 7S:4, Pass:3
+Update 2365/2441: Reward=-0.297, SPS=1296, OffWin=0.40, DefWin=0.96
+Top Bids: 6D:20, 6S:13, 6H:9, 7S:5, 6NT:4
+Update 2366/2441: Reward=-0.883, SPS=1293, OffWin=0.35, DefWin=0.94
+Top Bids: 6D:27, 6S:12, 7S:9, 6NT:4, 6H:3
+Update 2367/2441: Reward=-0.850, SPS=1290, OffWin=0.22, DefWin=1.00
+Top Bids: 6D:33, 6S:12, 6H:6, 6NT:5, 6C:4
+Update 2368/2441: Reward=-0.683, SPS=1288, OffWin=0.47, DefWin=1.00
+Top Bids: 6D:22, 6S:12, 7S:7, 6H:4, 6NT:4
+Update 2369/2441: Reward=-0.672, SPS=1286, OffWin=0.33, DefWin=0.92
+Top Bids: 6D:26, 6S:15, 6H:6, 7S:5, 7C:4
+Update 2370/2441: Reward=-0.578, SPS=1283, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:20, 6S:11, 6H:6, Pass:5, 7S:4
+Update 2371/2441: Reward=-0.638, SPS=1281, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:25, 6S:11, 7S:9, 6H:6, 6NT:3
+Update 2372/2441: Reward=-1.033, SPS=1278, OffWin=0.35, DefWin=0.94
+Top Bids: 6D:31, 6S:10, 7S:6, Pass:4, 6H:3
+Update 2373/2441: Reward=-0.529, SPS=1276, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:26, 6S:13, 6H:5, Pass:4, 7H:3
+Update 2374/2441: Reward=-0.531, SPS=1273, OffWin=0.35, DefWin=1.00
+Top Bids: 6D:34, 6S:7, 6NT:5, 6H:4, 7S:4
+Update 2375/2441: Reward=-0.707, SPS=1271, OffWin=0.23, DefWin=0.91
+Top Bids: 6D:28, 6S:11, 6H:6, 7S:6, Pass:2
+Update 2376/2441: Reward=-0.562, SPS=1268, OffWin=0.36, DefWin=0.96
+Top Bids: 6D:31, 6S:8, 6H:6, 7S:5, 6C:3
+Update 2377/2441: Reward=-0.584, SPS=1266, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:33, 6S:13, 6C:5, 7S:4, Pass:2
+Update 2378/2441: Reward=-0.628, SPS=1263, OffWin=0.23, DefWin=1.00
+Top Bids: 6D:28, Pass:8, 6S:6, 6NT:6, 7S:6
+Update 2379/2441: Reward=-0.882, SPS=1261, OffWin=0.19, DefWin=0.95
+Top Bids: 6D:25, 6S:20, 6NT:4, 7S:4, Pass:3
+Update 2380/2441: Reward=-0.447, SPS=1258, OffWin=0.41, DefWin=1.00
+Top Bids: 6D:34, 6S:10, 6C:5, 6H:3, Pass:2
+Update 2381/2441: Reward=-0.930, SPS=1256, OffWin=0.37, DefWin=1.00
+Top Bids: 6D:33, 6S:10, 7S:7, 6H:3, 6NT:3
+Update 2382/2441: Reward=-0.675, SPS=1254, OffWin=0.20, DefWin=1.00
+Top Bids: 6D:33, 6S:12, 6H:4, 6C:3, 7S:3
+Update 2383/2441: Reward=-1.093, SPS=1250, OffWin=0.08, DefWin=1.00
+Top Bids: 6D:23, 6S:13, 6H:7, 7S:7, 7C:5
+Update 2384/2441: Reward=-0.653, SPS=1248, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:35, 6S:8, 7S:4, 6C:3, 6H:3
+Update 2385/2441: Reward=-0.833, SPS=1246, OffWin=0.22, DefWin=1.00
+Top Bids: 6D:26, 6S:10, 6H:4, 6C:3, 7S:3
+Update 2386/2441: Reward=-0.268, SPS=1244, OffWin=0.55, DefWin=0.95
+Top Bids: 6D:19, 6S:15, 7S:8, 6H:5, 6NT:4
+Update 2387/2441: Reward=-0.642, SPS=1241, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:19, 6S:17, 7S:7, 6H:6, Pass:3
+Update 2388/2441: Reward=-0.604, SPS=1239, OffWin=0.38, DefWin=0.96
+Top Bids: 6D:20, 6S:19, 6H:6, Pass:5, 7S:4
+Update 2389/2441: Reward=-0.658, SPS=1237, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:37, 6S:7, 7S:5, Pass:3, 6H:3
+Update 2390/2441: Reward=-1.047, SPS=1235, OffWin=0.08, DefWin=1.00
+Top Bids: 6D:34, 6S:13, 6H:4, 7S:4, Pass:2
+Update 2391/2441: Reward=-0.833, SPS=1233, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:30, 6S:12, 7S:6, 7C:3, Pass:1
+Update 2392/2441: Reward=-0.765, SPS=1230, OffWin=0.33, DefWin=0.96
+Top Bids: 6D:26, 6S:11, 7S:8, 6H:6, 6C:3
+Update 2393/2441: Reward=-0.529, SPS=1228, OffWin=0.45, DefWin=0.96
+Top Bids: 6D:26, 6S:11, 7S:6, 6H:4, 6NT:4
+Update 2394/2441: Reward=-0.798, SPS=1226, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:36, 6S:9, 7S:4, Pass:2, 6C:2
+Update 2395/2441: Reward=-0.922, SPS=1224, OffWin=0.33, DefWin=0.95
+Top Bids: 6D:26, 6S:11, Pass:4, 6H:4, 7S:3
+Update 2396/2441: Reward=-1.025, SPS=1222, OffWin=0.26, DefWin=0.89
+Top Bids: 6D:35, 6S:8, 6H:5, 6NT:3, 7S:3
+Update 2397/2441: Reward=-0.889, SPS=1220, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:33, 6S:8, 7S:5, Pass:3, 6C:2
+Update 2398/2441: Reward=-0.554, SPS=1218, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:21, 6S:11, Pass:7, 6H:6, 7S:6
+Update 2399/2441: Reward=-0.693, SPS=1216, OffWin=0.27, DefWin=1.00
+Top Bids: 6D:29, 6S:12, 7S:7, 6H:4, 6NT:4
+Update 2400/2441: Reward=-0.515, SPS=1214, OffWin=0.50, DefWin=1.00
+Top Bids: 6D:28, 6S:13, 6H:4, 7C:3, Pass:2
+ -> Saved League Snapshot: checkpoints/league/step_1228800.pth
+Update 2401/2441: Reward=-0.921, SPS=1211, OffWin=0.26, DefWin=1.00
+Top Bids: 6D:27, 6S:10, 6H:7, 7S:6, 6C:5
+Update 2402/2441: Reward=-0.708, SPS=1209, OffWin=0.36, DefWin=1.00
+Top Bids: 6D:25, 6S:14, 6H:6, 7S:6, Pass:3
+Update 2403/2441: Reward=-0.737, SPS=1207, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:27, 6S:10, 7S:7, 6H:6, Pass:5
+Update 2404/2441: Reward=-0.859, SPS=1205, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:33, 6S:15, 6H:3, 7S:3, 6NT:2
+Update 2405/2441: Reward=-0.872, SPS=1203, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:29, 6S:8, 6C:5, 6H:4, Pass:2
+Update 2406/2441: Reward=-0.520, SPS=1201, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:25, 6S:12, Pass:5, 7S:5, 6H:3
+Update 2407/2441: Reward=-0.648, SPS=1199, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:30, 6S:15, Pass:3, 6C:3, 6H:3
+Update 2408/2441: Reward=-0.635, SPS=1197, OffWin=0.30, DefWin=0.97
+Top Bids: 6D:32, 6S:14, 6H:7, Pass:2, 7S:2
+Update 2409/2441: Reward=-0.704, SPS=1195, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:31, 6S:12, 6H:7, 6NT:3, 7S:2
+Update 2410/2441: Reward=-1.108, SPS=1193, OffWin=0.08, DefWin=1.00
+Top Bids: 6D:28, 6S:10, Pass:4, 6H:4, 6NT:4
+Update 2411/2441: Reward=-0.814, SPS=1191, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:30, 6S:9, 6NT:5, 7S:5, 6H:4
+Update 2412/2441: Reward=-1.173, SPS=1189, OffWin=0.30, DefWin=0.94
+Top Bids: 6D:34, 6S:8, 6NT:6, Pass:4, 7S:4
+Update 2413/2441: Reward=-0.758, SPS=1187, OffWin=0.40, DefWin=0.95
+Top Bids: 6D:28, 6S:10, 7S:6, 6H:5, Pass:2
+Update 2414/2441: Reward=-0.815, SPS=1185, OffWin=0.38, DefWin=1.00
+Top Bids: 6D:24, 6S:8, 6H:8, 7S:6, 6NT:4
+Update 2415/2441: Reward=-0.759, SPS=1183, OffWin=0.25, DefWin=1.00
+Top Bids: 6D:25, 6S:11, 7S:5, 7C:4, Pass:3
+Update 2416/2441: Reward=-0.961, SPS=1181, OffWin=0.19, DefWin=1.00
+Top Bids: 6D:29, Pass:8, 6S:7, 7S:4, 6H:3
+Update 2417/2441: Reward=-0.888, SPS=1179, OffWin=0.25, DefWin=0.95
+Top Bids: 6D:35, 6S:13, Pass:4, 6H:4, 6C:3
+Update 2418/2441: Reward=-0.984, SPS=1177, OffWin=0.42, DefWin=1.00
+Top Bids: 6D:31, 6S:10, 6H:7, 7S:6, Pass:2
+Update 2419/2441: Reward=-1.167, SPS=1175, OffWin=0.18, DefWin=0.96
+Top Bids: 6D:27, 6S:9, Pass:4, 6NT:4, 6H:3
+Update 2420/2441: Reward=-0.604, SPS=1173, OffWin=0.22, DefWin=1.00
+Top Bids: 6D:34, 6H:9, Pass:5, 7S:5, 6S:4
+Update 2421/2441: Reward=-0.772, SPS=1171, OffWin=0.19, DefWin=1.00
+Top Bids: 6D:29, 6S:15, 6H:5, 6C:2, 6NT:2
+Update 2422/2441: Reward=-0.700, SPS=1169, OffWin=0.29, DefWin=1.00
+Top Bids: 6D:20, 6S:17, 7S:7, 7C:3, Pass:2
+Update 2423/2441: Reward=-0.429, SPS=1168, OffWin=0.45, DefWin=1.00
+Top Bids: 6D:23, 6S:11, 7S:8, 7C:4, 6C:3
+Update 2424/2441: Reward=-0.619, SPS=1166, OffWin=0.25, DefWin=0.96
+Top Bids: 6S:20, 6D:17, 7S:9, 6H:7, 6C:3
+Update 2425/2441: Reward=-0.314, SPS=1164, OffWin=0.57, DefWin=1.00
+Top Bids: 6D:18, 7S:13, 6S:12, 6H:5, Pass:3
+Update 2426/2441: Reward=-0.748, SPS=1162, OffWin=0.41, DefWin=0.95
+Top Bids: 6D:23, 6S:12, 7S:6, Pass:4, 6C:4
+Update 2427/2441: Reward=-0.842, SPS=1160, OffWin=0.40, DefWin=1.00
+Top Bids: 6D:29, 6S:10, 7S:6, 6H:4, Pass:2
+Update 2428/2441: Reward=-0.570, SPS=1158, OffWin=0.11, DefWin=0.96
+Top Bids: 6D:32, 6S:9, 6H:5, 7S:5, Pass:2
+Update 2429/2441: Reward=-0.527, SPS=1156, OffWin=0.43, DefWin=1.00
+Top Bids: 6D:21, 6S:15, 7S:7, 6H:5, 6NT:4
+Update 2430/2441: Reward=-0.609, SPS=1154, OffWin=0.33, DefWin=1.00
+Top Bids: 6D:22, 6S:13, 7S:8, 6H:6, 6NT:6
+Update 2431/2441: Reward=-0.845, SPS=1152, OffWin=0.28, DefWin=1.00
+Top Bids: 6D:26, 6S:9, 7S:7, 6H:4, 7C:4
+Update 2432/2441: Reward=-0.928, SPS=1151, OffWin=0.33, DefWin=0.95
+Top Bids: 6D:37, 6S:11, 6H:4, 6NT:4, Pass:3
+Update 2433/2441: Reward=-0.842, SPS=1149, OffWin=0.44, DefWin=1.00
+Top Bids: 6D:31, 6S:15, 6NT:4, Pass:3, 7C:2
+Update 2434/2441: Reward=-0.453, SPS=1147, OffWin=0.60, DefWin=1.00
+Top Bids: 6D:27, 6S:11, 7S:6, Pass:4, 6H:4
+Update 2435/2441: Reward=-1.006, SPS=1145, OffWin=0.31, DefWin=1.00
+Top Bids: 6S:21, 6D:19, 6H:4, 7S:4, 7C:4
+Update 2436/2441: Reward=-1.168, SPS=1143, OffWin=0.12, DefWin=0.95
+Top Bids: 6D:30, 6S:11, 7S:4, 6NT:2, 9H:2
+Update 2437/2441: Reward=-0.552, SPS=1141, OffWin=0.50, DefWin=0.96
+Top Bids: 6D:30, 6S:9, 6H:6, 6NT:6, 7S:3
+Update 2438/2441: Reward=-1.341, SPS=1140, OffWin=0.12, DefWin=1.00
+Top Bids: 6D:26, 6S:17, 6H:5, 6NT:3, 7S:3
+Update 2439/2441: Reward=-0.629, SPS=1138, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:23, 6S:14, 7S:8, 6H:4, 6NT:4
+Update 2440/2441: Reward=-0.868, SPS=1136, OffWin=0.31, DefWin=1.00
+Top Bids: 6D:31, 6S:10, 6H:4, Pass:3, 7S:3
+Update 2441/2441: Reward=-0.757, SPS=1134, OffWin=0.18, DefWin=1.00
+Top Bids: 6D:31, 6S:12, 6NT:4, 7S:4, 6C:3

@@ -1,0 +1,1 @@
+{"_wandb":{"runtime":334},"charts/learning_rate":0.00025,"losses/value_loss":5518.76171875,"charts/mean_reward":-733.0091552734375,"_timestamp":1.76743449968827e+09,"losses/policy_loss":-0.3769609034061432,"_runtime":334,"global_step":52992,"_step":413,"losses/approx_kl":13.107789993286133,"losses/entropy":0.006922663189470768,"charts/SPS":158}

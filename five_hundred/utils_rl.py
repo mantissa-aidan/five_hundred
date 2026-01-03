@@ -27,8 +27,11 @@ def int_to_card(idx: int) -> Optional[Card]:
     # Map back to enums
     suit_map_inv = {0: Suit.SPADES, 1: Suit.CLUBS, 2: Suit.DIAMONDS, 3: Suit.HEARTS}
     curr_suit = suit_map_inv.get(suit_val)
-    curr_rank = Rank(rank_val) # Assuming Rank enum values match 4..14
-    
+    try:
+        curr_rank = Rank(rank_val)
+    except ValueError:
+        return None
+        
     return Card(curr_suit, curr_rank)
 
 def get_state_vector(obs: Dict) -> np.ndarray:
@@ -150,6 +153,88 @@ def get_state_vector(obs: Dict) -> np.ndarray:
     idx += 4
 
     return vec
+
+def build_observation(game: Any, agent_seat: int, phase: str) -> Dict[str, Any]:
+    """
+    Constructs the observation dictionary from the Game state relative to the agent.
+    Encapsulates logic previously in DirectRLPlayer.
+    """
+    obs = {}
+    obs['phase'] = phase
+    
+    # Identify agent
+    agent = game.players[agent_seat]
+    obs['hand'] = agent.hand
+    obs['trump_suit'] = game.trump_suit
+    obs['agent_seat'] = agent_seat
+
+    # Identify teams relative to agent
+    # Team 0: P0, P2. Team 1: P1, P3.
+    # If agent_seat is 0 or 2 -> Team 0 is "My Team".
+    # If agent_seat is 1 or 3 -> Team 1 is "My Team".
+    my_team_idx = 0 if agent_seat % 2 == 0 else 1
+    my_team = game.teams[my_team_idx]
+    opp_team = game.teams[1 - my_team_idx]
+
+    # Scores
+    obs['my_score'] = my_team.team_score
+    obs['opp_score'] = opp_team.team_score
+    
+    # Tricks
+    obs['tricks_my_team'] = sum(p.tricks_won_this_round for p in my_team.players)
+    obs['tricks_opp_team'] = sum(p.tricks_won_this_round for p in opp_team.players)
+
+    # Trick History
+    obs['current_trick'] = list(getattr(game, 'current_trick_cards', []))
+    obs['played_history'] = list(getattr(game, 'cards_played_this_round', []))
+
+    # Bid State
+    if game.winning_bid:
+        obs['winning_bid_obj'] = game.winning_bid
+        obs['bidder_seat'] = game.players.index(game.winning_bid.player)
+    
+    # Bidding History One-Hot
+    obs['bidding_history_one_hot'] = {}
+    
+    # Iterate game.bids_this_round
+    # This list contains Bid objects OR string "PlayerName passes"
+    # We need to robustly map them to indices.
+    
+    for item in game.bids_this_round:
+        p_idx = -1
+        bid_code = 0
+        
+        if isinstance(item, str) and "passes" in item:
+            # Parse name from string (e.g. "Bot1 passes")
+             for i, p in enumerate(game.players):
+                if p.name in item:
+                    p_idx = i
+                    bid_code = 0 # Pass
+                    break
+        elif hasattr(item, 'player'):
+            # It's a Bid object
+            p_idx = game.players.index(item.player)
+            
+            # Encode Bid
+            if item.bid_type == BidType.MISERE: 
+                bid_code = 26
+            elif item.bid_type == BidType.OPEN_MISERE: 
+                bid_code = 27
+            else:
+                tr_idx = item.tricks - 6
+                s_map = {Suit.SPADES: 0, Suit.CLUBS: 1, Suit.DIAMONDS: 2, Suit.HEARTS: 3, Suit.NO_TRUMP: 4}
+                # Handle implied Suit for NoTrump bid type
+                eff_suit = item.suit
+                if item.bid_type == BidType.NO_TRUMP:
+                    eff_suit = Suit.NO_TRUMP
+                
+                s_idx = s_map.get(eff_suit, 4)
+                bid_code = 1 + (tr_idx * 5) + s_idx
+        
+        if p_idx != -1:
+            obs['bidding_history_one_hot'][p_idx] = bid_code
+
+    return obs
 
 def decode_action(action_idx: int, phase: str) -> Any:
     # EXCLUDE MISERE logic handled in MASKING, not here.

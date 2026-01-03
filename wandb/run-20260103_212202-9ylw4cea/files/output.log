@@ -1,0 +1,163 @@
+Resuming from LATEST checkpoint: checkpoints/ppo_latest.pth
+/Users/aidanperuch/Code/five_hundred/training/train_ppo.py:74: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(latest_path, map_location=device)
+Resuming at Step 172800 (Update 338)
+Update 338/1953: Reward=-202.350, SPS=16121, OffWin=0.29, DefWin=1.00
+Update 339/1953: Reward=-212.275, SPS=11588, OffWin=0.25, DefWin=0.88
+Update 340/1953: Reward=-200.752, SPS=9294, OffWin=0.46, DefWin=1.00
+Update 341/1953: Reward=-153.641, SPS=8051, OffWin=0.37, DefWin=0.94
+Update 342/1953: Reward=-204.949, SPS=6989, OffWin=0.32, DefWin=1.00
+Update 343/1953: Reward=-146.886, SPS=6369, OffWin=0.50, DefWin=1.00
+Update 344/1953: Reward=-142.464, SPS=5669, OffWin=0.29, DefWin=0.85
+Update 345/1953: Reward=-149.477, SPS=5265, OffWin=0.29, DefWin=1.00
+Update 346/1953: Reward=-153.528, SPS=4903, OffWin=0.29, DefWin=1.00
+Update 347/1953: Reward=-159.611, SPS=4508, OffWin=0.12, DefWin=0.93
+Update 348/1953: Reward=-175.307, SPS=4242, OffWin=0.29, DefWin=1.00
+Update 349/1953: Reward=-191.941, SPS=4003, OffWin=0.33, DefWin=1.00
+Update 350/1953: Reward=-158.203, SPS=3804, OffWin=0.45, DefWin=0.92
+Update 351/1953: Reward=-140.422, SPS=3627, OffWin=0.30, DefWin=0.93
+Update 352/1953: Reward=-175.275, SPS=3471, OffWin=0.32, DefWin=1.00
+Update 353/1953: Reward=-159.268, SPS=3324, OffWin=0.36, DefWin=0.86
+Update 354/1953: Reward=-158.390, SPS=3194, OffWin=0.38, DefWin=1.00
+Update 355/1953: Reward=-116.128, SPS=3071, OffWin=0.41, DefWin=1.00
+Update 356/1953: Reward=-135.839, SPS=2958, OffWin=0.36, DefWin=1.00
+Update 357/1953: Reward=-147.177, SPS=2852, OffWin=0.32, DefWin=1.00
+Update 358/1953: Reward=-180.593, SPS=2753, OffWin=0.26, DefWin=1.00
+Update 359/1953: Reward=-226.447, SPS=2665, OffWin=0.26, DefWin=1.00
+Update 360/1953: Reward=-189.404, SPS=2562, OffWin=0.42, DefWin=1.00
+Update 361/1953: Reward=-157.122, SPS=2464, OffWin=0.42, DefWin=0.92
+Update 362/1953: Reward=-169.216, SPS=2364, OffWin=0.38, DefWin=1.00
+Update 363/1953: Reward=-171.120, SPS=2293, OffWin=0.38, DefWin=1.00
+Update 364/1953: Reward=-174.341, SPS=2224, OffWin=0.36, DefWin=0.89
+Update 365/1953: Reward=-181.683, SPS=2156, OffWin=0.24, DefWin=1.00
+Update 366/1953: Reward=-214.269, SPS=2103, OffWin=0.11, DefWin=1.00
+Update 367/1953: Reward=-182.170, SPS=2053, OffWin=0.33, DefWin=1.00
+Update 368/1953: Reward=-178.641, SPS=2007, OffWin=0.30, DefWin=1.00
+Update 369/1953: Reward=-183.879, SPS=1959, OffWin=0.28, DefWin=1.00
+Update 370/1953: Reward=-205.407, SPS=1915, OffWin=0.17, DefWin=1.00
+Update 371/1953: Reward=-177.103, SPS=1871, OffWin=0.43, DefWin=0.91
+Update 372/1953: Reward=-190.361, SPS=1829, OffWin=0.37, DefWin=0.86
+Update 373/1953: Reward=-208.915, SPS=1793, OffWin=0.20, DefWin=0.94
+Update 374/1953: Reward=-164.533, SPS=1758, OffWin=0.47, DefWin=1.00
+Update 375/1953: Reward=-171.551, SPS=1726, OffWin=0.35, DefWin=0.89
+Update 376/1953: Reward=-171.318, SPS=1695, OffWin=0.40, DefWin=1.00
+Update 377/1953: Reward=-169.809, SPS=1664, OffWin=0.30, DefWin=1.00
+Update 378/1953: Reward=-182.093, SPS=1634, OffWin=0.28, DefWin=1.00
+Update 379/1953: Reward=-179.411, SPS=1604, OffWin=0.29, DefWin=1.00
+Update 380/1953: Reward=-191.501, SPS=1577, OffWin=0.26, DefWin=1.00
+Update 381/1953: Reward=-163.870, SPS=1552, OffWin=0.42, DefWin=1.00
+Update 382/1953: Reward=-189.813, SPS=1526, OffWin=0.20, DefWin=1.00
+Update 383/1953: Reward=-201.468, SPS=1502, OffWin=0.26, DefWin=1.00
+Update 384/1953: Reward=-223.917, SPS=1478, OffWin=0.25, DefWin=0.83
+Update 385/1953: Reward=-254.482, SPS=1455, OffWin=0.15, DefWin=1.00
+Update 386/1953: Reward=-256.384, SPS=1433, OffWin=0.28, DefWin=1.00
+Update 387/1953: Reward=-246.045, SPS=1412, OffWin=0.35, DefWin=1.00
+Update 388/1953: Reward=-285.452, SPS=1392, OffWin=0.19, DefWin=1.00
+Update 389/1953: Reward=-250.701, SPS=1373, OffWin=0.43, DefWin=1.00
+Update 390/1953: Reward=-216.712, SPS=1353, OffWin=0.32, DefWin=1.00
+Update 391/1953: Reward=-198.538, SPS=1330, OffWin=0.38, DefWin=1.00
+Update 392/1953: Reward=-200.672, SPS=1313, OffWin=0.34, DefWin=0.90
+Update 393/1953: Reward=-169.968, SPS=1298, OffWin=0.36, DefWin=1.00
+Update 394/1953: Reward=-155.900, SPS=1281, OffWin=0.44, DefWin=0.90
+Update 395/1953: Reward=-140.216, SPS=1265, OffWin=0.27, DefWin=1.00
+Update 396/1953: Reward=-139.157, SPS=1249, OffWin=0.42, DefWin=1.00
+Update 397/1953: Reward=-135.771, SPS=1234, OffWin=0.33, DefWin=1.00
+Update 398/1953: Reward=-160.054, SPS=1219, OffWin=0.25, DefWin=1.00
+Update 399/1953: Reward=-163.761, SPS=1205, OffWin=0.38, DefWin=0.92
+Update 400/1953: Reward=-165.176, SPS=1192, OffWin=0.32, DefWin=1.00
+Update 401/1953: Reward=-209.836, SPS=1178, OffWin=0.24, DefWin=1.00
+Update 402/1953: Reward=-210.794, SPS=1164, OffWin=0.20, DefWin=1.00
+Update 403/1953: Reward=-223.877, SPS=1150, OffWin=0.31, DefWin=1.00
+Update 404/1953: Reward=-188.112, SPS=1137, OffWin=0.38, DefWin=1.00
+Update 405/1953: Reward=-146.556, SPS=1125, OffWin=0.50, DefWin=1.00
+Update 406/1953: Reward=-148.849, SPS=1113, OffWin=0.30, DefWin=1.00
+Update 407/1953: Reward=-176.579, SPS=1101, OffWin=0.17, DefWin=1.00
+Update 408/1953: Reward=-185.787, SPS=1089, OffWin=0.25, DefWin=1.00
+Update 409/1953: Reward=-187.280, SPS=1078, OffWin=0.34, DefWin=1.00
+Update 410/1953: Reward=-221.738, SPS=1068, OffWin=0.29, DefWin=1.00
+Update 411/1953: Reward=-200.014, SPS=1057, OffWin=0.46, DefWin=0.90
+Update 412/1953: Reward=-248.450, SPS=1046, OffWin=0.20, DefWin=1.00
+Update 413/1953: Reward=-227.849, SPS=1037, OffWin=0.27, DefWin=1.00
+Update 414/1953: Reward=-241.768, SPS=1028, OffWin=0.25, DefWin=1.00
+Update 415/1953: Reward=-216.183, SPS=1018, OffWin=0.35, DefWin=1.00
+Update 416/1953: Reward=-212.615, SPS=1009, OffWin=0.33, DefWin=1.00
+Update 417/1953: Reward=-169.324, SPS=1001, OffWin=0.25, DefWin=1.00
+Update 418/1953: Reward=-197.438, SPS=992, OffWin=0.19, DefWin=0.86
+Update 419/1953: Reward=-182.609, SPS=983, OffWin=0.32, DefWin=0.92
+Update 420/1953: Reward=-199.933, SPS=975, OffWin=0.31, DefWin=1.00
+Update 421/1953: Reward=-211.943, SPS=966, OffWin=0.29, DefWin=1.00
+Update 422/1953: Reward=-208.547, SPS=958, OffWin=0.32, DefWin=1.00
+Update 423/1953: Reward=-230.647, SPS=948, OffWin=0.28, DefWin=1.00
+Update 424/1953: Reward=-211.586, SPS=941, OffWin=0.15, DefWin=1.00
+Update 425/1953: Reward=-222.448, SPS=933, OffWin=0.24, DefWin=1.00
+Update 426/1953: Reward=-173.103, SPS=926, OffWin=0.37, DefWin=1.00
+Update 427/1953: Reward=-151.525, SPS=918, OffWin=0.33, DefWin=1.00
+Update 428/1953: Reward=-151.712, SPS=911, OffWin=0.35, DefWin=1.00
+Update 429/1953: Reward=-156.333, SPS=904, OffWin=0.33, DefWin=1.00
+Update 430/1953: Reward=-188.283, SPS=898, OffWin=0.25, DefWin=1.00
+Update 431/1953: Reward=-192.121, SPS=891, OffWin=0.18, DefWin=0.93
+Update 432/1953: Reward=-185.041, SPS=883, OffWin=0.30, DefWin=1.00
+Update 433/1953: Reward=-207.292, SPS=876, OffWin=0.33, DefWin=0.86
+Update 434/1953: Reward=-242.593, SPS=870, OffWin=0.26, DefWin=0.88
+Update 435/1953: Reward=-212.446, SPS=863, OffWin=0.42, DefWin=0.91
+Update 436/1953: Reward=-248.467, SPS=856, OffWin=0.20, DefWin=1.00
+Update 437/1953: Reward=-203.738, SPS=850, OffWin=0.48, DefWin=1.00
+Update 438/1953: Reward=-226.469, SPS=843, OffWin=0.30, DefWin=0.92
+Update 439/1953: Reward=-224.135, SPS=837, OffWin=0.31, DefWin=0.91
+Update 440/1953: Reward=-223.275, SPS=831, OffWin=0.30, DefWin=0.92
+Update 441/1953: Reward=-263.533, SPS=826, OffWin=0.14, DefWin=1.00
+Update 442/1953: Reward=-207.747, SPS=820, OffWin=0.25, DefWin=1.00
+Update 443/1953: Reward=-210.015, SPS=815, OffWin=0.33, DefWin=1.00
+Update 444/1953: Reward=-196.170, SPS=810, OffWin=0.21, DefWin=0.93
+Update 445/1953: Reward=-194.963, SPS=805, OffWin=0.33, DefWin=0.83
+Update 446/1953: Reward=-207.221, SPS=800, OffWin=0.26, DefWin=1.00
+Update 447/1953: Reward=-207.046, SPS=794, OffWin=0.35, DefWin=1.00
+Update 448/1953: Reward=-194.652, SPS=789, OffWin=0.37, DefWin=1.00
+Update 449/1953: Reward=-204.111, SPS=784, OffWin=0.35, DefWin=1.00
+Update 450/1953: Reward=-238.519, SPS=779, OffWin=0.10, DefWin=1.00
+Update 451/1953: Reward=-180.379, SPS=775, OffWin=0.48, DefWin=0.91
+Update 452/1953: Reward=-240.458, SPS=770, OffWin=0.11, DefWin=1.00
+Update 453/1953: Reward=-212.523, SPS=765, OffWin=0.26, DefWin=1.00
+Update 454/1953: Reward=-217.387, SPS=761, OffWin=0.23, DefWin=1.00
+Update 455/1953: Reward=-199.208, SPS=756, OffWin=0.37, DefWin=0.89
+Update 456/1953: Reward=-199.731, SPS=752, OffWin=0.26, DefWin=1.00
+Update 457/1953: Reward=-192.589, SPS=748, OffWin=0.24, DefWin=0.94
+Update 458/1953: Reward=-164.378, SPS=744, OffWin=0.45, DefWin=1.00
+Update 459/1953: Reward=-143.636, SPS=739, OffWin=0.45, DefWin=1.00
+Update 460/1953: Reward=-150.060, SPS=735, OffWin=0.23, DefWin=1.00
+Update 461/1953: Reward=-155.608, SPS=730, OffWin=0.30, DefWin=0.92
+Update 462/1953: Reward=-156.901, SPS=726, OffWin=0.30, DefWin=0.89
+Update 463/1953: Reward=-155.132, SPS=721, OffWin=0.33, DefWin=1.00
+Update 464/1953: Reward=-164.906, SPS=716, OffWin=0.29, DefWin=1.00
+Update 465/1953: Reward=-165.356, SPS=711, OffWin=0.32, DefWin=1.00
+Update 466/1953: Reward=-156.896, SPS=706, OffWin=0.48, DefWin=0.89
+Update 467/1953: Reward=-193.722, SPS=702, OffWin=0.22, DefWin=1.00
+Update 468/1953: Reward=-171.052, SPS=698, OffWin=0.32, DefWin=0.94
+Update 469/1953: Reward=-177.845, SPS=693, OffWin=0.31, DefWin=0.90
+Update 470/1953: Reward=-203.416, SPS=689, OffWin=0.23, DefWin=1.00
+Update 471/1953: Reward=-187.017, SPS=685, OffWin=0.26, DefWin=1.00
+Update 472/1953: Reward=-191.828, SPS=681, OffWin=0.32, DefWin=0.90
+Update 473/1953: Reward=-219.466, SPS=677, OffWin=0.16, DefWin=1.00
+Step 30/32
+Traceback (most recent call last):
+  File "/Users/aidanperuch/Code/five_hundred/training/train_ppo.py", line 415, in <module>
+  File "/Users/aidanperuch/Code/five_hundred/training/train_ppo.py", line 314, in train
+    _, newlogprob, entropy, newvalue = policy.get_action_and_value(
+  File "/Users/aidanperuch/Code/five_hundred/five_hundred/ppo_agent.py", line 112, in get_action_and_value
+    probs = Categorical(logits=logits)
+  File "/usr/local/Caskroom/miniforge/base/lib/python3.10/site-packages/torch/distributions/categorical.py", line 72, in __init__
+    super().__init__(batch_shape, validate_args=validate_args)
+  File "/usr/local/Caskroom/miniforge/base/lib/python3.10/site-packages/torch/distributions/distribution.py", line 70, in __init__
+    if not valid.all():
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/aidanperuch/Code/five_hundred/training/train_ppo.py", line 415, in <module>
+  File "/Users/aidanperuch/Code/five_hundred/training/train_ppo.py", line 314, in train
+    _, newlogprob, entropy, newvalue = policy.get_action_and_value(
+  File "/Users/aidanperuch/Code/five_hundred/five_hundred/ppo_agent.py", line 112, in get_action_and_value
+    probs = Categorical(logits=logits)
+  File "/usr/local/Caskroom/miniforge/base/lib/python3.10/site-packages/torch/distributions/categorical.py", line 72, in __init__
+    super().__init__(batch_shape, validate_args=validate_args)
+  File "/usr/local/Caskroom/miniforge/base/lib/python3.10/site-packages/torch/distributions/distribution.py", line 70, in __init__
+    if not valid.all():
+KeyboardInterrupt

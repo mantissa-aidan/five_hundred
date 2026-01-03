@@ -1,0 +1,69 @@
+Resuming from LATEST checkpoint: checkpoints/ppo_latest.pth
+/Users/aidanperuch/Code/five_hundred/training/train_ppo.py:74: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(latest_path, map_location=device)
+Resuming at Step 256256 (Update 501)
+Update 501/1953: Reward=-136.542, SPS=22081, OffWin=0.39, DefWin=1.00
+Top Bids: 7NT:74
+Update 502/1953: Reward=-101.616, SPS=16332, OffWin=0.31, DefWin=1.00
+Top Bids: 7NT:77
+Update 503/1953: Reward=-77.894, SPS=13629, OffWin=0.46, DefWin=1.00
+Top Bids: 7NT:50
+Update 504/1953: Reward=-63.967, SPS=11893, OffWin=0.15, DefWin=1.00
+Top Bids: 7NT:67
+Update 505/1953: Reward=-49.133, SPS=10634, OffWin=0.29, DefWin=1.00
+Top Bids: 7NT:57
+Update 506/1953: Reward=-35.232, SPS=9479, OffWin=0.26, DefWin=0.87
+Top Bids: 7NT:65
+Update 507/1953: Reward=-25.078, SPS=8514, OffWin=0.50, DefWin=1.00
+Top Bids: 7NT:64
+Update 508/1953: Reward=-21.288, SPS=7812, OffWin=0.27, DefWin=1.00
+Top Bids: 7NT:64
+Update 509/1953: Reward=-17.793, SPS=7256, OffWin=0.36, DefWin=0.90
+Top Bids: 7NT:57, 7C:1, 9S:1
+Update 510/1953: Reward=-13.716, SPS=6766, OffWin=0.25, DefWin=1.00
+Top Bids: 7NT:65
+Update 511/1953: Reward=-10.994, SPS=6339, OffWin=0.27, DefWin=1.00
+Top Bids: 7NT:53, 9S:7, 6H:3, 9D:3, OpenMisere:2
+Update 512/1953: Reward=-8.468, SPS=5934, OffWin=0.33, DefWin=1.00
+Top Bids: 7NT:64, 9D:4, 9H:2, 9S:1, Misere:1
+Update 513/1953: Reward=-6.799, SPS=5561, OffWin=0.32, DefWin=1.00
+Top Bids: 7NT:61, 9D:2, 6H:1, 9S:1
+Update 514/1953: Reward=-5.078, SPS=5280, OffWin=0.35, DefWin=1.00
+Top Bids: 7NT:55, 9D:4, 7D:1, 9S:1, OpenMisere:1
+Update 515/1953: Reward=-3.987, SPS=5034, OffWin=0.32, DefWin=0.90
+Top Bids: 7NT:60, 8H:2, OpenMisere:2, Pass:1, 6D:1
+Update 516/1953: Reward=-2.823, SPS=4810, OffWin=0.47, DefWin=1.00
+Top Bids: 7NT:61, 9D:1, 9NT:1, OpenMisere:1
+Update 517/1953: Reward=-3.133, SPS=4603, OffWin=0.29, DefWin=1.00
+Top Bids: 7NT:46, 6C:3, 9S:3, 6H:2, 7C:2
+Update 518/1953: Reward=-3.017, SPS=4413, OffWin=0.38, DefWin=1.00
+Top Bids: 7NT:59, 6C:3, 9NT:2, 6S:1, 8D:1
+Update 519/1953: Reward=-2.850, SPS=4218, OffWin=0.38, DefWin=1.00
+Top Bids: 7NT:42, 6C:3, 8H:3, 9D:3, OpenMisere:3
+Update 520/1953: Reward=-2.805, SPS=4054, OffWin=0.26, DefWin=1.00
+Top Bids: 7NT:49, 8H:3, OpenMisere:2, Pass:1, 6C:1
+Update 521/1953: Reward=-2.792, SPS=3902, OffWin=0.36, DefWin=1.00
+Top Bids: 7NT:52, 6C:4, 6D:3, 8H:3, 10C:2
+Update 522/1953: Reward=-2.968, SPS=3763, OffWin=0.20, DefWin=1.00
+Top Bids: 7NT:50, 8H:5, 6C:4, 6D:1, 9S:1
+Update 523/1953: Reward=-2.884, SPS=3626, OffWin=0.31, DefWin=1.00
+Top Bids: 7NT:50, 6C:4, 6D:2, 8H:2, 9D:2
+Update 524/1953: Reward=-2.974, SPS=3501, OffWin=0.25, DefWin=1.00
+Top Bids: 7NT:40, 8H:6, 6C:5, 9C:2, 6D:1
+Update 525/1953: Reward=-3.177, SPS=3379, OffWin=0.11, DefWin=0.88
+Top Bids: 7NT:45, 8H:8, 6C:4, 6D:2, 9C:2
+Update 526/1953: Reward=-3.061, SPS=3274, OffWin=0.19, DefWin=1.00
+Top Bids: 7NT:50, 6C:3, 6H:2, 7S:2, 8H:2
+Update 527/1953: Reward=-3.000, SPS=3178, OffWin=0.33, DefWin=1.00
+Top Bids: 7NT:50, 6C:5, 8S:2, 8H:2, 7D:1
+Update 528/1953: Reward=-3.025, SPS=3076, OffWin=0.20, DefWin=1.00
+Top Bids: 7NT:39, 6C:8, 6D:4, 8H:4, 7S:2
+Update 529/1953: Reward=-3.235, SPS=2995, OffWin=0.14, DefWin=0.91
+Top Bids: 7NT:29, 6C:4, 7H:4, 6D:3, 9NT:3
+Update 530/1953: Reward=-3.397, SPS=2903, OffWin=0.06, DefWin=1.00
+Top Bids: 7NT:33, 6C:5, 7H:4, 6D:3, 8H:3
+Update 531/1953: Reward=-3.495, SPS=2828, OffWin=0.33, DefWin=1.00
+Top Bids: 7NT:36, 8H:7, 6C:5, 7H:4, 9NT:4
+Update 532/1953: Reward=-3.163, SPS=2747, OffWin=0.41, DefWin=1.00
+Top Bids: 7NT:29, 6C:7, 7S:4, 7H:4, 9S:3
+Step 20/32
