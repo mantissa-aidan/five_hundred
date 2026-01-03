@@ -53,6 +53,7 @@ function Game:init(player_names, team_names)
     self.tricks_history = {}
     self.current_trick = {}
     self.lead_suit = nil
+    self.cards_played_this_round = {} -- Track all cards played in round linearly
     self.round_history = {}
     
     self.message_log = {}
@@ -104,6 +105,7 @@ function Game:start_new_round()
     self.passed_players = {}
     self.consecutive_passes = 0
     self.tricks_history = {}
+    self.cards_played_this_round = {} 
     self.current_trick = {}
     
     -- Bidding starts left of dealer
@@ -255,6 +257,7 @@ function Game:player_bid(player_idx, tricks, suit, type)
     -- Apply
     self.highest_bid = new_bid
     self:log(tostring(new_bid))
+    table.insert(self.bids_this_round, new_bid)
     self.consecutive_passes = 0
     self:advance_turn()
     return true
@@ -267,6 +270,11 @@ function Game:player_pass(player_idx)
     local player = self.players[player_idx]
     self.passed_players[player] = true
     self:log(player.name .. " passes")
+    
+    -- Record Pass in History
+    local pass_bid = Bid.new(player, 0, nil, BidType.PASS)
+    table.insert(self.bids_this_round, pass_bid)
+    
     self.consecutive_passes = self.consecutive_passes + 1
     
     self:check_bidding_end()
@@ -385,6 +393,7 @@ function Game:player_play_card(player_idx, card)
 
     player:play_card(card)
     table.insert(self.current_trick, {player=player, card=card})
+    table.insert(self.cards_played_this_round, card)
     
     if #self.current_trick == 1 then
         self.lead_suit = self:get_effective_suit(card, self.trump_suit)
@@ -419,12 +428,26 @@ function Game:resolve_trick()
     
     if self.on_trick_complete_callback then
         local trick_num = #self.tricks_history
+        
+        -- Build detailed card info for debugging
+        local all_cards = {}
+        for _, play in ipairs(self.current_trick) do
+            local strength = self:get_card_strength(play.card, self.lead_suit, self.trump_suit)
+            table.insert(all_cards, {
+                player = play.player,
+                card = play.card,
+                strength = strength
+            })
+        end
+        
         self.on_trick_complete_callback({
             trick_num = trick_num, 
             winner = winner, 
             score = best_score,
             winning_card = winning_card,
-            trump_suit = self.trump_suit
+            trump_suit = self.trump_suit,
+            lead_suit = self.lead_suit,
+            all_cards = all_cards
         })
     end
     
