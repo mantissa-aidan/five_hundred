@@ -6,7 +6,8 @@ from .deck import Deck
 from .player import Player
 from .bot_player import BotPlayer
 from .team import Team
-from .bid import Bid, BidType, MISERE_POINTS, OPEN_MISERE_POINTS # Assuming Bid class is in bid.py
+from .bid import Bid, BidType, MISERE_POINTS, OPEN_MISERE_POINTS
+from .heuristic import get_effective_suit
 
 class Game:
     def __init__(self, player_names: List[str], team_names: List[str], bot_config: Optional[Dict[int, str]] = None, verbose: bool = True, trick_complete_hook: Optional[Callable[[], None]] = None):
@@ -168,6 +169,10 @@ class Game:
         self.bids_this_round.append(f"{player.name} passes")
         self.player_has_passed_auction[player] = True
         self.passes_this_round += 1 # Increment passes when a player formally passes
+        
+        # Strategy Tracking
+        from .strategy_tracker import record_pass
+        record_pass(player.name)
 
     def _get_player_bid_action(self, player: Player) -> Tuple[str, Optional[Tuple]]:
         """
@@ -337,6 +342,10 @@ class Game:
                         consecutive_passes_since_last_bid = 0 # Successful bid resets passes
                         total_passes_this_auction = 0 # A bid means not all passed
                         action_taken_this_turn = True
+                        
+                        # Strategy Tracking
+                        from .strategy_tracker import record_bid
+                        record_bid(player.name, self.highest_bid_this_round)
                     else:
                         # Bid attempt failed (e.g., too low, already passed, tried to rebid self)
                         # Treat as a pass for auction flow, player might choose to pass formally next if applicable
@@ -448,25 +457,14 @@ class Game:
                 else:
                     # Fallback if bot's discard choices were problematic (e.g., duplicates, not in hand)
                     self._log(f"Error processing bot's discards. Reverting to simple discard logic for {declarer.name}")
-                    declarer.sort_hand(trump_suit=self.winning_bid.suit if self.winning_bid else None) # Re-sort original 13 cards
-                    # Need to re-add kitty and then discard, as hand might be in inconsistent state
-                    declarer.hand = [] # Clear hand
-                    declarer.add_cards_to_hand(original_kitty) # Add kitty back
-                    # At this point, the declarer.hand should have had the non-kitty cards from before + original_kitty.
-                    # This part is tricky; the original state before bot's decision was player hand + kitty.
-                    # Let's re-fetch initial state for safety if bot fails badly.
-                    # This fallback needs to be robust. The simplest is to take the first N cards from sorted 13-card hand.
-                    
-                    # Re-ensure the 13 cards are there before discard
-                    # The current declarer.hand should be the 13 cards. Sort and take first N.
+                    # Re-ensure we have the full 13 cards (if possible) or just work with what we have
                     declarer.sort_hand(trump_suit=self.winning_bid.suit if self.winning_bid else None)
+                    
+                    # Instead of clearing, we just pop cards until we hit 10.
                     final_discards = []
-                    # Pop from the current 13 card hand to be sure
-                    for _ in range(num_expected_discards):
-                        if declarer.hand:
-                             # Discarding the 'lowest' as per sort order
-                            card_popped = declarer.hand.pop(0) 
-                            final_discards.append(card_popped)
+                    while len(declarer.hand) > 10:
+                        card_popped = declarer.hand.pop(0) 
+                        final_discards.append(card_popped)
                     self._log(f"{declarer.name} (Bot) fallback (safe) discarded: {final_discards}")
 
             assert len(declarer.hand) == 10, f"Bot declarer hand size not 10 after discard, but {len(declarer.hand)}"
@@ -556,7 +554,53 @@ class Game:
         self._score_round(declarer) # Call scoring after the round
         self._log("\n--- End of Play Phase --- ")
 
-    def _get_effective_suit(self, card: Card, trump_suit: Optional[Suit]) -> Suit:
+    def _score_round(self, declarer: Player):
+        """Calculates scores at the end of the round and updates team scores."""
+        # Simple scoring logic:
+        # Declarer's team gets points if they made the bid.
+        # Otherwise negative points.
+        # Opponents get 10 points per trick.
+        
+        declarer_team = [t for t in self.teams if declarer in t.players][0]
+        opponent_team = [t for t in self.teams if declarer not in t.players][0]
+        
+        declarer_tricks = declarer_team.get_total_tricks_won_this_round()
+        opponent_tricks = opponent_team.get_total_tricks_won_this_round()
+        
+        contract = self.winning_bid
+        contract_points = contract.points
+        made_contract = False
+        
+        if contract.bid_type in [BidType.MISERE, BidType.OPEN_MISERE]:
+             # Misere: Must win 0 tricks.
+             if declarer_tricks == 0:
+                 made_contract = True
+                 declarer_team.update_score(contract_points)
+             else:
+                 declarer_team.update_score(-contract_points)
+        else:
+            # Suit/NT: Must win >= contract tricks
+            if declarer_tricks >= contract.tricks:
+                made_contract = True
+                declarer_team.update_score(contract_points)
+            else:
+                declarer_team.update_score(-contract_points)
+                
+        # Opponents score 10 per trick
+        opponent_team.update_score(opponent_tricks * 10)
+        
+        self._log(f"Round Result: Declarer {declarer.name} (Need {contract.tricks}) got {declarer_tricks}. Made: {made_contract}")
+        self._log(f"Scores -> {declarer_team}: {declarer_team.team_score}, {opponent_team}: {opponent_team.team_score}")
+        
+        # --- Strategy Tracker Hook ---
+        try:
+            from .strategy_tracker import record_round
+            # We record for the declarer
+            record_round(contract, made_contract, declarer_tricks, declarer.name)
+        except ImportError:
+            pass # Safety
+            
+        pass
         """Determines the effective suit of a card given the current trump suit.
         In 500, the Left Bower (same color Jack) and Joker are technically 'Trump' suit.
         """
@@ -586,7 +630,7 @@ class Game:
 
         # Player must follow suit if possible
         # Use effective suit for comparison (handles Bowers being trump)
-        cards_of_trick_suit = [card for card in hand if self._get_effective_suit(card, self.trump_suit) == trick_suit]
+        cards_of_trick_suit = [card for card in hand if get_effective_suit(card, self.trump_suit) == trick_suit]
         
         # Special handling for Joker and Bowers if they are the only cards of the trick_suit
         # or if player cannot follow suit.
@@ -694,6 +738,14 @@ class Game:
             if chosen_card is None: # Should not be reached if logic above is correct
                  raise Exception(f"Error: No card chosen for {current_player.name}")
 
+            # --- Strategy Tracker Hook ---
+            try:
+                from .strategy_tracker import record_play
+                record_play(current_player.name, chosen_card, playable_cards, current_trick_display_order, self.trump_suit)
+            except ImportError:
+                pass
+
+
             self._log(f"{current_player.name} plays: {chosen_card}")
             current_player.play_card(chosen_card) # Removes card from player's hand
             current_trick_cards_played_by_player[current_player] = chosen_card
@@ -702,7 +754,7 @@ class Game:
                 self.cards_played_this_round.append(chosen_card)
 
             if i == 0: # First card played in the trick sets the trick_suit
-                trick_suit = self._get_effective_suit(chosen_card, self.trump_suit)
+                trick_suit = get_effective_suit(chosen_card, self.trump_suit)
                 # Special Joker rule: If Joker is led in a trump game, the trick suit becomes the trump suit.
                 # If Joker is led in No Trump, its suit is effectively what it was declared as (if that was a feature), 
                 # or it acts as its own suit. Here, card.suit for Joker is JOKER_SUIT or similar.

@@ -24,6 +24,26 @@ share/python-wheels/
 *.egg-info/  # Ignores .egg-info directories
 .installed.cfg
 *.egg
+# PyTorch model checkpoints and training artifacts
+*.pth
+*.pkl
+*_history.json
+eval_history.json
+loss_history.json
+reward_history.json
+league_pool.pkl
+
+# Large pretrained data (keep structure, ignore data)
+pre_training/**/*.pkl
+pre_training/**/*.pth
+
+# Training outputs
+model_checkpoint_*.pth
+*_memory.pkl
+
+# Virtual environments .egg-info directories
+.installed.cfg
+*.egg
 MANIFEST
 
 # PyInstaller

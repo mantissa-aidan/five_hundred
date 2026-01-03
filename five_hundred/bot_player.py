@@ -80,7 +80,7 @@ class BotPlayer(Player):
             List[Card]: A list of 3 cards to discard from the bot's current 13-card hand.
         """
         # Placeholder: Very basic logic - discard the first 3 cards from sorted hand
-        print(f"{self.name} (Bot) is deciding kitty exchange...")
+        # print(f"{self.name} (Bot) is deciding kitty exchange...")
         
         # Ensure hand is sorted to make discards somewhat predictable for now
         # More sophisticated sorting might be needed based on trump
@@ -94,7 +94,7 @@ class BotPlayer(Player):
         # This is very naive and needs improvement.
         discards = self.hand[:num_to_discard]
         
-        print(f"{self.name} (Bot) discards: {discards}")
+        # print(f"{self.name} (Bot) discards: {discards}")
         return discards
 
     def decide_play_card(self, playable_cards: List[Card], trick_suit: Optional[Suit], trump_suit: Optional[Suit], current_trick_cards: List[Tuple[Player, Card]]) -> Card:
@@ -110,14 +110,14 @@ class BotPlayer(Player):
             Card: The card chosen to play.
         """
         # Placeholder: Very basic logic - play the first playable card
-        print(f"{self.name} (Bot) is deciding which card to play from {playable_cards}...")
+        # print(f"{self.name} (Bot) is deciding which card to play from {playable_cards}...")
         if not playable_cards:
             # This should ideally not happen if game logic for playable_cards is correct
             raise ValueError(f"{self.name} (Bot) has no playable cards.")
         
         # TODO: Implement actual card playing logic based on hand, game state, difficulty
         chosen_card = playable_cards[0] 
-        print(f"{self.name} (Bot) plays: {chosen_card}")
+        # print(f"{self.name} (Bot) plays: {chosen_card}")
         return chosen_card
 
     def __repr__(self):

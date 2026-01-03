@@ -42,9 +42,36 @@ class RLPlayer(BotPlayer):
             'kitty_original': kitty
         }
         
-        # Expect action to be list of 3 cards to discard
-        discards = self._get_action(obs)
-        return discards
+        # Expect 3 sequential actions (one for each card to discard)
+        discards = []
+        for i in range(3):
+            obs['discard_num'] = i + 1
+            # Filter hand for mask: only show cards NOT already in discards
+            remaining_hand = [c for c in self.hand if c not in discards]
+            
+            # Note: The 'env' uses common mask for all 3 steps based on initial hand.
+            # To be 100% perfect, env should re-mask every sub-step, but for now
+            # we just ensure the resulting list is unique here.
+            
+            card = self._get_action(obs)
+            if isinstance(card, Card) and card not in discards:
+                discards.append(card)
+            elif isinstance(card, int):
+                # Fallback for index
+                if card < len(self.hand):
+                    c = self.hand[card]
+                    if c not in discards:
+                        discards.append(c)
+            
+        # Ensure we return 3 cards
+        while len(discards) < 3:
+             # Random fallback for duplicates/failures
+             import random
+             rem = [c for c in self.hand if c not in discards]
+             if not rem: break
+             discards.append(random.choice(rem))
+             
+        return discards[:3]
 
     def decide_play_card(self, playable_cards: List[Card], trick_suit: Optional[Suit], trump_suit: Optional[Suit], current_trick_cards: List[Tuple[Any, Card]]) -> Card:
         

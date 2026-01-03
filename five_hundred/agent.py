@@ -3,7 +3,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import random
+import pickle
+import os
 from collections import deque
+from .prioritized_replay import PrioritizedReplayBuffer
 
 class BiddingNetwork(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -91,108 +94,100 @@ class PyTorchAgent:
         self.bid_optimizer = optim.Adam(self.bid_net.parameters(), lr=lr)
         self.play_optimizer = optim.Adam(self.play_net.parameters(), lr=lr)
         
-        self.criterion = nn.MSELoss() # Or HuberLoss
+        self.criterion = nn.MSELoss(reduction='none') # Return individual losses for PER
         
-        # Memory
-        self.memory = deque(maxlen=buffer_size)
+        # Memory: Prioritized Experience Replay
+        self.bid_memory = PrioritizedReplayBuffer(buffer_size)
+        self.play_memory = PrioritizedReplayBuffer(buffer_size)
         
         # Epsilon
         self.epsilon = 1.0
         self.epsilon_min = 0.05 # Lower floor for meaningful play
-        self.epsilon_decay = 0.995
+        self.epsilon_decay = 0.999995  # VERY slow decay - takes ~200k episodes to reach min
 
-    def act(self, state, phase, valid_mask=None):
+    def act(self, state, phase, valid_mask=None, bid_epsilon=None):
         """
         Returns action_idx (int).
-        Uses Bidding Net if phase='BID'/'KITTY'.
-        Uses Playing Net if phase='PLAY'.
+        Uses Bidding Net if phase='BID'.
+        Uses Playing Net if phase='PLAY'/'KITTY'.
+        
+        bid_epsilon: Optional override for epsilon during bidding phase.
+                     If None, uses self.epsilon for all phases.
+                     If provided, uses bid_epsilon for BID phase only.
         """
-        if np.random.rand() <= self.epsilon:
+        if phase == "BID":
+            brain = self.bid_net
+            action_space_size = 28
+            # Use bid_epsilon if provided, otherwise use self.epsilon
+            epsilon_to_use = bid_epsilon if bid_epsilon is not None else self.epsilon
+        elif phase in ["PLAY", "KITTY"]:
+            brain = self.play_net
+            action_space_size = 53
+            epsilon_to_use = self.epsilon
+        else:
+            raise ValueError(f"Unknown phase: {phase}")
+        
+        # Epsilon-greedy
+        if random.random() < epsilon_to_use:
             # Random valid action
             if valid_mask is not None:
-                valid_indices = np.where(valid_mask == 1)[0]
-                if len(valid_indices) > 0:
-                    return np.random.choice(valid_indices)
-            return random.randrange(self.action_dim)
-
+                valid_indices = [i for i, v in enumerate(valid_mask[:action_space_size]) if v]
+                if valid_indices:
+                    return random.choice(valid_indices)
+            return random.randint(0, action_space_size - 1)
+        
+        # Greedy (use network)
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         
-        if phase == 'BID' or phase == 'KITTY': # Treat KITTY as BID for now or generic
-            # Bidding Logic (Actions 0-27)
-            with torch.no_grad():
-                q_values = self.bid_net(state_tensor).squeeze(0) # [28]
+        with torch.no_grad():
+            if phase == "BID":
+                q_values = brain(state_tensor).squeeze(0) # [28]
+            else:
+                q_values = brain(state_tensor).squeeze(0) # [53]
+        
+        # Apply mask
+        if valid_mask is not None:
+            mask_subset = torch.FloatTensor(valid_mask[:action_space_size]).to(self.device)
+            q_values = q_values.masked_fill(mask_subset == 0, float('-inf'))
+        
+        action_idx = torch.argmax(q_values).item()
+        return action_idx
+
+    def remember(self, state, action, reward, next_state, done, phase=None):
+        if phase is None:
+            # Inference fallback
+            is_bid = (state[0] == 1)
+            phase = 'BID' if is_bid else 'PLAY'
             
-            # Masking
-            # valid_mask is size 100. extract first 28
-            mask_subset = torch.FloatTensor(valid_mask[:28]).to(self.device)
-            # Set invalid to -inf
-            q_values[mask_subset == 0] = -float('inf')
-            
-            action_idx = torch.argmax(q_values).item()
-            return action_idx # 0-27 works directly
-            
-        elif phase == 'PLAY':
-            # Playing Logic (Actions 0-52 representing Cards)
-            # Wait, global action space is 100?
-            # 0-52 are card IDs.
-            # My 'PlayingNetwork' outputs 53 dims.
-            # Does action 0 mean Card 0? Yes.
-            
-            with torch.no_grad():
-                q_values = self.play_net(state_tensor).squeeze(0) # [53]
-                
-            # Masking
-            # Play actions are 0-52 in new Env logic?
-            # Env._decode_action handles 0..52 as card IDs for PLAY phase.
-            mask_subset = torch.FloatTensor(valid_mask[:53]).to(self.device)
-            q_values[mask_subset == 0] = -float('inf')
-            
-            action_idx = torch.argmax(q_values).item()
-            return action_idx
-            
+        # PER: push with phase info
+        if phase == 'BID':
+            self.bid_memory.push(state, action, reward, next_state, done, phase)
         else:
-            return 0 # Fallback
+            # KITTY and PLAY both use play_net
+            self.play_memory.push(state, action, reward, next_state, done, phase)
 
-    def remember(self, state, action, reward, next_state, done, info):
-        # We need 'phase' to know which net to train. 
-        # But 'info' might contain it, or we infer from action idx?
-        # Actually, store phase explicitly or derive?
-        # Env provides phase in obs. 
-        # simpler: agent stores it.
-        # But `train_agent.py` only passes these args. 
-        # I'll update remember signature in train_agent.py OR infer.
-        # Inference: Bidding actions < 28? No, play actions overlap (0-52).
-        # We MUST know phase.
-        # Let's extract phase from 'state'?
-        # In current state vector, index 0, 1 are phase.
-        # idx 0 = BID/KITTY, idx 1 = PLAY.
+    def replay(self, batch_size=64, freeze_bidding=False):
+        """
+        Train both networks using Prioritized Experience Replay.
+        Returns TD-errors to update priorities in the replay buffer.
+        """
+        total_loss = 0.0
         
-        is_bid = (state[0] == 1)
-        phase_code = 'BID' if is_bid else 'PLAY'
+        # Train bidding network (unless frozen)
+        if not freeze_bidding and len(self.bid_memory) >= batch_size:
+            batch, idxs, weights = self.bid_memory.sample(batch_size)
+            loss, td_errors = self.train_network_per(batch, weights, self.bid_net, self.target_bid_net, self.bid_optimizer, 28)
+            self.bid_memory.update_priorities(idxs, td_errors)
+            total_loss += loss
         
-        self.memory.append((state, action, reward, next_state, done, phase_code))
-
-    def replay(self, batch_size=64):
-        if len(self.memory) < batch_size:
-            return 0
-            
-        minibatch = random.sample(self.memory, batch_size)
+        # Always train playing network
+        if len(self.play_memory) >= batch_size:
+            batch, idxs, weights = self.play_memory.sample(batch_size)
+            loss, td_errors = self.train_network_per(batch, weights, self.play_net, self.target_play_net, self.play_optimizer, 53)
+            self.play_memory.update_priorities(idxs, td_errors)
+            total_loss += loss
         
-        # We need to process BID and PLAY stats separately or just loop?
-        # Looping is slow. Vectorization is better.
-        # Split batch
-        bid_batch = [e for e in minibatch if e[5] == 'BID']
-        play_batch = [e for e in minibatch if e[5] == 'PLAY']
-        
-        total_loss = 0
-        
-        if bid_batch:
-            total_loss += self.train_network(bid_batch, self.bid_net, self.target_bid_net, self.bid_optimizer, 28)
-            
-        if play_batch:
-            total_loss += self.train_network(play_batch, self.play_net, self.target_play_net, self.play_optimizer, 53)
-            
-        return total_loss
+        return total_loss if total_loss > 0 else None
 
     def decay_epsilon(self):
         if self.epsilon > self.epsilon_min:
@@ -242,8 +237,13 @@ class PyTorchAgent:
     def save(self, name):
         torch.save({
             'bid': self.bid_net.state_dict(),
-            'play': self.play_net.state_dict()
+            'play': self.play_net.state_dict(),
+            'epsilon': self.epsilon
         }, name)
+        
+        # Save memory separately as it's large
+        mem_name = name.replace(".pth", "_memory.pkl")
+        self.save_memory(mem_name)
         
     def load(self, name):
         checkpoint = torch.load(name, map_location=self.device)
@@ -251,3 +251,69 @@ class PyTorchAgent:
         self.play_net.load_state_dict(checkpoint['play'])
         self.target_bid_net.load_state_dict(checkpoint['bid'])
         self.target_play_net.load_state_dict(checkpoint['play'])
+        if 'epsilon' in checkpoint:
+            self.epsilon = checkpoint['epsilon']
+            print(f"Loaded epsilon: {self.epsilon:.4f}")
+            
+        mem_name = name.replace(".pth", "_memory.pkl")
+        self.load_memory(mem_name)
+
+    def save_memory(self, filename):
+        try:
+            with open(filename, 'wb') as f:
+                pickle.dump({'bid': self.bid_memory, 'play': self.play_memory}, f)
+        except Exception as e:
+            print(f"Failed to save memory: {e}")
+
+    def load_memory(self, filename):
+        try:
+            if os.path.exists(filename):
+                with open(filename, 'rb') as f:
+                    data = pickle.load(f)
+                    if isinstance(data, dict):
+                        self.bid_memory = data.get('bid', self.bid_memory)
+                        self.play_memory = data.get('play', self.play_memory)
+                    else:
+                        # Migration for old legacy files
+                        self.play_memory = data
+                print(f"Loaded memory: {len(self.bid_memory)} bid, {len(self.play_memory)} play transitions.")
+        except Exception as e:
+            print(f"Failed to load memory: {e}")
+    def train_network_per(self, batch, is_weights, policy_net, target_net, optimizer, output_dim):
+        """
+        Train network using Prioritized Experience Replay with importance sampling.
+        Returns: (average_loss, td_errors_for_priority_update)
+        """
+        # Extract transitions from named tuples
+        states = torch.FloatTensor(np.array([t.state for t in batch])).to(self.device)
+        actions = torch.LongTensor(np.array([t.action for t in batch])).to(self.device)
+        rewards = torch.FloatTensor(np.array([t.reward for t in batch])).to(self.device)
+        next_states = torch.FloatTensor(np.array([t.next_state for t in batch])).to(self.device)
+        dones = torch.FloatTensor(np.array([t.done for t in batch])).to(self.device)
+        weights = torch.FloatTensor(is_weights).to(self.device)
+        
+        # Current Q-values
+        curr_q = policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+        
+        # Target Q-values
+        with torch.no_grad():
+            next_q_vals = target_net(next_states)
+            max_next_q = next_q_vals.max(1)[0]
+            target_q = rewards + (self.gamma * max_next_q * (1 - dones))
+            # Expanded clipping for new reward scale
+            target_q = torch.clamp(target_q, -100, 100)
+        
+        # TD-errors for priority update
+        td_errors = (curr_q - target_q).detach().cpu().numpy()
+        
+        # Weighted loss (importance sampling)
+        elementwise_loss = self.criterion(curr_q, target_q)
+        loss = (elementwise_loss * weights).mean()
+        
+        # Backprop
+        optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 1.0)
+        optimizer.step()
+        
+        return loss.item(), td_errors
