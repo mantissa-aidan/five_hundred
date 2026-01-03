@@ -1,1 +1,0 @@
-{"losses/value_loss":2033.9451904296875,"losses/approx_kl":0,"global_step":3456,"charts/SPS":28,"charts/mean_reward":-180.0452880859375,"losses/policy_loss":1.1243505477905273,"_wandb":{"runtime":125},"_runtime":125,"_timestamp":1.7674340500861812e+09,"charts/learning_rate":0.00025,"losses/entropy":0.0003281486569903791,"_step":26}
