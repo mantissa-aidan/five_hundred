@@ -748,6 +748,49 @@ describe("Round Scoring", function()
         assert_equal(0, opposing_team.score, "Opposing team score should not change")
     end)
 
+    it("calls round end callback exactly once with correct data", function()
+        local game = create_game()
+        game:start_new_round()
+        
+        -- Bid and setup
+        local bidder_idx = game.current_player_idx
+        game:player_bid(bidder_idx, 6, Suit.SPADES, BidType.SUIT_TRUMP)
+        game:player_pass(game.current_player_idx)
+        game:player_pass(game.current_player_idx)
+        game:player_pass(game.current_player_idx)
+        
+        local declarer = game.players[game.current_player_idx]
+        local discards = {declarer.hand[1], declarer.hand[2], declarer.hand[3]}
+        game:player_discard_kitty(game.current_player_idx, discards)
+        
+        -- Set up tricks
+        for _, p in ipairs(game.players) do
+            p.tricks_won_this_round = 0
+        end
+        game.players[bidder_idx].tricks_won_this_round = 6
+        
+        -- Register callback to track calls
+        local callback_count = 0
+        local received_data = nil
+        
+        game:set_on_round_end(function(data)
+            callback_count = callback_count + 1
+            received_data = data
+            
+            -- Verify data is not nil (would fail if called without arguments)
+            assert_not_nil(data, "Callback must receive data parameter")
+            assert_not_nil(data.team_a_score, "Data must include team_a_score")
+            assert_not_nil(data.team_b_score, "Data must include team_b_score")
+        end)
+        
+        -- Trigger scoring
+        game:score_round()
+        
+        -- Verify callback was called exactly once
+        assert_equal(1, callback_count, "Callback should be called exactly once")
+        assert_not_nil(received_data, "Should have received data")
+    end)
+
 end)
 
 return TestRunner
