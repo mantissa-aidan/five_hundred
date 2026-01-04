@@ -69,19 +69,33 @@ function CardRenderer.get_card_canvas(card)
             local r_str = RankChars[card.rank]
             local s_str = SuitChars[card.suit]
             
-            -- Top Left
+            -- Draw Rank (Lambda)
+            if gFonts and gFonts.medium then love.graphics.setFont(gFonts.medium) end
+            
+            -- Top Left Rank
             love.graphics.print(r_str, 5, 5, 0, scale, scale)
-            love.graphics.print(s_str, 5, 20, 0, scale, scale)
             
-            -- Center Large Suit
-            love.graphics.print(s_str, CardWidth/2 - 10, CardHeight/2 - 15, 0, 2, 2)
-            
-            -- Bottom Right (Rotated)
+            -- Bottom Right Rank (Rotated)
             love.graphics.push()
             love.graphics.translate(CardWidth - 5, CardHeight - 5)
             love.graphics.rotate(math.pi)
             love.graphics.print(r_str, 0, 0, 0, scale, scale)
-            love.graphics.print(s_str, 0, 15, 0, scale, scale)
+            love.graphics.pop()
+            
+            -- Draw Suit (DejaVu / Symbols)
+            if gFonts and gFonts.symbols then love.graphics.setFont(gFonts.symbols) end
+            
+            -- Top Left Suit
+            love.graphics.print(s_str, 5, 25, 0, 1, 1)
+            
+            -- Center Large Suit
+            love.graphics.print(s_str, CardWidth/2 - 8, CardHeight/2 - 12, 0, 2, 2)
+            
+            -- Bottom Right Suit (Rotated)
+            love.graphics.push()
+            love.graphics.translate(CardWidth - 5, CardHeight - 5)
+            love.graphics.rotate(math.pi)
+            love.graphics.print(s_str, 0, 20, 0, 1, 1)
             love.graphics.pop()
         end
         
