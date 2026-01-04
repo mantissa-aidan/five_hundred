@@ -231,126 +231,79 @@ function TableView:on_deal()
                 local target_idx_val = nil
                 local end_rot = 0
                 
-                -- Shared Constants matching draw_player_hand
-                local h_size = 10 -- Assumed final size
+                -- Dimensions matching CardRenderer (140x190 base, 0.6 internal scale)
+                local rw = 140 * 0.6 * self.card_scale
+                local rh = 190 * 0.6 * self.card_scale
+                local hw = rw / 2
+                local hh = rh / 2
+                
+                local h_size = 10 
+                local spread, start_x, local_x, local_y, fan_rot, base_x, base_y, r
                 
                 if p == 1 then
-                    -- HUMAN
+                    -- HUMAN (Bottom, Rotation 0)
                     local h_idx = hand_counts[p]
                     local hand = self.game.players[1].hand
                     card_obj = hand[h_idx]
                     target_idx_val = h_idx
                     face_up = true 
                     
-                    -- Logic from draw_player_hand (Human specific)
-                    local spread = 90
-                    local start_x = -((h_size - 1) * spread) / 2
+                    spread = 90
+                    start_x = -((h_size - 1) * spread) / 2
+                    local_x = start_x + (h_idx-1)*spread
+                    local_y = -60
                     
-                    local local_x = start_x + (h_idx-1)*spread
-                    
-                    -- Translate to Global (Human is centered at bottom)
-                    -- draw_player_hand(1, center_x, height-100) -> draws at (local_x, -60)
+                    -- Rot 0: Global = Base + Local
                     tx = self.center_x + local_x
-                    ty = self.height - 100 - 60
-                    
-                    -- Rotation is 0 for Human + Ambient (ignored here)
+                    ty = self.height - 100 + local_y
                     end_rot = 0
                     
-                elseif p == 2 then
-                    -- LEFT BOT (Rotated -90 aka -pi/2)
-                    -- draw_player_hand(2, 110, center_y, false, -pi/2)
-                    -- Fan logic occurs in LOCAl space.
-                    -- Local X goes along the hand axis.
-                    -- Local Y goes perpendicular (Card height).
-                    
-                    -- Local Calculation
-                    local h_idx = hand_counts[p]
-                    local spread = 30
-                    local start_x = -((h_size - 1) * spread) / 2
-                    local local_x = start_x + (h_idx-1)*spread
-                    local local_y = -60
-                    
-                    -- Fan Logic (Opponent)
+                else
+                     -- BOTS
+                     face_up = false
+                     card_obj = self.game.players[1].hand[1]
+                     local h_idx = hand_counts[p]
+                     spread = 30
+                     start_x = -((h_size - 1) * spread) / 2
+                     local_x = start_x + (h_idx-1)*spread
+                     local_y = -60
+
+                    -- Fan Logic
                     local center = (h_size + 1) / 2
                     local dist = math.abs(h_idx - center)
                     local signed_dist = h_idx - center
                     local_y = local_y - (dist * dist) * 1.5 
-                    local fan_rot = -signed_dist * 0.1
+                    fan_rot = -signed_dist * 0.1
                     
-                    -- Transform Local -> Global
-                    -- Hand Base: (110, center_y). Rotation: -pi/2
-                    -- Global X = BaseX + (LocalX * cosR - LocalY * sinR)
-                    -- Global Y = BaseY + (LocalX * sinR + LocalY * cosR)
-                    local r = -math.pi/2
+                    if p == 2 then
+                        -- LEFT (Rot -pi/2)
+                        base_x, base_y = 110, self.center_y
+                        r = -math.pi/2
+                    elseif p == 3 then
+                        -- TOP (Rot 0)
+                        base_x, base_y = self.center_x, 50
+                        r = 0
+                    elseif p == 4 then
+                        -- RIGHT (Rot pi/2)
+                        base_x, base_y = self.width - 110, self.center_y
+                        r = math.pi/2
+                    end
+                    
+                    -- Calculate Center in Local Hand Space
+                    -- Note: local_x/y are Top-Left coords relative to Hand Base (if Rot=0)
+                    local cx_local = local_x + hw
+                    local cy_local = local_y + hh
+                    
+                    -- Transform Center to Global
                     local c, s = math.cos(r), math.sin(r)
+                    local cx_global = base_x + (cx_local * c - cy_local * s)
+                    local cy_global = base_y + (cx_local * s + cy_local * c)
                     
-                    tx = 110 + (local_x * c - local_y * s)
-                    ty = self.center_y + (local_x * s + local_y * c)
-                    
-                    -- Global Rotation = HandRotation + FanRotation
-                    end_rot = r + fan_rot
-                    
-                    card_obj = self.game.players[1].hand[1] -- Dummy
-                    face_up = false
-                    
-                elseif p == 3 then
-                    -- TOP BOT (Rotated 0? No, 0 implies regular orientation but at top)
-                    -- draw_player_hand(3, center_x, 50, false, 0)
-                    -- Wait, if rotation is 0, cards are upright?
-                    -- Usually top player cards are upside down (pi) or just upright backs.
-                    -- Code says rotation 0. So they are upright.
-                    
-                    local h_idx = hand_counts[p]
-                    local spread = 30
-                    local start_x = -((h_size - 1) * spread) / 2
-                    local local_x = start_x + (h_idx-1)*spread
-                    local local_y = -60
-                    
-                    -- Fan
-                    local center = (h_size + 1) / 2
-                    local dist = math.abs(h_idx - center)
-                    local signed_dist = h_idx - center
-                    local_y = local_y - (dist * dist) * 1.5 
-                    local fan_rot = -signed_dist * 0.1
-                    
-                    -- Transform
-                    -- Base: (center_x, 50). Rot: 0
-                    tx = self.center_x + local_x
-                    ty = 50 + local_y
-                    end_rot = 0 + fan_rot
-                    
-                    card_obj = self.game.players[1].hand[1]
-                    face_up = false
-                    
-                elseif p == 4 then
-                    -- RIGHT BOT (Rotated 90 aka pi/2)
-                    -- draw_player_hand(4, width-110, center_y, false, pi/2)
-                    
-                    local h_idx = hand_counts[p]
-                    local spread = 30
-                    local start_x = -((h_size - 1) * spread) / 2
-                    local local_x = start_x + (h_idx-1)*spread
-                    local local_y = -60
-                    
-                    -- Fan
-                    local center = (h_size + 1) / 2
-                    local dist = math.abs(h_idx - center)
-                    local signed_dist = h_idx - center
-                    local_y = local_y - (dist * dist) * 1.5 
-                    local fan_rot = -signed_dist * 0.1
-                    
-                    -- Transform
-                    local r = math.pi/2
-                    local c, s = math.cos(r), math.sin(r)
-                    
-                    local base_x = self.width - 110
-                    tx = base_x + (local_x * c - local_y * s)
-                    ty = self.center_y + (local_x * s + local_y * c)
+                    -- Calculate Global Top-Left for CardRenderer
+                    tx = cx_global - hw
+                    ty = cy_global - hh
                     
                     end_rot = r + fan_rot
-                    
-                    card_obj = self.game.players[1].hand[1]
-                    face_up = false
                 end
                 
                 self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, target_idx_val, nil, 0.2, current_delay, face_up, end_rot)
@@ -600,7 +553,16 @@ function TableView:draw()
     self:draw_kitty()
     
     if self.game.state == "BIDDING" then
-        self.bidding_view:draw()
+        -- Only if animations are mostly done?
+        -- Simplest: Only if no FLY_IN animations active.
+        local busy = false
+        for _, anim in ipairs(self.animations) do
+            if anim.type == "FLY_IN" then busy = true; break end
+        end
+        
+        if not busy then
+             self.bidding_view:draw()
+        end
     end
     
     if self.game.state == "KITTY" and self.game.current_player_idx == 1 then
