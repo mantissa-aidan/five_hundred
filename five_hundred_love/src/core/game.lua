@@ -86,10 +86,6 @@ function Game:set_on_round_end(callback)
     self.on_round_end_callback = callback
 end
 
-function Game:set_on_cards_dealt(callback)
-    self.on_cards_dealt_callback = callback
-end
-
 function Game:log(msg)
     print("[GAME] " .. msg)
     table.insert(self.message_log, msg)
@@ -134,38 +130,21 @@ function Game:deal_cards()
     -- Deal pattern: 3, 3, 3, 3, Kitty 1 ... (Simplified for functionality)
     -- Total 10 each, 3 kitty.
     -- Just deal 10 each then 3 to kitty for simplicity unless exact order matters deeply for shuffling RNG
-    -- Deal pattern: 3, 3, 3, 3, Kitty 1, 4, 4, 4, 4, Kitty 1, 3, 3, 3, 3, Kitty 1
     local cards = self.deck:deal(43)
     local idx = 1
     
-    local deal_seq = {3, 4, 3} -- Packets for players
-    
-    local start_p = (self.dealer_idx % 4) + 1
-    
-    -- Helper to iterate players starting from start_p
-    local function deal_round(count)
-        for i=0, 3 do
-            local p_idx = ((start_p + i - 1) % 4) + 1
-            for k=1, count do
-                self.players[p_idx]:add_card_to_hand(cards[idx])
-                idx = idx + 1
-            end
+    -- Distribute (following standard 3-1-4-1-3-1 pattern simulation)
+    -- Or just give 10 to each
+    for i=1,4 do
+        for k=1,10 do
+            self.players[i]:add_card_to_hand(cards[idx])
+            idx = idx + 1
         end
-        -- Kitty after each round
+        self.players[i]:sort_hand()
+    end
+    for k=1,3 do
         table.insert(self.kitty, cards[idx])
         idx = idx + 1
-    end
-    
-    -- Execute Deal Rounds
-    deal_round(3)
-    deal_round(4)
-    deal_round(3)
-    
-    -- Sort Hands
-    for _, p in ipairs(self.players) do p:sort_hand() end
-    
-    if self.on_cards_dealt_callback then
-        self.on_cards_dealt_callback()
     end
 end
 

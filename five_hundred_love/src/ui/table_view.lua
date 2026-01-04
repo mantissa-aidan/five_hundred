@@ -36,10 +36,6 @@ function TableView:init(game)
         self:on_card_played(p_idx, card)
     end)
     
-    game:set_on_cards_dealt(function()
-        self:on_deal()
-    end)
-    
     -- UI Polish State
     self.turn_alphas = {0,0,0,0} -- Alpha for each player's turn indicator
     self.hud_state = {
@@ -47,6 +43,11 @@ function TableView:init(game)
         us_scale={val=1, vel=0, target=1},
         them_scale={val=1, vel=0, target=1}
     }
+    
+    -- Animation State
+    self.is_animating = false
+    self.animation_delay_timer = 0
+    self.animation_delay_duration = 0.3 -- Pause after each animation
 end
 
 function TableView:resize(w, h)
@@ -100,193 +101,44 @@ function TableView:on_card_played(p_idx, card)
     self:play_card_animation(card, start_x, start_y, anim_end_x, anim_end_y, 0.4, nil)
 end
 
-function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale, delay, face_up, end_rotation)
+function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale)
+    self.is_animating = true -- Block game updates
+    
     table.insert(self.animations, {
         type = "FLY_IN",
         card = card,
         start_pos = {x=start_x, y=start_y},
         end_pos = {x=end_x, y=end_y},
         t = 0,
-        delay = delay or 0, -- Add Delay Param
         duration = duration,
         target_idx = card_idx,
         on_complete = on_complete,
-        start_scale = start_scale or 1.0,
-        face_up = face_up,
-        end_rotation = end_rotation or 0
+        start_scale = start_scale or 1.0
     })
 end
 
 function TableView:update_animations(dt)
+    -- Handle post-animation delay
+    if self.animation_delay_timer > 0 then
+        self.animation_delay_timer = self.animation_delay_timer - dt
+        if self.animation_delay_timer <= 0 then
+            self.is_animating = false -- Unblock game
+        end
+        return
+    end
+    
     for i = #self.animations, 1, -1 do
         local anim = self.animations[i]
-        
-        if anim.delay and anim.delay > 0 then
-            anim.delay = anim.delay - dt
-        else
-            anim.t = anim.t + dt
-            if anim.t >= anim.duration then
-                if anim.on_complete then anim.on_complete() end
-                table.remove(self.animations, i)
+        anim.t = anim.t + dt
+        if anim.t >= anim.duration then
+            if anim.on_complete then anim.on_complete() end
+            table.remove(self.animations, i)
+            
+            -- Start delay timer after animation completes
+            if #self.animations == 0 then
+                self.animation_delay_timer = self.animation_delay_duration
             end
         end
-    end
-end
-
-function TableView:on_deal()
-    -- Animate Deal in Packets: 3, 3, 3, 3, K, 4, 4, 4, 4, K, 3, 3, 3, 3, K
-    
-    local start_delay = 0.5
-    local packet_delay = 0.3 -- Delay between packets
-    local card_interval = 0.05 -- Delay between cards IN a packet
-    
-    local current_delay = start_delay
-    
-    -- We need to know where cards go.
-    -- Human hand: we have actual cards.
-    -- Bot hands: we just animate "backs" to their hand position.
-    -- Kitty: Animate to center stack? Or off screen? Center is fine.
-    
-    local hand_counts = {0,0,0,0} -- Track how many cards dealt so far to calculate positions
-    
-    -- Helper to spawn animation
-    local function deal_packet(count)
-        -- Iterate players starting from Left of Dealer
-        local dealer_idx = self.game.dealer_idx or 4 -- Default 4 (so 1 starts)
-        local start_p = (dealer_idx % 4) + 1
-        
-        for i=0, 3 do
-            local p = ((start_p + i - 1) % 4) + 1
-            local player_idx = p
-            
-            for k=1, count do
-                hand_counts[p] = hand_counts[p] + 1
-                local h_idx = hand_counts[p]
-                
-                -- Target Pos logic (Same as before)
-                local tx, ty
-                local card_obj = nil
-                
-                if player_idx == 1 then
-                    local hand = self.game.players[1].hand
-                    local hand_size = 10
-                    local available_width = self.width - 200
-                    local card_w = 80 * self.card_scale
-                    local spread = 60 * self.card_scale
-                    local total_w = (hand_size - 1) * spread + card_w
-                    if total_w > available_width then spread = (available_width - card_w) / (hand_size - 1) end
-                    local start_x = -total_w / 2
-                    
-                    local local_x = start_x + (h_idx-1)*spread
-                    tx = self.center_x + local_x
-                    ty = self.height - 100 - 60
-                    
-                    card_obj = hand[h_idx]
-                else
-                    if p == 2 then tx, ty = 50, self.center_y
-                    elseif p == 3 then tx, ty = self.center_x, 50
-                    elseif p == 4 then tx, ty = self.width - 50, self.center_y
-                    end
-                end
-                
-                if player_idx == 1 then
-                    -- Animate Human Card
-                    self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, h_idx, nil, 0.2, current_delay)
-                    current_delay = current_delay + card_interval
-                end
-            end
-            
-            if player_idx == 1 then 
-                 -- Add delay after Human receives packet so we can perceive the turn?
-                 -- No, `packet_delay` handles the wait between rounds.
-                 -- `current_delay` logic is strictly scheduling Human animations.
-                 -- If P2 is dealt before P1, P1's animation should start AFTER P2's imaginary animation time.
-                 -- So we should increment `current_delay` regardless of who the player is, to simulate the time taken to deal to them.
-                 -- Dealing ~0.1s per card.
-            end
-            
-            -- Simulate time passing for everyone
-            current_delay = current_delay + (count * card_interval)
-        end
-    end
-    
-    -- Current Delay Logic Note: The previous code updated `current_delay` TWICE for Human (once inside loop, once by accumulation)?
-    -- Let's fix. `current_delay` is the "Clock" for when the NEXT animation starts.
-    
-    -- Correct Helper:
-    local function deal_packet_corrected(count)
-        local dealer_idx = self.game.dealer_idx or 4
-        local start_p = (dealer_idx % 4) + 1
-        local h_size = 10  -- Final hand size
-        
-        for i=0, 3 do
-            local p = ((start_p + i - 1) % 4) + 1
-            
-            -- Animate this player's packet
-            for k=1, count do
-                hand_counts[p] = hand_counts[p] + 1
-                
-                -- Only animate the human player's cards
-                if p == 1 then
-                    local h_idx = hand_counts[p]
-                    local hand = self.game.players[1].hand
-                    local card_obj = hand[h_idx]
-                    
-                    -- Calculate target position (same as draw_player_hand)
-                    local spread = 90
-                    local start_x = -((h_size - 1) * spread) / 2
-                    local local_x = start_x + (h_idx-1)*spread
-                    local local_y = -60
-                    
-                    local tx = self.center_x + local_x
-                    local ty = self.height - 100 + local_y
-                    
-                    -- Don't hide the card - let it show immediately
-                    self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, nil, nil, 0.2, current_delay, true, 0)
-                    current_delay = current_delay + card_interval
-                end
-            end
-            
-            -- Small pause between players
-            current_delay = current_delay + 0.1
-        end
-    end
-    
-    deal_packet = deal_packet_corrected -- Swap
-    
-    -- Sequence
-    deal_packet(3)
-    
-    -- Kitty (1 Card)
-    -- Animate to Center + 100? Or just "The kitty pile"? 
-    -- Kitty usually face down.
-    -- Target: Center X, Center Y + 20 (stack).
-    for k=1, 1 do
-         -- Dummy card for kitty
-         local card_obj = self.game.players[1].hand[1] 
-         local tx, ty = self.center_x, self.center_y + 20 -- Slightly offset from deck
-         self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, nil, nil, 0.2, current_delay, false)
-         current_delay = current_delay + card_interval
-    end
-    current_delay = current_delay + 0.2
-    
-    deal_packet(4)
-    for k=1, 1 do
-         -- Kitty 2
-         local card_obj = self.game.players[1].hand[1] 
-         local tx, ty = self.center_x + 5, self.center_y + 25 
-         self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, nil, nil, 0.2, current_delay, false)
-         current_delay = current_delay + card_interval
-    end
-    current_delay = current_delay + 0.2
-    
-    deal_packet(3)
-    for k=1, 1 do
-         -- Kitty 3
-         local card_obj = self.game.players[1].hand[1] 
-         local tx, ty = self.center_x - 5, self.center_y + 25 
-         self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, nil, nil, 0.2, current_delay, false)
-         current_delay = current_delay + card_interval
     end
 end
 
@@ -489,16 +341,7 @@ function TableView:draw()
     self:draw_kitty()
     
     if self.game.state == "BIDDING" then
-        -- Only if animations are mostly done?
-        -- Simplest: Only if no FLY_IN animations active.
-        local busy = false
-        for _, anim in ipairs(self.animations) do
-            if anim.type == "FLY_IN" then busy = true; break end
-        end
-        
-        if not busy then
-             self.bidding_view:draw()
-        end
+        self.bidding_view:draw()
     end
     
     if self.game.state == "KITTY" and self.game.current_player_idx == 1 then
@@ -541,39 +384,21 @@ function TableView:draw()
             -- Align with movement vector
             local dx = anim.end_pos.x - anim.start_pos.x
             local dy = anim.end_pos.y - anim.start_pos.y
-
-            -- Rotate towards end_rotation at the end
+            
+            -- Rotate towards 0 at the end
             local flight_angle = math.atan2(dy, dx) - math.pi/2
             
-            -- Interpolate rotation: Flight Angle -> End Rotation
+            -- Interpolate rotation: Flight Angle -> 0
             -- Smooth transition near end
             if progress > 0.8 then
                  local end_t = (progress - 0.8) / 0.2
-                 
-                 local start_r = flight_angle
-                 local end_r = anim.end_rotation
-                 
-                 -- Shortest path
-                 local diff = end_r - start_r
-                 -- Normalize to -pi..pi
-                 while diff > math.pi do diff = diff - 2*math.pi end
-                 while diff < -math.pi do diff = diff + 2*math.pi end
-                 
-                 params.rotation = start_r + diff * end_t
+                 params.rotation = flight_angle * (1 - end_t)
             else
                  params.rotation = flight_angle
             end
             
             -- Use CardRenderer directly with global coords
-            -- Handle Face Up override from animation
-            local is_face_up = true
-            if anim.face_up ~= nil then is_face_up = anim.face_up end
-            
-            -- If it's the dealer deal, usually we deal face down?
-            -- But for Human we want to see them arrive face up? Or arrive face down then flip?
-            -- Let's stick to what we pass in.
-            
-            CardRenderer.draw_card(anim.card, curr_x - 40, curr_y, self.card_scale, is_face_up, false, params)
+            CardRenderer.draw_card(anim.card, curr_x - 40, curr_y, self.card_scale, true, false, params)
         end
     end
     
