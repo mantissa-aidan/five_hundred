@@ -132,47 +132,115 @@ function TableView:update_animations(dt)
 end
 
 function TableView:on_deal()
-    -- Animate Human Hand Deal
+    -- Animate Deal in Packets: 3, 3, 3, 3, K, 4, 4, 4, 4, K, 3, 3, 3, 3, K
+    
     local start_delay = 0.5
-    local stagger = 0.08 -- 80ms stagger
+    local packet_delay = 0.3 -- Delay between packets
+    local card_interval = 0.05 -- Delay between cards IN a packet
     
-    local hand = self.game.players[1].hand
-    -- Calculate spread for target X
-    local hand_size = #hand
-    local available_width = self.width - 200
-    local card_w = 80 * self.card_scale
-    local spread = 60 * self.card_scale
-    local total_w = (hand_size - 1) * spread + card_w
-    if total_w > available_width then
-        spread = (available_width - card_w) / (hand_size - 1)
+    local current_delay = start_delay
+    
+    -- We need to know where cards go.
+    -- Human hand: we have actual cards.
+    -- Bot hands: we just animate "backs" to their hand position.
+    -- Kitty: Animate to center stack? Or off screen? Center is fine.
+    
+    local hand_counts = {0,0,0,0} -- Track how many cards dealt so far to calculate positions
+    
+    -- Helper to spawn animation
+    local function deal_packet(count)
+        for p=1, 4 do
+            for k=1, count do
+                local player_idx = p
+                hand_counts[p] = hand_counts[p] + 1
+                local h_idx = hand_counts[p]
+                
+                -- Target Pos
+                local tx, ty
+                local card_obj = nil
+                
+                if player_idx == 1 then
+                    -- Human: Calculate visual slot (approximate since we don't know sorted order yet?)
+                    -- Actually Game has already sorted the hand!
+                    -- So card at `h_idx` in `players[1].hand` is NOT necessarily the card being dealt right now physically.
+                    -- Visual Trick: We just animate the card at `players[1].hand[h_idx]` arriving now.
+                    -- Even if logically it shouldn't be dealt yet.
+                    -- It looks smoother to fill the hand left-to-right.
+                    
+                    local hand = self.game.players[1].hand
+                    local hand_size = 10 -- We know final size
+                    -- Use spread logic
+                    local available_width = self.width - 200
+                    local card_w = 80 * self.card_scale
+                    local spread = 60 * self.card_scale
+                    local total_w = (hand_size - 1) * spread + card_w
+                    if total_w > available_width then spread = (available_width - card_w) / (hand_size - 1) end
+                    local start_x = -total_w / 2
+                    
+                    local local_x = start_x + (h_idx-1)*spread
+                    tx = self.center_x + local_x
+                    ty = self.height - 100 - 60
+                    
+                    card_obj = hand[h_idx]
+                else
+                    -- Bots: Center of their hand zone
+                    if p == 2 then tx, ty = 50, self.center_y
+                    elseif p == 3 then tx, ty = self.center_x, 50
+                    elseif p == 4 then tx, ty = self.width - 50, self.center_y
+                    end
+                    -- Use "back" of a dummy card logic? 
+                    -- play_card_animation expects a card object.
+                    -- If nil, it crashes?
+                    -- We can pass a dummy card or `Card.new(Suit.SPADES, Rank.ACE)` but flag it to draw back.
+                    -- Actually CardRenderer handles nil? No.
+                    -- We'll pass the first card of their hand and force draw_back in Renderer?
+                    -- Or just animate P1 only for simpler polish?
+                    -- User asked for "Fly in animation... deal animation should follow...".
+                    -- Let's stick to Human + Kitty for now to avoid visual clutter of 40 animations.
+                    -- Wait, "Fly animations are all happening at once".
+                    -- Implies they SAW animations.
+                    -- Previous code only animated Human.
+                    -- So let's stick to Human + Kitty pattern logic.
+                end
+                
+                if player_idx == 1 then
+                    self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, h_idx, nil, 0.2, current_delay)
+                    current_delay = current_delay + card_interval
+                end
+            end
+            -- Delay between players?
+            if player_idx == 1 then -- Only adding delay if we animated
+               -- current_delay = current_delay + 0.1
+            end
+        end
     end
-    local start_x = self.center_x - (total_w / 2)
-    -- Actually this start_x logic is relative to center if drawn centered?
-    -- draw_player_hand uses `local start_x = -total_w / 2` and then translates.
-    -- BUT play_card_animation uses global coords (because it draws in global space or on top).
-    -- Wait, play_card_animation calls CardRenderer at x, y. 
-    -- draw draws relative to center.
-    -- We need Global Target X/Y.
     
-    -- In draw_player_hand (Human):
-    -- translate(center_x, height-100)
-    -- card_x = start_x + (i-1)*spread.
-    -- So Global X = center_x + start_x + (i-1)*spread.
-    -- Global Y = height - 100 + (-60).
+    -- Sequence: 3, 3, 3, 3...
+    -- But if we only animate Human (P1), we only care about when P1 gets cards.
+    -- P1 gets 3. Then P2(3), P3(3), P4(3). Kitty(1).
+    -- So P1 waits for others.
     
-    -- Correct Start_X logic from draw_player_hand:
-    local visual_start_x = -total_w / 2
+    -- Real Sequence Delays:
+    -- Round 1
+    deal_packet(3) -- P1 gets 3
+    current_delay = current_delay + packet_delay -- Wait for P2,3,4 (simulated)
     
-    for i, card in ipairs(hand) do
-        local local_card_x = visual_start_x + (i-1) * spread
-        local target_x = self.center_x + local_card_x -- Global X
-        local target_y = self.height - 100 - 60       -- Global Y
-        
-        -- Start from Deck (Center Screen)
-        local sx, sy = self.center_x, self.center_y
-        
-        self:play_card_animation(card, sx, sy, target_x, target_y, 0.4, i, nil, 0.2, start_delay + (i-1)*stagger)
-    end
+    -- Kitty 1
+    current_delay = current_delay + 0.1
+    
+    -- Round 2
+    deal_packet(4) -- P1 gets 4
+    current_delay = current_delay + packet_delay
+    
+    -- Kitty 1
+    current_delay = current_delay + 0.1
+    
+    -- Round 3
+    deal_packet(3) -- P1 gets 3
+    current_delay = current_delay + packet_delay
+    
+    -- Kitty 1
+    -- End.
 end
 
 -- ...

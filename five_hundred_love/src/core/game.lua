@@ -134,22 +134,44 @@ function Game:deal_cards()
     -- Deal pattern: 3, 3, 3, 3, Kitty 1 ... (Simplified for functionality)
     -- Total 10 each, 3 kitty.
     -- Just deal 10 each then 3 to kitty for simplicity unless exact order matters deeply for shuffling RNG
+    -- Deal pattern: 3, 3, 3, 3, Kitty 1, 4, 4, 4, 4, Kitty 1, 3, 3, 3, 3, Kitty 1
     local cards = self.deck:deal(43)
     local idx = 1
     
-    -- Distribute (following standard 3-1-4-1-3-1 pattern simulation)
-    -- Or just give 10 to each
+    local deal_seq = {3, 4, 3} -- Packets for players
+    
+    -- We track which cards go where for animation syncing if needed, 
+    -- but for now just distribute logic.
+    
+    -- Round 1: 3 cards each
     for i=1,4 do
-        for k=1,10 do
-            self.players[i]:add_card_to_hand(cards[idx])
-            idx = idx + 1
+        for k=1,3 do
+            self.players[i]:add_card_to_hand(cards[idx]); idx = idx + 1
         end
-        self.players[i]:sort_hand()
     end
-    for k=1,3 do
-        table.insert(self.kitty, cards[idx])
-        idx = idx + 1
+    -- Kitty 1
+    table.insert(self.kitty, cards[idx]); idx = idx + 1
+    
+    -- Round 2: 4 cards each
+    for i=1,4 do
+        for k=1,4 do
+            self.players[i]:add_card_to_hand(cards[idx]); idx = idx + 1
+        end
     end
+    -- Kitty 1
+    table.insert(self.kitty, cards[idx]); idx = idx + 1
+    
+    -- Round 3: 3 cards each
+    for i=1,4 do
+        for k=1,3 do
+            self.players[i]:add_card_to_hand(cards[idx]); idx = idx + 1
+        end
+    end
+    -- Kitty 1
+    table.insert(self.kitty, cards[idx]); idx = idx + 1
+    
+    -- Sort Hands
+    for _, p in ipairs(self.players) do p:sort_hand() end
     
     if self.on_cards_dealt_callback then
         self.on_cards_dealt_callback()

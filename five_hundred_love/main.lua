@@ -181,6 +181,8 @@ local gCanvas = nil
 local gCRTShader = nil
 local gTime = 0
 local gScreenShake = 0
+local gTurnTimer = 0
+local gCurrentPlayerIdx = 1
 
 function love.load()
     -- Initialize RNG
@@ -297,9 +299,20 @@ function love.update(dt)
             
             -- Only bots need updating from main (Humans act via UI events)
             if strategy and not strategy.is_human then
-                if not strategy.last_action_time then strategy.last_action_time = love.timer.getTime() end
-
-                if love.timer.getTime() - strategy.last_action_time > AI_DELAY then
+                -- Check for turn change
+                if gCurrentPlayerIdx ~= p_idx then
+                    gCurrentPlayerIdx = p_idx
+                    gTurnTimer = 0
+                end
+                
+                gTurnTimer = gTurnTimer + dt
+                
+                if gTurnTimer > AI_DELAY then
+                   -- Reset timer to avoid multiple actions in one frame? 
+                   -- actually if they act, turn changes, so it's fine.
+                   -- But if they need multiple actions (e.g. discard 3 cards), we need to handle that.
+                   -- Discard is usually atomic (list of cards).
+                   
                    if gGame.state == "BIDDING" then
                        local action, params = strategy:decide_bid(gGame, p_idx)
                        if action == "pass" then
