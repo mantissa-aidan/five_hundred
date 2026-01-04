@@ -522,7 +522,21 @@ function Game:score_round()
         })
     end
     
-    self.state = Game.STATE.ROUND_OVER
+    -- Check for game over (500 points or -500 points)
+    local game_over = false
+    for _, team in ipairs(self.teams) do
+        if team.score >= 500 or team.score <= -500 then
+            game_over = true
+            break
+        end
+    end
+    
+    if game_over then
+        self.state = Game.STATE.GAME_OVER
+        self:log("Game Over!")
+    else
+        self.state = Game.STATE.ROUND_OVER
+    end
 end
 
 function Game:get_player_index(player)
