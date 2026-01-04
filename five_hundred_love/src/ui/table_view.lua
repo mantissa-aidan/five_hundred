@@ -118,15 +118,7 @@ function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, dur
 end
 
 function TableView:update_animations(dt)
-    -- Handle post-animation delay
-    if self.animation_delay_timer > 0 then
-        self.animation_delay_timer = self.animation_delay_timer - dt
-        if self.animation_delay_timer <= 0 then
-            self.is_animating = false -- Unblock game
-        end
-        return
-    end
-    
+    -- Update active animations
     for i = #self.animations, 1, -1 do
         local anim = self.animations[i]
         anim.t = anim.t + dt
@@ -138,6 +130,14 @@ function TableView:update_animations(dt)
             if #self.animations == 0 then
                 self.animation_delay_timer = self.animation_delay_duration
             end
+        end
+    end
+    
+    -- Handle post-animation delay (blocks game logic but not animation updates)
+    if self.animation_delay_timer > 0 then
+        self.animation_delay_timer = self.animation_delay_timer - dt
+        if self.animation_delay_timer <= 0 then
+            self.is_animating = false -- Unblock game
         end
     end
 end
