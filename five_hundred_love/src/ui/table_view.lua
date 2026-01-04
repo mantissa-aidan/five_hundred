@@ -192,6 +192,8 @@ function TableView:animate_deal()
     self.dealing_in_progress = true
     self.is_animating = true
     
+    print("[DEAL] Starting deal animation")
+    
     local deck_x = self.center_x
     local deck_y = self.center_y
     local delay = 0
@@ -203,6 +205,9 @@ function TableView:animate_deal()
             local card = self.game.players[p_idx].hand[round]
             if card then
                 local end_x, end_y = self:get_deal_target_position(p_idx, round)
+                
+                print(string.format("[DEAL] Queueing card %d for P%d: %s -> (%.1f, %.1f) delay=%.2f", 
+                    round, p_idx, tostring(card), end_x, end_y, delay))
                 
                 self:play_card_animation_delayed(card, deck_x, deck_y, end_x, end_y, 0.2, delay, function()
                     -- Card landed
@@ -216,6 +221,8 @@ function TableView:animate_deal()
             end
         end
     end
+    
+    print(string.format("[DEAL] Queued %d pending animations", #self.pending_animations))
 end
 
 function TableView:deal_kitty(start_delay)
@@ -472,7 +479,8 @@ function TableView:draw()
     self:draw_current_trick()
     self:draw_kitty()
     
-    if self.game.state == "BIDDING" then
+    
+    if self.game.state == "BIDDING" and not self.dealing_in_progress then
         self.bidding_view:draw()
     end
     
