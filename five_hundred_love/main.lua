@@ -359,6 +359,7 @@ function love.keypressed(key)
         gChatLog:add_message("System", {"UI Reloaded"}, false, {0.3, 0.5, 0.3})
     elseif key == "n" then
         gGame:start_new_round()
+        if gChatLog then gChatLog:clear() end
         gChatLog:add_message("System", {"New round started"}, false, {0.3, 0.5, 0.3})
         gPaused = false
     end

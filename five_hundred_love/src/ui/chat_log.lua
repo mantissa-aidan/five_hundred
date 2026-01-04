@@ -29,6 +29,11 @@ function ChatLog:init(x, y, w, h)
     self.avatar_colors = Config.colors.avatar
 end
 
+function ChatLog:clear()
+    self.messages = {}
+    self.scroll_offset = 0
+end
+
 function ChatLog:resize(x, y, w, h)
     self.x = x
     self.y = y
