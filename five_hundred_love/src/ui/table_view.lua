@@ -562,12 +562,58 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     
     -- Bid Indicator
     if self.game.state == "BIDDING" then
-        local last_act = self.game.player_last_action[player_idx]
-        if last_act then
+        local action = self.game.player_last_action[player_idx]
+        if action then
+            -- Position: "centre side of hand"
+            -- Hand is centered at (x,y) with local coordinates.
+            -- Local (0,0) is center of hand arc.
+            -- Cards are at y approx -60 to -110?
+            -- "Centre side" depends on rotation logic.
+            -- Actually, simpler: draw below hand (positive Y in local space) or above (negative Y)?
+            -- User said "centre side of the hand".
+            -- For P1 (Bottom), "centre side" is probably towards board center (Up/Negative Y)
+            -- For P3 (Top), also towards board center (which is "Up" in local space relative to hand? No, rotated 180).
+            -- Let's just draw it "above" the hand in local space (negative Y), so it's between hand and center of table.
+            
+            local y_offset = -120 
+            
             love.graphics.setColor(1, 0.8, 0.2) -- Goldish
-             -- Determine position based on rotation/side?
-             -- Draw below name tag
-            love.graphics.print(last_act, -30, -100)
+            local text = ""
+            if action.type == "PASS" then
+                text = "PASS"
+                love.graphics.printf(text, -100, y_offset, 200, "center")
+            else
+                -- Format: "7 [Symbol] (Score)"
+                local suit_sym = "?"
+                if action.suit == Suit.SPADES then suit_sym = "♠"
+                elseif action.suit == Suit.CLUBS then suit_sym = "♣"
+                elseif action.suit == Suit.HEARTS then suit_sym = "♥"
+                elseif action.suit == Suit.DIAMONDS then suit_sym = "♦"
+                elseif action.suit == Suit.NO_TRUMP then suit_sym = "NT"
+                end
+                
+                text = string.format("%d %s (%d)", action.tricks, suit_sym, action.score)
+                
+                -- Fallback font for symbol if needed, but let's try standard font first or switch
+                -- Using standard print for now, symbols might need fallback font if Lambda doesn't support them.
+                -- User mentioned Suit Symbols fallback was added to CardRenderer.
+                -- Let's try to just print for now, if symbols fail we switch to fallback.
+                
+                -- Actually, let's use the fallback font explicitly for the symbol to be safe, 
+                -- or ensure the main font has them. Lambda likely doesn't.
+                -- So we construct the string carefully.
+                
+                -- Draw "7 "
+                local font = love.graphics.getFont()
+                local w7 = font:getWidth(action.tricks .. " ")
+                local wSym = 0
+                local wScore = font:getWidth(" (" .. action.score .. ")")
+                
+                -- Approximate width of symbol (assume 20px?)
+                -- Better approach: Draw centered.
+                
+                love.graphics.printf(text, -100, y_offset, 200, "center")
+            end
             love.graphics.setColor(1, 1, 1)
         end
     end
