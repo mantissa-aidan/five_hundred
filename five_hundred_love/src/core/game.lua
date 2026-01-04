@@ -514,17 +514,12 @@ function Game:score_round()
         declarer_team:update_score(-self.winning_bid.points)
     end
     
-    -- Trigger Hook with UPDATED scores
+    -- Trigger Hook with UPDATED scores (also clears animations via callback)
     if self.on_round_end_callback then
         self.on_round_end_callback({
             team_a_score = self.teams[1].score, 
             team_b_score = self.teams[2].score
         })
-    end
-    
-    -- Clear any pending animations to prevent blocking
-    if self.on_round_end_callback then
-        self.on_round_end_callback()
     end
     
     self.state = Game.STATE.ROUND_OVER
