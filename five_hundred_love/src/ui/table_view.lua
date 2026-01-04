@@ -33,6 +33,14 @@ function TableView:init(game)
     game:set_on_card_play(function(p_idx, card)
         self:on_card_played(p_idx, card)
     end)
+    
+    -- UI Polish State
+    self.turn_alphas = {0,0,0,0} -- Alpha for each player's turn indicator
+    self.hud_state = {
+        us_score=0, them_score=0,
+        us_scale={val=1, vel=0, target=1},
+        them_scale={val=1, vel=0, target=1}
+    }
 end
 
 function TableView:resize(w, h)
@@ -214,6 +222,37 @@ function TableView:update(dt)
     self:update_hand_springs(dt)
     self.particles:update(dt)
     
+    -- Update Turn Indicators
+    local current_p = self.game.current_player_idx
+    for i=1, 4 do
+        local target = (current_p == i and (self.game.state == "PLAYING" or self.game.state == "BIDDING")) and 1.0 or 0.0
+        if self.game.state == "GAME_OVER" then target = 0 end
+        
+        -- Smooth Fade
+        self.turn_alphas[i] = self.turn_alphas[i] + (target - self.turn_alphas[i]) * 5 * dt
+    end
+    
+    -- Update HUD Score Animation
+    local us = (self.game.tricks_won and (self.game.tricks_won[1] + self.game.tricks_won[3])) or 0
+    local them = (self.game.tricks_won and (self.game.tricks_won[2] + self.game.tricks_won[4])) or 0
+    
+    if us > self.hud_state.us_score then self.hud_state.us_scale.val = 1.5 end
+    self.hud_state.us_score = us
+    
+    if them > self.hud_state.them_score then self.hud_state.them_scale.val = 1.5 end
+    self.hud_state.them_score = them
+    
+    -- Scale Springs
+    local k = 150; local d = 10
+    local function spring(prop, dt)
+         local diff = 1.0 - prop.val
+         local force = diff * k
+         prop.vel = prop.vel * (1 - d*dt) + force*dt
+         prop.val = prop.val + prop.vel * dt
+    end
+    spring(self.hud_state.us_scale, dt)
+    spring(self.hud_state.them_scale, dt)
+
     -- Update drag position
     if self.dragged_card then
         if not love.mouse.isDown(1) then
@@ -260,7 +299,7 @@ function TableView:draw()
     love.graphics.setColor(Config.colors.background)
     love.graphics.rectangle("fill", 0, 0, self.width, self.height) 
     
-    self:draw_status_info()
+    self:draw_hud()
     self:draw_tricks_history()
     
     -- Draw Players
@@ -484,18 +523,44 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     local player = self.game.players[player_idx]
     if not player then return end
     
+    
+    local hand_size = #player.hand
+    local spread = 90  
+    local start_x = -((hand_size - 1) * spread) / 2
+    
     love.graphics.push()
     love.graphics.translate(x, y)
     if rotation then love.graphics.rotate(rotation) end
     
+    
+    -- Draw Indicator if turn_alpha > 0
+    local alpha = self.turn_alphas[player_idx]
+    if alpha > 0.01 then
+        local w_hand = (hand_size - 1) * spread + 80 * self.card_scale
+        local rx = start_x - 40 * self.card_scale - 20
+        local ry = -60 - 20
+        local rw = w_hand + 40
+        local rh = 110 * self.card_scale + 40
+        -- Adjust for selected
+        if is_human then ry = ry - 20; rh = rh + 20 end
+        
+        love.graphics.setColor(1, 1, 1, alpha * 0.8) 
+        love.graphics.setLineWidth(3)
+        love.graphics.rectangle("line", rx, ry, rw, rh, 15, 15)
+        
+        -- Glow
+        love.graphics.setColor(1, 1, 1, alpha * 0.1)
+        love.graphics.rectangle("fill", rx, ry, rw, rh, 15, 15)
+    end
+
     -- Name Tag
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(player.name, -30, -80)
     
     -- Cards
-    local hand_size = #player.hand
-    local spread = 90  
-    local start_x = -((hand_size - 1) * spread) / 2
+    -- Cards
+    
+    -- Store card rects only for Human/Bottom for clicking
     
     -- Store card rects only for Human/Bottom for clicking
     if is_human then self.hand_card_rects = {} end
@@ -706,6 +771,73 @@ function TableView:draw_kitty()
        -- If P1 is declarer, show kitty text? 
        -- Actually kitty cards are already in hand.
     end
+end
+
+
+function TableView:draw_hud()
+    local padding = 10
+    local x, y = 10, 10
+    local w, h = 220, 90
+    
+    -- Panel BG
+    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.rectangle("fill", x, y, w, h, 8, 8)
+    
+    -- Border
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", x, y, w, h, 8, 8)
+    
+    -- TRUMP INFO
+    local trump_suit = self.game.trump_suit or "None"
+    local bid = self.game.winning_bid
+    local contract_str = "Bidding..."
+    
+    if self.game.state == "BIDDING" then
+        local highest = self.game.highest_bid
+        if highest then
+             contract_str = string.format("Bid: %d %s", highest.tricks, highest.suit)
+        else
+             contract_str = "Bidding"
+        end
+    elseif bid then
+        contract_str = string.format("Contract: %d %s", bid.tricks, bid.suit)
+        trump_suit = bid.suit 
+    end
+    
+    -- Big Text (Contract)
+    love.graphics.setColor(1, 1, 1)
+    -- Scaling text slightly for "Medium" feel if no font
+    local default_font = love.graphics.getFont()
+    local scale = 1.2
+    love.graphics.print(contract_str, x + 15, y + 15, 0, scale, scale)
+    
+    -- SCORE
+    local us = self.hud_state.us_score
+    local them = self.hud_state.them_score
+    
+    love.graphics.print("Tricks:", x + 15, y + 50)
+    
+    local s_us = self.hud_state.us_scale.val
+    local s_them = self.hud_state.them_scale.val
+    
+    -- Draw Scores with Pop
+    love.graphics.push()
+    love.graphics.translate(x + 90, y + 60)
+    love.graphics.scale(s_us, s_us)
+    love.graphics.setColor(0.5, 1, 0.5) -- Greenish for Us
+    love.graphics.print(tostring(us), -5, -10)
+    love.graphics.pop()
+    
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("-", x + 110, y + 50)
+    
+    love.graphics.push()
+    love.graphics.translate(x + 130, y + 60)
+    love.graphics.scale(s_them, s_them)
+    love.graphics.setColor(1, 0.5, 0.5) -- Reddish for Them
+    love.graphics.print(tostring(them), -5, -10)
+    love.graphics.pop()
 end
 
 function TableView:check_click(x, y)
