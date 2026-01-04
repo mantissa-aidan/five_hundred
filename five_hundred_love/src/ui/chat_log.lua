@@ -75,6 +75,8 @@ function ChatLog:scroll(delta)
 end
 
 function ChatLog:draw()
+    local old_font = love.graphics.getFont()
+    if gFonts and gFonts.small then love.graphics.setFont(gFonts.small) end
     -- Background
     love.graphics.setColor(self.bg_color)
     love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, 5)
@@ -150,6 +152,9 @@ function ChatLog:draw()
     
     -- Reset scissor
     love.graphics.setScissor()
+    
+    -- Restore previous font
+    if old_font then love.graphics.setFont(old_font) end
     
     -- Scroll indicator
     local total_height = self:get_total_height()

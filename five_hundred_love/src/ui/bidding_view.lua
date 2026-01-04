@@ -41,6 +41,8 @@ end
 
 function BiddingView:create_buttons()
     self.buttons = {}
+    self.springs = {} -- Reset springs
+    
     local cell_w = 60
     local cell_h = 40
     local start_x = self.base_x + 150
@@ -50,81 +52,95 @@ function BiddingView:create_buttons()
     local suits = {Suit.SPADES, Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.NO_TRUMP}
     local tricks = {6, 7, 8, 9, 10}
     
+    local btn_idx = 1
+    
     for r, suit in ipairs(suits) do
         for c, trick_count in ipairs(tricks) do
             local bx = start_x + (c-1) * (cell_w + 10)
             local by = start_y + (r-1) * (cell_h + 10)
             
-            table.insert(self.buttons, {
+            local btn = {
                 x = bx, y = by, w = cell_w, h = cell_h,
                 text = tostring(trick_count),
                 type = "SELECT_BID",
                 suit = suit,
                 tricks = trick_count,
-                bid_type = (suit == Suit.NO_TRUMP) and BidType.NO_TRUMP or BidType.SUIT_TRUMP
-            })
+                bid_type = (suit == Suit.NO_TRUMP) and BidType.NO_TRUMP or BidType.SUIT_TRUMP,
+                id = btn_idx 
+            }
+            table.insert(self.buttons, btn)
+            self.springs[btn_idx] = {val=1, target=1, vel=0}
+            btn_idx = btn_idx + 1
         end
     end
     
-    -- Misere Buttons (DISABLED - Bot not trained on these yet, curriculum learning planned)
-    -- TODO: Re-enable when curriculum learning adds Misere support
-    --[[
-    local misc_y = start_y + 5 * (cell_h + 10) + 20
-    table.insert(self.buttons, {
-        x = start_x, y = misc_y, w = 100, h = 40,
-        text = "Misere",
-        type = "SELECT_BID",
-        suit = Suit.NO_TRUMP,
-        tricks = 0,
-        bid_type = BidType.MISERE
-    })
-    
-    table.insert(self.buttons, {
-        x = start_x + 120, y = misc_y, w = 120, h = 40,
-        text = "Open Misere",
-        type = "SELECT_BID",
-        suit = Suit.NO_TRUMP,
-        tricks = 0,
-        bid_type = BidType.OPEN_MISERE
-    })
-    --]]
-    local misc_y = start_y + 5 * (cell_h + 10) + 20 -- Keep for action button positioning
-    
-    -- Action Buttons Area
+    local misc_y = start_y + 5 * (cell_h + 10) + 20 
     local action_y = misc_y + 60
     
-    -- Pass Button (Immediate action)
+    -- Pass Button
     table.insert(self.buttons, {
         x = self.base_x + 50, y = action_y, w = 100, h = 50,
         text = "Pass",
-        type = "PASS"
+        type = "PASS",
+        id = btn_idx
     })
+    self.springs[btn_idx] = {val=1, target=1, vel=0}
+    btn_idx = btn_idx + 1
     
-    -- Submit Button (Requires selection)
+    -- Submit Button
     table.insert(self.buttons, {
         x = self.base_x + self.width - 150, y = action_y, w = 100, h = 50,
         text = "Place Bid",
-        type = "SUBMIT"
+        type = "SUBMIT",
+        id = btn_idx
     })
+    self.springs[btn_idx] = {val=1, target=1, vel=0}
+end
+
+function BiddingView:update(dt)
+    if self.game.state ~= "BIDDING" then return end
+    
+    local mx, my = love.mouse.getPosition()
+    
+    for i, btn in ipairs(self.buttons) do
+        local spr = self.springs[btn.id]
+        if spr then
+            local hovered = (mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h)
+            spr.target = hovered and 1.15 or 1.0
+            
+            -- Spring Physics
+            local k = 200
+            local d = 15
+            local diff = spr.target - spr.val
+            local force = diff * k
+            spr.vel = spr.vel * (1 - d*dt) + force*dt
+            spr.val = spr.val + spr.vel * dt
+        end
+    end
 end
 
 function BiddingView:update_layout()
     -- Recalculate position using stored container dimensions (game area, not full screen)
     self.base_x = (self.container_w - self.width) / 2
     self.base_y = (self.container_h - self.height) / 2
-    self:create_buttons()
+    
+    -- Only recreate if buttons empty (avoid resetting springs constantly)
+    if #self.buttons == 0 then
+        self:create_buttons()
+    end
 end
 
 function BiddingView:draw()
     if self.game.state ~= "BIDDING" then return end
     
-    self:update_layout()
+    if #self.buttons == 0 then self:update_layout() end
     
     -- Overlay Background
     love.graphics.setColor(0, 0, 0, 0.9)
     love.graphics.rectangle("fill", self.base_x, self.base_y, self.width, self.height, 10)
     
     love.graphics.setColor(1, 1, 1)
+    if gFonts and gFonts.medium then love.graphics.setFont(gFonts.medium) end
     love.graphics.print("Bidding Phase - Select a Bid", self.base_x + 20, self.base_y + 20)
     
     local suit_labels = {[Suit.SPADES]="Spades", [Suit.CLUBS]="Clubs", 
@@ -139,6 +155,9 @@ function BiddingView:draw()
     end
     
     -- Draw Buttons
+    local current_font = love.graphics.getFont()
+    local font_h = current_font:getHeight()
+    
     for _, btn in ipairs(self.buttons) do
         local color = {0.3, 0.3, 0.3} -- Default Gray
         local can_click = true
@@ -171,12 +190,33 @@ function BiddingView:draw()
              end
         end
         
-        love.graphics.setColor(unpack(color))
-        love.graphics.rectangle("fill", btn.x, btn.y, btn.w, btn.h, 5)
+        -- Animation Scale & Float
+        local spr = self.springs[btn.id]
+        local scale = spr and spr.val or 1.0
         
+        -- Idle Float (Sine Wave)
+        local time = love.timer.getTime()
+        local float_y = math.sin(time * 2 + btn.id * 0.5) * 2
+        
+        love.graphics.push()
+        -- Translate to center of button for scaling (and add float)
+        love.graphics.translate(btn.x + btn.w/2, btn.y + btn.h/2 + float_y)
+        love.graphics.scale(scale, scale)
+        love.graphics.translate(-btn.w/2, -btn.h/2)
+        
+        -- Draw Button Body (at 0,0 relative to pushed transform)
+        love.graphics.setColor(unpack(color))
+        love.graphics.rectangle("fill", 0, 0, btn.w, btn.h, 5)
+        
+        -- Draw Text Centered
         love.graphics.setColor(1, 1, 1)
         if not can_click then love.graphics.setColor(0.5, 0.5, 0.5) end
-        love.graphics.printf(btn.text, btn.x, btn.y + (btn.h/2 - 7), btn.w, "center")
+        
+        -- Center Y calculation
+        local text_y = (btn.h - font_h) / 2
+        love.graphics.printf(btn.text, 0, text_y, btn.w, "center")
+        
+        love.graphics.pop()
     end
 end
 

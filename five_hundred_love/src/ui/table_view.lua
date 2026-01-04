@@ -221,6 +221,7 @@ function TableView:update(dt)
     self:update_animations(dt)
     self:update_hand_springs(dt)
     self.particles:update(dt)
+    if self.bidding_view then self.bidding_view:update(dt) end
     
     -- Update Turn Indicators
     local current_p = self.game.current_player_idx
