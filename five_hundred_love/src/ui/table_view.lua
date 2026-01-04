@@ -82,7 +82,7 @@ function TableView:on_card_played(p_idx, card)
     -- Actually center is fine. draw_current_trick has offsets.
     -- Let's fly to strict center for now or match target pos.
     
-    -- Target Pos logic from draw_current_trick (MUST MATCH EXACTLY!)
+    -- Match the exact position from draw_current_trick (MUST MATCH EXACTLY!)
     local positions = {
         [1] = {x=0, y=90},  -- Bottom Played
         [2] = {x=-120, y=0}, -- Left Played
@@ -96,9 +96,6 @@ function TableView:on_card_played(p_idx, card)
     -- So absolute position is: center_x + offset.x - 40, center_y + offset.y - 55
     local anim_end_x = self.center_x + offset.x - 40
     local anim_end_y = self.center_y + offset.y - 55
-    
-    print(string.format("[ANIM] P%d: center=(%.1f,%.1f) offset=(%.1f,%.1f) -> target=(%.1f, %.1f)", 
-        p_idx, self.center_x, self.center_y, offset.x, offset.y, anim_end_x, anim_end_y))
     
     -- Track when this card lands to disable float initially
     self.card_land_times = self.card_land_times or {}
@@ -866,14 +863,6 @@ function TableView:draw_current_trick()
                 local ambient_rot = math.cos(t * speed_rot + phase_rot) * 0.02 * float_strength
                 
                 card_y = card_y + ambient_y
-                
-                -- Debug: print actual draw position (in local coords after translate)
-                local abs_x = self.center_x + card_x
-                local abs_y = self.center_y + card_y
-                if not animating_set[play.card] then
-                    print(string.format("[TRICK] P%d: center=(%.1f,%.1f) offset=(%.1f,%.1f) card_xy=(%.1f,%.1f) -> abs=(%.1f, %.1f)", 
-                        p_idx, self.center_x, self.center_y, offset.x, offset.y, card_x, card_y, abs_x, abs_y))
-                end
                 
                 CardRenderer.draw_card(play.card, card_x, card_y, self.card_scale, true, false, {
                     scale_x = 1, -- Base scale for params
