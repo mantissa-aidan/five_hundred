@@ -3,15 +3,14 @@ local Utils = require "src.core.utils"
 local Team = Utils.class("Team")
 
 function Team:init(name, players)
-    if #players > 2 then error("Team size limit 2") end
     self.name = name
-    self.players = players
-    self.team_score = 0
+    self.players = players or {}
+    self.score = 0  -- Initialize score to 0
     self.has_bid_this_round = false
 end
 
 function Team:update_score(points)
-    self.team_score = self.team_score + points
+    self.score = self.score + points
 end
 
 function Team:get_total_tricks_won_this_round()
@@ -30,7 +29,7 @@ function Team:reset_for_new_round()
 end
 
 function Team:__tostring()
-    return string.format("%s (Score: %d)", self.name, self.team_score)
+    return string.format("%s (Score: %d)", self.name, self.score)
 end
 
 return Team
