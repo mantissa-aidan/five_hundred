@@ -265,6 +265,15 @@ function TableView:get_deal_target_position(p_idx, card_idx)
     end
 end
 
+function TableView:skip_dealing_animation()
+    -- Clear all animations
+    self.animations = {}
+    self.pending_animations = {}
+    self.dealing_in_progress = false
+    self.is_animating = false
+    self.animation_delay_timer = 0
+end
+
 -- ...
 
 
@@ -475,7 +484,7 @@ function TableView:draw()
         self:draw_next_trick_btn()
     end
     
-    -- Draw Animations
+    -- Draw Animations (including dealing)
     for _, anim in ipairs(self.animations) do
         if anim.type == "FLY_IN" then
             local progress = anim.t / anim.duration
@@ -493,8 +502,16 @@ function TableView:draw()
             local params = {scale_x = 1, scale_y = 1, rotation = 0, shadow_offset = 10}
             
             -- Draw at interpolated position (already includes the -40 offset)
-            CardRenderer.draw_card(anim.card, curr_x, curr_y, self.card_scale, true, false, params)
+            -- Draw face down for dealing animation, face up for trick animations
+            local face_up = not self.dealing_in_progress
+            CardRenderer.draw_card(anim.card, curr_x, curr_y, self.card_scale, face_up, false, params)
         end
+    end
+    
+    -- Skip hint during dealing
+    if self.dealing_in_progress then
+        love.graphics.setColor(1, 1, 1, 0.7)
+        love.graphics.printf("Press SPACE to skip", 0, self.height - 30, self.width, "center")
     end
     
     -- Debug overlay

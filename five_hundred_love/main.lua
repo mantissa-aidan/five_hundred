@@ -368,7 +368,10 @@ function love.keypressed(key)
         gChatLog:add_message("System", {"Debug mode: " .. (gDebugMode and "ON" or "OFF")}, false, {0.5, 0.5, 0.3})
     elseif key == "space" then
         if gPaused then return end
-        if gGame.state == "BIDDING" and gGame.current_player_idx == 1 then
+        -- Skip dealing animation first
+        if gTableView and gTableView.dealing_in_progress then
+            gTableView:skip_dealing_animation()
+        elseif gGame.state == "BIDDING" and gGame.current_player_idx == 1 then
             gGame:player_pass(1)
             gChatLog:add_message("You", {"Passed"}, true)
         elseif gGame.state == "TRICK_OVER" then
