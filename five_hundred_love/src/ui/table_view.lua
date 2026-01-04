@@ -263,7 +263,7 @@ function TableView:on_deal()
                      face_up = false
                      card_obj = self.game.players[1].hand[1]
                      local h_idx = hand_counts[p]
-                     target_idx_val = h_idx -- KEY FIX: Hide this slot in draw_player_hand
+                     target_idx_val = h_idx
                      
                      spread = 30
                      start_x = -((h_size - 1) * spread) / 2
@@ -278,30 +278,49 @@ function TableView:on_deal()
                     fan_rot = -signed_dist * 0.1
                     
                     if p == 2 then
-                        -- LEFT (Rot -pi/2)
                         base_x, base_y = 110, self.center_y
                         r = -math.pi/2
                     elseif p == 3 then
-                        -- TOP (Rot 0)
                         base_x, base_y = self.center_x, 50
                         r = 0
                     elseif p == 4 then
-                        -- RIGHT (Rot pi/2)
                         base_x, base_y = self.width - 110, self.center_y
                         r = math.pi/2
                     end
                     
-                    -- Calculate Center in Local Hand Space
-                    -- Note: local_x/y are Top-Left coords relative to Hand Base (if Rot=0)
-                    local cx_local = local_x + hw
-                    local cy_local = local_y + hh
+                    -- The key insight: draw_player_hand does:
+                    -- 1. translate(base_x, base_y)
+                    -- 2. rotate(r)
+                    -- 3. draw card at (local_x, local_y)
+                    --
+                    -- CardRenderer.draw_card(card, x, y, ..., rotation) does:
+                    -- 1. translate(x + w/2, y + h/2)  -- move to center
+                    -- 2. rotate(rotation)
+                    -- 3. draw mesh at (0, 0)
+                    --
+                    -- So when draw_player_hand calls CardRenderer with (local_x, local_y),
+                    -- the ACTUAL center position in global coords is:
+                    -- global_center = base + rotate_by_r(local + (w/2, h/2))
+                    --
+                    -- We want the animation to end at that same global center.
+                    -- So we need to calculate: what (tx, ty) should we pass to CardRenderer
+                    -- such that (tx + w/2, ty + h/2) rotated by end_rot equals global_center?
                     
-                    -- Transform Center to Global
+                    -- Step 1: Calculate the center in local hand space
+                    -- Note: draw_player_hand passes (card_x - 40, card_y) to CardRenderer
+                    -- where card_x = start_x + (idx-1)*spread
+                    local card_x_local = local_x - 40
+                    local card_y_local = local_y
+                    
+                    local cx_local = card_x_local + hw
+                    local cy_local = card_y_local + hh
+                    
+                    -- Step 2: Transform to global (this is where the center will be)
                     local c, s = math.cos(r), math.sin(r)
                     local cx_global = base_x + (cx_local * c - cy_local * s)
                     local cy_global = base_y + (cx_local * s + cy_local * c)
                     
-                    -- Calculate Global Top-Left for CardRenderer
+                    -- Step 3: Calculate top-left such that CardRenderer's center lands at cx_global, cy_global
                     tx = cx_global - hw
                     ty = cy_global - hh
                     
