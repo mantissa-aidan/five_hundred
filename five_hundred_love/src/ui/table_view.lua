@@ -100,7 +100,7 @@ function TableView:on_card_played(p_idx, card)
     self:play_card_animation(card, start_x, start_y, anim_end_x, anim_end_y, 0.4, nil)
 end
 
-function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale, delay, face_up)
+function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale, delay, face_up, end_rotation)
     table.insert(self.animations, {
         type = "FLY_IN",
         card = card,
@@ -112,7 +112,8 @@ function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, dur
         target_idx = card_idx,
         on_complete = on_complete,
         start_scale = start_scale or 1.0,
-        face_up = face_up -- Default true if nil in renderer? Or pass explicit logic.
+        face_up = face_up,
+        end_rotation = end_rotation or 0
     })
 end
 
@@ -228,50 +229,135 @@ function TableView:on_deal()
                 local card_obj = nil
                 local face_up = false
                 local target_idx_val = nil
+                local end_rot = 0
+                
+                -- Shared Constants matching draw_player_hand
+                local h_size = 10 -- Assumed final size
                 
                 if p == 1 then
-                    -- Human
+                    -- HUMAN
                     local h_idx = hand_counts[p]
                     local hand = self.game.players[1].hand
                     card_obj = hand[h_idx]
                     target_idx_val = h_idx
-                    face_up = true -- Deal face up for user convenience/smoothness
+                    face_up = true 
                     
-                    -- Pos Calc
-                    local hand_size = 10
-                    local available_width = self.width - 200
-                    local card_w = 80 * self.card_scale
-                    local spread = 60 * self.card_scale
-                    local total_w = (hand_size - 1) * spread + card_w
-                    if total_w > available_width then spread = (available_width - card_w) / (hand_size - 1) end
-                    local start_x = -total_w / 2
-                    tx = self.center_x + (start_x + (h_idx-1)*spread)
+                    -- Logic from draw_player_hand (Human specific)
+                    local spread = 90
+                    local start_x = -((h_size - 1) * spread) / 2
+                    
+                    local local_x = start_x + (h_idx-1)*spread
+                    
+                    -- Translate to Global (Human is centered at bottom)
+                    -- draw_player_hand(1, center_x, height-100) -> draws at (local_x, -60)
+                    tx = self.center_x + local_x
                     ty = self.height - 100 - 60
-                else
-                    -- Bots
-                    if p == 2 then tx, ty = 50, self.center_y
-                    elseif p == 3 then tx, ty = self.center_x, 50
-                    elseif p == 4 then tx, ty = self.width - 50, self.center_y
-                    end
                     
-                    -- Use a dummy card (Back)
-                    -- We just need ANY card object but render it face down.
-                    -- If we pass nil, renderer might crash.
-                    -- Pass first card of P1 hand? or create dummy?
-                    -- CardRenderer just needs `card.suit` `card.rank` if face up.
-                    -- If face down, it ignores suit/rank.
-                    -- So we can pass self.game.players[1].hand[1] safely if face_up=false.
+                    -- Rotation is 0 for Human + Ambient (ignored here)
+                    end_rot = 0
+                    
+                elseif p == 2 then
+                    -- LEFT BOT (Rotated -90 aka -pi/2)
+                    -- draw_player_hand(2, 110, center_y, false, -pi/2)
+                    -- Fan logic occurs in LOCAl space.
+                    -- Local X goes along the hand axis.
+                    -- Local Y goes perpendicular (Card height).
+                    
+                    -- Local Calculation
+                    local h_idx = hand_counts[p]
+                    local spread = 30
+                    local start_x = -((h_size - 1) * spread) / 2
+                    local local_x = start_x + (h_idx-1)*spread
+                    local local_y = -60
+                    
+                    -- Fan Logic (Opponent)
+                    local center = (h_size + 1) / 2
+                    local dist = math.abs(h_idx - center)
+                    local signed_dist = h_idx - center
+                    local_y = local_y - (dist * dist) * 1.5 
+                    local fan_rot = -signed_dist * 0.1
+                    
+                    -- Transform Local -> Global
+                    -- Hand Base: (110, center_y). Rotation: -pi/2
+                    -- Global X = BaseX + (LocalX * cosR - LocalY * sinR)
+                    -- Global Y = BaseY + (LocalX * sinR + LocalY * cosR)
+                    local r = -math.pi/2
+                    local c, s = math.cos(r), math.sin(r)
+                    
+                    tx = 110 + (local_x * c - local_y * s)
+                    ty = self.center_y + (local_x * s + local_y * c)
+                    
+                    -- Global Rotation = HandRotation + FanRotation
+                    end_rot = r + fan_rot
+                    
+                    card_obj = self.game.players[1].hand[1] -- Dummy
+                    face_up = false
+                    
+                elseif p == 3 then
+                    -- TOP BOT (Rotated 0? No, 0 implies regular orientation but at top)
+                    -- draw_player_hand(3, center_x, 50, false, 0)
+                    -- Wait, if rotation is 0, cards are upright?
+                    -- Usually top player cards are upside down (pi) or just upright backs.
+                    -- Code says rotation 0. So they are upright.
+                    
+                    local h_idx = hand_counts[p]
+                    local spread = 30
+                    local start_x = -((h_size - 1) * spread) / 2
+                    local local_x = start_x + (h_idx-1)*spread
+                    local local_y = -60
+                    
+                    -- Fan
+                    local center = (h_size + 1) / 2
+                    local dist = math.abs(h_idx - center)
+                    local signed_dist = h_idx - center
+                    local_y = local_y - (dist * dist) * 1.5 
+                    local fan_rot = -signed_dist * 0.1
+                    
+                    -- Transform
+                    -- Base: (center_x, 50). Rot: 0
+                    tx = self.center_x + local_x
+                    ty = 50 + local_y
+                    end_rot = 0 + fan_rot
+                    
                     card_obj = self.game.players[1].hand[1]
                     face_up = false
-                    target_idx_val = nil -- Don't hide anything in Human hand
+                    
+                elseif p == 4 then
+                    -- RIGHT BOT (Rotated 90 aka pi/2)
+                    -- draw_player_hand(4, width-110, center_y, false, pi/2)
+                    
+                    local h_idx = hand_counts[p]
+                    local spread = 30
+                    local start_x = -((h_size - 1) * spread) / 2
+                    local local_x = start_x + (h_idx-1)*spread
+                    local local_y = -60
+                    
+                    -- Fan
+                    local center = (h_size + 1) / 2
+                    local dist = math.abs(h_idx - center)
+                    local signed_dist = h_idx - center
+                    local_y = local_y - (dist * dist) * 1.5 
+                    local fan_rot = -signed_dist * 0.1
+                    
+                    -- Transform
+                    local r = math.pi/2
+                    local c, s = math.cos(r), math.sin(r)
+                    
+                    local base_x = self.width - 110
+                    tx = base_x + (local_x * c - local_y * s)
+                    ty = self.center_y + (local_x * s + local_y * c)
+                    
+                    end_rot = r + fan_rot
+                    
+                    card_obj = self.game.players[1].hand[1]
+                    face_up = false
                 end
                 
-                self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, target_idx_val, nil, 0.2, current_delay, face_up)
+                self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, target_idx_val, nil, 0.2, current_delay, face_up, end_rot)
                 
-                -- Increment Frame Time
                 current_delay = current_delay + card_interval
             end
-            
+             
             -- Small pause between players
             current_delay = current_delay + 0.1
         end
@@ -557,15 +643,18 @@ function TableView:draw()
             -- Align with movement vector
             local dx = anim.end_pos.x - anim.start_pos.x
             local dy = anim.end_pos.y - anim.start_pos.y
-            
-            -- Rotate towards 0 at the end
+
+            -- Rotate towards end_rotation at the end
             local flight_angle = math.atan2(dy, dx) - math.pi/2
             
-            -- Interpolate rotation: Flight Angle -> 0
+            -- Interpolate rotation: Flight Angle -> End Rotation
             -- Smooth transition near end
             if progress > 0.8 then
                  local end_t = (progress - 0.8) / 0.2
-                 params.rotation = flight_angle * (1 - end_t)
+                 -- Lerp flight_angle to anim.end_rotation
+                 -- Shortest path interpolation? Usually flight_angle is close to direction.
+                 -- Simple lerp is fine.
+                 params.rotation = flight_angle + (anim.end_rotation - flight_angle) * end_t
             else
                  params.rotation = flight_angle
             end
