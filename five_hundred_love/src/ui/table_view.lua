@@ -263,6 +263,8 @@ function TableView:on_deal()
                      face_up = false
                      card_obj = self.game.players[1].hand[1]
                      local h_idx = hand_counts[p]
+                     target_idx_val = h_idx -- KEY FIX: Hide this slot in draw_player_hand
+                     
                      spread = 30
                      start_x = -((h_size - 1) * spread) / 2
                      local_x = start_x + (h_idx-1)*spread
@@ -613,10 +615,17 @@ function TableView:draw()
             -- Smooth transition near end
             if progress > 0.8 then
                  local end_t = (progress - 0.8) / 0.2
-                 -- Lerp flight_angle to anim.end_rotation
-                 -- Shortest path interpolation? Usually flight_angle is close to direction.
-                 -- Simple lerp is fine.
-                 params.rotation = flight_angle + (anim.end_rotation - flight_angle) * end_t
+                 
+                 local start_r = flight_angle
+                 local end_r = anim.end_rotation
+                 
+                 -- Shortest path
+                 local diff = end_r - start_r
+                 -- Normalize to -pi..pi
+                 while diff > math.pi do diff = diff - 2*math.pi end
+                 while diff < -math.pi do diff = diff + 2*math.pi end
+                 
+                 params.rotation = start_r + diff * end_t
             else
                  params.rotation = flight_angle
             end
