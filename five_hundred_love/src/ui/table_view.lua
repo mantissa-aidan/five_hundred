@@ -525,7 +525,9 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     
     
     local hand_size = #player.hand
-    local spread = 90  
+    
+    -- Tighter spread for bots (Fan), Normal for human
+    local spread = is_human and 90 or 30  
     local start_x = -((hand_size - 1) * spread) / 2
     
     love.graphics.push()
@@ -625,6 +627,21 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
                 local card_x = start_x + (visual_idx-1) * spread
                 local card_y = -60
                 
+                -- Fan Logic for Opponents
+                local fan_rot = 0
+                if not is_human then
+                     -- Curve: Center is higher, Edges lower (Positive Y is down)
+                     local center = (hand_size + 1) / 2
+                     local dist = math.abs(visual_idx - center)
+                     local signed_dist = visual_idx - center
+                     
+                     -- Push down at edges
+                     card_y = card_y + (dist * dist) * 1.5 
+                     
+                     -- Rotate (Left tilts left, Right tilts right)
+                     fan_rot = signed_dist * 0.1 -- radians
+                end
+                
                 if is_human and self.selected_discards[i] then
                     card_y = card_y - 20
                 end
@@ -635,7 +652,7 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
                 end
                 
                 local show_face = is_human or gDebugMode or (self.game.state == "GAME_OVER")
-                local params = {scale_x = 1, scale_y = 1, kx = 0, ky = 0, shadow_offset = 5}
+                local params = {scale_x = 1, scale_y = 1, kx = 0, ky = 0, shadow_offset = 5, rotation = fan_rot}
                 
                 -- PHYSICS & AMBIENT (Human Only)
                 local should_defer = false
@@ -723,10 +740,10 @@ function TableView:draw_current_trick()
     if not trick or #trick == 0 then return end
     
     local positions = {
-        [1] = {x=0, y=80},  -- Bottom Played
-        [2] = {x=-100, y=0}, -- Left Played
-        [3] = {x=0, y=-80}, -- Top Played
-        [4] = {x=100, y=0}   -- Right Played
+        [1] = {x=0, y=90},  -- Bottom Played
+        [2] = {x=-120, y=0}, -- Left Played
+        [3] = {x=0, y=-90}, -- Top Played
+        [4] = {x=120, y=0}   -- Right Played
     }
     
     love.graphics.push()
