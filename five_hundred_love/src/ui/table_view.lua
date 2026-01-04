@@ -1145,9 +1145,11 @@ function TableView:on_drag_end()
                  start_x = self.center_x + d.orig_x
                  start_y = (self.height - 100) + d.orig_y
             else
-                 -- Animation to center
-            local start_x = mx - d.offset_x
-            local start_y = my - d.offset_y
+                 -- From Mouse Pos - Offset
+                 start_x = mx - d.offset_x
+                 start_y = my - d.offset_y
+            end
+            
             local start_scale = 1.0
             
             -- Use same position calculation as on_card_played
@@ -1179,7 +1181,6 @@ function TableView:on_drag_end()
                 end
             end, start_scale) 
             return
-        end
         else
             -- Invalid: Shake/Reject?
             print("Invalid Move")
