@@ -47,7 +47,9 @@ function Game:init(player_names, team_names)
     self.bids_this_round = {}
     self.highest_bid = nil
     self.passed_players = {}
+    self.passed_players = {}
     self.consecutive_passes = 0
+    self.player_last_action = {} -- [p_idx] = "6 Spades" or "Pass"
     
     -- Play State
     self.tricks_history = {}
@@ -258,6 +260,7 @@ function Game:player_bid(player_idx, tricks, suit, type)
     self.highest_bid = new_bid
     self:log(tostring(new_bid))
     table.insert(self.bids_this_round, new_bid)
+    self.player_last_action[player_idx] = tostring(new_bid) -- RECORD ACTION
     self.consecutive_passes = 0
     self:advance_turn()
     return true
@@ -274,6 +277,7 @@ function Game:player_pass(player_idx)
     -- Record Pass in History
     local pass_bid = Bid.new(player, 0, nil, BidType.PASS)
     table.insert(self.bids_this_round, pass_bid)
+    self.player_last_action[player_idx] = "Pass" -- RECORD ACTION
     
     self.consecutive_passes = self.consecutive_passes + 1
     

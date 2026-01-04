@@ -560,6 +560,18 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(player.name, -30, -80)
     
+    -- Bid Indicator
+    if self.game.state == "BIDDING" then
+        local last_act = self.game.player_last_action[player_idx]
+        if last_act then
+            love.graphics.setColor(1, 0.8, 0.2) -- Goldish
+             -- Determine position based on rotation/side?
+             -- Draw below name tag
+            love.graphics.print(last_act, -30, -100)
+            love.graphics.setColor(1, 1, 1)
+        end
+    end
+    
     -- Cards
     -- Cards
     
