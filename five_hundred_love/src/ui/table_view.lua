@@ -66,7 +66,7 @@ function TableView:resize(w, h)
 end
 
 function TableView:on_card_played(p_idx, card)
-    if p_idx == 1 then return end -- Handled by local interaction for P1
+    if p_idx == 1 then return end -- P1 cards don't animate
     
     -- Determine start position based on player index
     -- P2 (Left): 50, center_y
@@ -96,7 +96,13 @@ function TableView:on_card_played(p_idx, card)
     local anim_end_x = self.center_x + offset.x - 40
     local anim_end_y = self.center_y + offset.y - 55
     
-    self:play_card_animation(card, start_x, start_y, anim_end_x, anim_end_y, 0.4, nil)
+    -- Track when this card lands to disable float initially
+    self.card_land_times = self.card_land_times or {}
+    
+    self:play_card_animation(card, start_x, start_y, anim_end_x, anim_end_y, 0.4, nil, function()
+        -- Mark when card landed
+        self.card_land_times[card] = love.timer.getTime()
+    end)
 end
 
 function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale)
@@ -836,7 +842,7 @@ function TableView:draw_current_trick()
                 local card_x = offset.x - 40 -- Adjust for card width
                 local card_y = offset.y - 55 -- Adjust for card height
                 
-                -- Trick Juice: Idle Float
+                -- Trick Juice: Idle Float (disabled for recently landed cards)
                 local t = love.timer.getTime()
                 local seed = p_idx * 123.456 -- Different seed per seat
                 
@@ -845,8 +851,15 @@ function TableView:draw_current_trick()
                 local speed_y = 2.0 + math.sin(seed)*0.5 
                 local speed_rot = 1.5 + math.cos(seed)*0.5 
                 
-                local ambient_y = math.sin(t * speed_y + phase_y) * 2.0 -- Slightly stronger than hand
-                local ambient_rot = math.cos(t * speed_rot + phase_rot) * 0.02 -- Subtle wobble
+                -- Fade in float animation over 0.5 seconds after landing
+                local float_strength = 1.0
+                if self.card_land_times and self.card_land_times[play.card] then
+                    local time_since_land = t - self.card_land_times[play.card]
+                    float_strength = math.min(1.0, time_since_land / 0.5)
+                end
+                
+                local ambient_y = math.sin(t * speed_y + phase_y) * 2.0 * float_strength
+                local ambient_rot = math.cos(t * speed_rot + phase_rot) * 0.02 * float_strength
                 
                 card_y = card_y + ambient_y
                 
