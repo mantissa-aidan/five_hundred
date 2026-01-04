@@ -236,8 +236,13 @@ function TableView:update(dt)
     end
     
     -- Update HUD Score Animation
-    local us = (self.game.tricks_won and (self.game.tricks_won[1] + self.game.tricks_won[3])) or 0
-    local them = (self.game.tricks_won and (self.game.tricks_won[2] + self.game.tricks_won[4])) or 0
+    local p1 = self.game.players[1] and self.game.players[1].tricks_won_this_round or 0
+    local p2 = self.game.players[2] and self.game.players[2].tricks_won_this_round or 0
+    local p3 = self.game.players[3] and self.game.players[3].tricks_won_this_round or 0
+    local p4 = self.game.players[4] and self.game.players[4].tricks_won_this_round or 0
+    
+    local us = p1 + p3
+    local them = p2 + p4
     
     if us > self.hud_state.us_score then self.hud_state.us_scale.val = 1.5 end
     self.hud_state.us_score = us
