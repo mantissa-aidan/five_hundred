@@ -81,6 +81,12 @@ local function register_callbacks()
     end)
     
     gGame:set_on_round_end(function(data)
+        -- Clear animation blocking to allow round end UI
+        if gTableView then
+            gTableView.is_animating = false
+            gTableView.animation_delay_timer = 0
+        end
+        
         gChatLog:add_message("System", {
             "Round Over", 
             "Team A: " .. data.team_a_score,

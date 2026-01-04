@@ -521,6 +521,11 @@ function Game:score_round()
         })
     end
     
+    -- Clear any pending animations to prevent blocking
+    if self.on_round_end_callback then
+        self.on_round_end_callback()
+    end
+    
     self.state = Game.STATE.ROUND_OVER
 end
 
