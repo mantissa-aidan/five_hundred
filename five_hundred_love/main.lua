@@ -74,6 +74,10 @@ local function register_callbacks()
             col = {0.2, 0.6, 0.2}
         end
         gChatLog:add_message("System", msgs, false, col)
+        
+        if gTableView and gTableView.on_trick_complete then
+            gTableView:on_trick_complete(data)
+        end
     end)
     
     gGame:set_on_round_end(function(data)
@@ -171,6 +175,13 @@ local function format_probs(top_actions, pass_prob)
     return lines
 end
 
+
+-- Render Canvas & Shader
+local gCanvas = nil
+local gCRTShader = nil
+local gTime = 0
+local gScreenShake = 0
+
 function love.load()
     -- Hot Reload Setup (Lurker)
     lurker = require "src.ext.lurker"
@@ -192,6 +203,18 @@ function love.load()
     local screen_w = love.graphics.getWidth()
     local screen_h = love.graphics.getHeight()
     local chat_width = Config.layout.chat_width
+    
+    -- Setup Canvas & Shader
+    gCanvas = love.graphics.newCanvas(screen_w, screen_h)
+    gCanvas:setFilter("nearest", "nearest")
+    
+    local shader_code = love.filesystem.read("src/shaders/crt.glsl")
+    if shader_code then
+        gCRTShader = love.graphics.newShader(shader_code)
+        print("[Main] CRT Shader Loaded")
+    else
+        print("[Main] Could not find src/shaders/crt.glsl")
+    end
     
     gChatLog = ChatLog.new(screen_w - chat_width, 0, chat_width, screen_h)
     gTableView = TableView.new(gGame)
@@ -220,6 +243,12 @@ end
 
 function love.update(dt)
     lurker.update() -- Check for file changes
+    gTime = gTime + dt
+    
+    if gScreenShake > 0 then
+        gScreenShake = gScreenShake - dt * 5 -- Decay
+        if gScreenShake < 0 then gScreenShake = 0 end
+    end
     
     if gAppState == "LOADING" then
         -- Check channel for loaded weights
@@ -327,6 +356,9 @@ function love.wheelmoved(x, y)
 end
 
 function love.resize(w, h)
+    gCanvas = love.graphics.newCanvas(w, h)
+    gCanvas:setFilter("nearest", "nearest")
+    
     local chat_width = Config.layout.chat_width
     if gChatLog then
         gChatLog:resize(w - chat_width, 0, chat_width, h)
@@ -337,6 +369,18 @@ function love.resize(w, h)
 end
 
 function love.draw()
+    -- Render to Canvas
+    love.graphics.setCanvas(gCanvas)
+    love.graphics.clear()
+    
+    -- Apply Screen Shake
+    love.graphics.push()
+    if gScreenShake > 0 then
+        local dx = love.math.random(-1, 1) * gScreenShake * 10
+        local dy = love.math.random(-1, 1) * gScreenShake * 10
+        love.graphics.translate(dx, dy)
+    end
+    
     gTableView:draw()
     gChatLog:draw()
     
@@ -373,6 +417,21 @@ function love.draw()
         love.graphics.setColor(1, 1, 1)
         love.graphics.print("DEBUG ON", 15, 10)
     end
+    
+    love.graphics.pop() -- End Shake
+    
+    love.graphics.setCanvas() -- Reset to Screen
+    
+    -- Draw Canvas with Shader
+    love.graphics.setColor(1, 1, 1)
+    if gCRTShader and false then -- Disabled for now
+        gCRTShader:send("canvasSize", {love.graphics.getWidth(), love.graphics.getHeight()})
+        gCRTShader:send("time", gTime)
+        love.graphics.setShader(gCRTShader)
+    end
+    
+    love.graphics.draw(gCanvas, 0, 0)
+    love.graphics.setShader()
 end
 
 function love.mousepressed(x, y, button, istouch, presses)

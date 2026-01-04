@@ -4,6 +4,7 @@ local BiddingView = require "src.ui.bidding_view"
 local Config = require "src.config"
 
 local TableView = Utils.class("TableView")
+local ParticleSystem = require "src.ui.particle_system"
 
 function TableView:init(game)
     self.game = game
@@ -14,14 +15,19 @@ function TableView:init(game)
     self.width = love.graphics.getWidth() - chat_width
     self.height = love.graphics.getHeight()
     
-    self.card_scale = 0.9  -- Slightly smaller to fit
+    self.card_scale = 1.3  -- Larger cards per user request
     -- Center of game area (not full screen)
     self.center_x = self.width / 2
     self.center_y = self.height / 2
     
     self.bidding_view = BiddingView.new(game, self.width, self.height)
     self.selected_discards = {} -- Set of card indices for P1
+    self.selected_discards = {} -- Set of card indices for P1
     self.animations = {} -- List of {type, card, start_pos, end_pos, t, duration}
+    self.animations = {} -- List of {type, card, start_pos, end_pos, t, duration}
+    self.particles = ParticleSystem.new()
+    self.dragged_card = nil
+    self.drag_offset = {x=0, y=0}
     
     -- Hook Animation Callback
     game:set_on_card_play(function(p_idx, card)
@@ -80,7 +86,7 @@ function TableView:on_card_played(p_idx, card)
     self:play_card_animation(card, start_x, start_y, anim_end_x, anim_end_y, 0.4, nil)
 end
 
-function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete)
+function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale)
     table.insert(self.animations, {
         type = "FLY_IN",
         card = card,
@@ -89,7 +95,8 @@ function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, dur
         t = 0,
         duration = duration,
         target_idx = card_idx,
-        on_complete = on_complete
+        on_complete = on_complete,
+        start_scale = start_scale or 1.0
     })
 end
 
@@ -108,8 +115,139 @@ end
 
 
 
+function TableView:update_hand_springs(dt)
+    if not self.hand_springs then self.hand_springs = {} end
+    
+    local player = self.game.players[1]
+    if not player then return end
+    
+    local hand_size = #player.hand
+    
+    -- Ensure spring state exists
+    for i=1, hand_size do
+        if not self.hand_springs[i] then
+            self.hand_springs[i] = {
+                scale = {val=1, vel=0, target=1},
+                pitch = {val=0, vel=0, target=0},
+                roll  = {val=0, vel=0, target=0}
+            }
+        end
+    end
+    
+    -- 1. Detect Hover (Logic reused from draw)
+    local spread = 90
+    local start_x = -((hand_size - 1) * spread) / 2
+    local mx, my = love.mouse.getPosition()
+    local hovered_idx = nil
+    
+    -- Need to check if over hand area generally first?
+    -- Only check if game allows interaction
+    if self.game.state == "PLAYING" or self.game.state == "KITTY" or self.game.state == "BIDDING" then
+         -- Iterate backwards for Z-order
+         for i = hand_size, 1, -1 do
+             local card_x = start_x + (i-1) * spread
+             local card_y = -60
+             if self.selected_discards[i] then card_y = card_y - 20 end
+             
+             local screen_x = self.center_x + card_x - 40
+             local screen_y = (self.height - 100) + card_y
+             
+             -- Hit test
+             if mx >= screen_x and mx <= screen_x + 80*self.card_scale and
+                my >= screen_y and my <= screen_y + 110*self.card_scale then
+                 hovered_idx = i
+                 break
+             end
+         end
+    end
+    
+    -- 2. Update Springs
+    local stiffness = 600
+    local damping = 25
+    
+    for i=1, hand_size do
+        local s = self.hand_springs[i]
+        local is_hovering = (i == hovered_idx)
+        
+        -- Targets
+        if is_hovering then
+            s.scale.target = 1.25
+            
+            -- Calculate tilt targets
+            local card_x = start_x + (i-1) * spread
+            local card_y = -60
+            local center_x = self.center_x + card_x
+            local center_y = (self.height - 100) + card_y + 55
+            
+            local diff_x = mx - center_x
+            local diff_y = my - center_y
+            
+            s.pitch.target = (diff_y / 60) * -0.15 
+            s.roll.target = (diff_x / 40) * -0.15
+        else
+            s.scale.target = 1.0
+            
+            -- Idle animation adds to target? Or just add sine wave in draw?
+            -- Let's keep spring target at 0 (flat), and add sine wave on top in Draw.
+            -- This separates physics (interaction) from ambient motion.
+            s.pitch.target = 0
+            s.roll.target = 0
+        end
+        
+        -- Physics Step
+        local function update_spring(prop, dt)
+            local diff = prop.target - prop.val
+            local force = diff * stiffness
+            prop.vel = prop.vel * (1 - damping * dt) -- Damping
+            prop.vel = prop.vel + force * dt
+            prop.val = prop.val + prop.vel * dt
+        end
+        
+        update_spring(s.scale, dt)
+        update_spring(s.pitch, dt)
+        update_spring(s.roll, dt)
+    end
+end
+
 function TableView:update(dt)
     self:update_animations(dt)
+    self:update_hand_springs(dt)
+    self.particles:update(dt)
+    
+    -- Update drag position
+    if self.dragged_card then
+        if not love.mouse.isDown(1) then
+            self:on_drag_end()
+        end
+    end
+end
+
+function TableView:on_trick_complete(data)
+    -- Spawn particles at winner's location
+    local winner_idx = -1
+    for i, p in ipairs(self.game.players) do
+        if p == data.winner then winner_idx = i; break end
+    end
+    
+    local pos_map = {
+        [1] = {x=self.center_x, y=self.height - 100},
+        [2] = {x=110, y=self.center_y},
+        [3] = {x=self.center_x, y=50},
+        [4] = {x=self.width - 110, y=self.center_y}
+    }
+    
+    local pos = pos_map[winner_idx]
+    if pos then
+         self.particles:emit({
+             x = pos.x, 
+             y = pos.y, 
+             count = 50,
+             speed = 300,
+             life = 1.5,
+             color = {1, 0.8, 0.2}, -- Gold
+             gravity = 500
+         })
+    end
 end
 
 function TableView:draw()
@@ -150,14 +288,49 @@ function TableView:draw()
     for _, anim in ipairs(self.animations) do
         if anim.type == "FLY_IN" then
             local progress = anim.t / anim.duration
-            -- Simple Ease Out Quad
-            local t = 1 - (1 - progress) * (1 - progress)
+            -- Easing: Back Out (goes past destination and comes back)
+            local function easeOutBack(x)
+                local c1 = 1.70158
+                local c3 = c1 + 1
+                return 1 + c3 * math.pow(x - 1, 3) + c1 * math.pow(x - 1, 2)
+            end
+            local t = easeOutBack(progress)
             
             local curr_x = anim.start_pos.x + (anim.end_pos.x - anim.start_pos.x) * t
             local curr_y = anim.start_pos.y + (anim.end_pos.y - anim.start_pos.y) * t
             
+            -- Stretch Effect during flight
+            local params = {scale_x = 1, scale_y = 1, rotation = 0}
+            
+            -- Peak stretch at mid-flight
+            -- Fade out stretch near end (progress > 0.8)
+            local stretch = math.sin(progress * math.pi) * 0.3
+            if progress > 0.8 then stretch = stretch * (1.0 - progress)/0.2 end
+            
+            -- Interpolate Base Scale (Start Scale -> 1.0)
+            local base_scale = anim.start_scale + (1.0 - anim.start_scale) * progress
+            
+            params.scale_x = base_scale * (1.0 - stretch * 0.5) -- Narrow
+            params.scale_y = base_scale * (1.0 + stretch) -- Long
+            
+            -- Align with movement vector
+            local dx = anim.end_pos.x - anim.start_pos.x
+            local dy = anim.end_pos.y - anim.start_pos.y
+            
+            -- Rotate towards 0 at the end
+            local flight_angle = math.atan2(dy, dx) - math.pi/2
+            
+            -- Interpolate rotation: Flight Angle -> 0
+            -- Smooth transition near end
+            if progress > 0.8 then
+                 local end_t = (progress - 0.8) / 0.2
+                 params.rotation = flight_angle * (1 - end_t)
+            else
+                 params.rotation = flight_angle
+            end
+            
             -- Use CardRenderer directly with global coords
-            CardRenderer.draw_card(anim.card, curr_x - 40, curr_y, self.card_scale, true, false)
+            CardRenderer.draw_card(anim.card, curr_x - 40, curr_y, self.card_scale, true, false, params)
         end
     end
     
@@ -168,6 +341,9 @@ function TableView:draw()
     
     -- Reset scissor so chat can render
     love.graphics.setScissor()
+    
+    -- Draw Particles (Global coordinates, on top)
+    self.particles:draw()
 end
 
 function TableView:draw_debug_overlay()
@@ -318,15 +494,12 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     
     -- Cards
     local hand_size = #player.hand
-    local spread = 55  -- Increased from 30 for less overlap
+    local spread = 90  
     local start_x = -((hand_size - 1) * spread) / 2
     
     -- Store card rects only for Human/Bottom for clicking
     if is_human then self.hand_card_rects = {} end
     
-    local mx, my = love.mouse.getPosition()
-    
-    -- Filter out animating cards from hand (Stub for animation system)
     local animating_indices = {}
     if self.animations then
         for _, anim in ipairs(self.animations) do
@@ -336,71 +509,148 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
         end
     end
     
-    -- Pre-calculate hovered card (iterate backwards to find top-most)
-    local hovered_idx = nil
-    if is_human then
-        for i = #player.hand, 1, -1 do
-            if not animating_indices[i] then
-                local card_x = start_x + (i-1) * spread
+    -- Calculate Drag Target Index (Visual Slot)
+    local drag_target_idx = nil
+    if is_human and self.dragged_card then
+        local mx, my = love.mouse.getPosition()
+        local local_mx = mx - x
+        local initial_idx = math.floor((local_mx - start_x) / spread) + 1
+        
+        if initial_idx < 1 then initial_idx = 1 end
+        if initial_idx > hand_size then initial_idx = hand_size end
+        drag_target_idx = initial_idx
+        self.drag_target_idx = drag_target_idx
+    else
+        if is_human then self.drag_target_idx = nil end
+    end
+
+    -- Ensure springs exist
+    if not self.hand_springs then self.hand_springs = {} end
+    
+    local deferred_draws = {}
+
+    for i, card in ipairs(player.hand) do
+        -- Init spring if missing
+        local spring = nil
+        if is_human then
+            if not self.hand_springs[i] then
+                 self.hand_springs[i] = {
+                    scale = {val=1, vel=0, target=1},
+                    pitch = {val=0, vel=0, target=0},
+                    roll  = {val=0, vel=0, target=0}
+                }
+            end
+            spring = self.hand_springs[i]
+        end
+        
+        if not animating_indices[i] then
+            if is_human and self.dragged_card and self.dragged_card.idx == i then
+                -- Skip rendered dragged card
+            else
+                local visual_idx = i
+                if drag_target_idx then
+                    local d_idx = self.dragged_card.idx
+                    if i < d_idx and i >= drag_target_idx then
+                        visual_idx = i + 1
+                    elseif i > d_idx and i <= drag_target_idx then
+                        visual_idx = i - 1
+                    end
+                end
+                
+                local card_x = start_x + (visual_idx-1) * spread
                 local card_y = -60
                 
-                -- Determine if selected (affects Y position for hit check)
-                if self.selected_discards[i] then
+                if is_human and self.selected_discards[i] then
                     card_y = card_y - 20
                 end
                 
-                local screen_card_x = x + card_x - 40
-                local screen_card_y = y + card_y 
+                -- Highlight current player
+                if self.game.current_player_idx == player_idx and self.game.state == "PLAYING" then
+                     love.graphics.setColor(1, 1, 0)
+                end
                 
-                if mx >= screen_card_x and mx <= screen_card_x + 80*self.card_scale and
-                   my >= screen_card_y and my <= screen_card_y + 110*self.card_scale then
-                       hovered_idx = i
-                       break -- Found top-most
+                local show_face = is_human or gDebugMode or (self.game.state == "GAME_OVER")
+                local params = {scale_x = 1, scale_y = 1, kx = 0, ky = 0, shadow_offset = 5}
+                
+                -- PHYSICS & AMBIENT (Human Only)
+                local should_defer = false
+                
+                if is_human and spring then
+                    local physics_scale = spring.scale.val
+                    local physics_pitch = spring.pitch.val
+                    local physics_roll = spring.roll.val
+                    
+                    -- Add Ambient Motion (Sine Wave)
+                    local t = love.timer.getTime()
+                    local seed = i * 123.456
+                    local ambient_y = 0
+                    local ambient_rot = 0
+                    
+                    if physics_scale < 1.05 then
+                        local phase_y = seed
+                        local phase_rot = seed * 0.7
+                        -- Faster wobble
+                        local speed_y = 2.0 + math.sin(seed)*0.5 
+                        local speed_rot = 1.5 + math.cos(seed)*0.5 
+                        
+                        ambient_y = math.sin(t * speed_y + phase_y) * 1.5
+                        ambient_rot = math.cos(t * speed_rot + phase_rot) * 0.015
+                    end
+                    
+                    card_y = card_y + ambient_y
+                    params.rotation = ambient_rot
+                    
+                    params.scale_x = physics_scale
+                    params.scale_y = physics_scale
+                    params.kx = physics_pitch
+                    params.ky = physics_roll
+                    
+                    params.shadow_offset = 5 + (physics_scale > 1 and (physics_scale - 1.0) * 100 or 0)
+                    
+                     if physics_scale > 1.01 then should_defer = true end
+                end
+                
+                -- Draw Logic
+                local draw_op = {card=card, x=card_x - 40, y=card_y, scale=self.card_scale, show=show_face, params=params}
+                
+                if should_defer then
+                    table.insert(deferred_draws, draw_op)
+                else
+                    CardRenderer.draw_card(card, draw_op.x, draw_op.y, draw_op.scale, draw_op.show, false, draw_op.params)
+                end
+                
+                if is_human then
+                     table.insert(self.hand_card_rects, {
+                         idx = i,
+                         x = card_x - 40,
+                         y = card_y, 
+                         w = 80 * self.card_scale, 
+                         h = 110 * self.card_scale,
+                         cx = card_x, 
+                         cy = card_y + 55,
+                     })
                 end
             end
         end
     end
     
-    for i, card in ipairs(player.hand) do
-        if not animating_indices[i] then
-            local odd_offset = 0
-            local card_x = start_x + (i-1) * spread
-            local card_y = -60
-            
-            -- Selection highlight (Pop up)
-            if is_human and self.selected_discards[i] then
-                card_y = card_y - 20
-            end
-            
-            -- Hover Effect (Only if it's the specific hovered card)
-            if is_human and i == hovered_idx then
-               card_y = card_y - 15 -- Hover pop
-            end
-            
-            -- Highlight current player
-            if self.game.current_player_idx == player_idx and self.game.state == "PLAYING" then
-                 love.graphics.setColor(1, 1, 0)
-            end
-            
-            -- Determine if we show face
-            -- In debug mode, show all cards face up
-            local show_face = is_human or gDebugMode or (self.game.state == "GAME_OVER")
-            
-            CardRenderer.draw_card(card, card_x - 40, card_y, self.card_scale, show_face, false)
-            
-            if is_human then
-                 table.insert(self.hand_card_rects, {
-                     idx = i,
-                     x = card_x - 40,
-                     y = card_y, 
-                     w = 80 * self.card_scale, 
-                     h = 110 * self.card_scale
-                 })
-            end
-        end
+    -- Draw Deferred Cards
+    for _, op in ipairs(deferred_draws) do
+        CardRenderer.draw_card(op.card, op.x, op.y, op.scale, op.show, true, op.params)
     end
     
     love.graphics.pop()
+    
+    -- Render Dragged Card Last (Global Coords)
+    if self.dragged_card and is_human then
+        local mx, my = love.mouse.getPosition()
+        local d = self.dragged_card
+        local draw_x = mx - d.offset_x 
+        local draw_y = my - d.offset_y
+        
+        local params = {scale_x=1.2, scale_y=1.2, rotation=0, shadow_offset=20}
+        CardRenderer.draw_card(d.card, draw_x, draw_y, self.card_scale, true, false, params)
+    end
 end
 
 function TableView:draw_current_trick()
@@ -523,8 +773,9 @@ function TableView:check_click(x, y)
             end
         end
     
+    
     elseif self.game.state == "PLAYING" and self.game.current_player_idx == 1 then
-        -- Play Card
+        -- Play Card / Drag Start
         local local_x = x - self.center_x
         local local_y = y - (self.height - 100)
         
@@ -539,35 +790,26 @@ function TableView:check_click(x, y)
                 if local_x >= r.x and local_x <= r.x + r.w and local_y >= r.y and local_y <= r.y + r.h then
                     local card = self.game.players[1].hand[r.idx]
                     
-                    -- PRE-VALIDATE move before animating
-                    local p = self.game.players[1]
-                    local playable = self.game:get_playable_cards(p, self.game.lead_suit)
-                    local is_valid = false
-                    for _, c in ipairs(playable) do if c == card then is_valid = true break end end
+                    -- Start Dragging
+                    -- Calculate offset: Mouse - Card TopLeft
+                    -- Note: r.x = card_x - 40. r.y = card_y.
+                    -- Start_x passed to animation is center_x + r.x
+                    -- Start_y passed to animation is (height-100) + r.y
                     
-                    if not is_valid then
-                        -- Optional: Shake animation or sound?
-                        print("Invalid Move: Must follow suit")
-                        return true
-                    end
+                    -- Card TopLeft on screen:
+                    local screen_card_x = self.center_x + r.x
+                    local screen_card_y = (self.height - 100) + r.y
                     
-                    -- Start Animation
-                    local start_x = self.center_x + r.x 
-                    local start_y = (self.height - 100) + r.y
-                    
-                    -- End Pos: Center of table
-                    local end_x = self.center_x 
-                    local end_y = self.center_y + 50 - 55
-                    
-                    self:play_card_animation(card, start_x, start_y, end_x, end_y, 0.4, r.idx, function()
-                         local success, err = self.game:player_play_card(1, card)
-                         if success then
-                             if gChatLog then gChatLog:add_message("You", {string.format("Plays %s", tostring(card))}, true) end
-                         else
-                             print("Error playing: "..tostring(err)) 
-                         end
-                    end)
-                    
+                    self.dragged_card = {
+                        card = card,
+                        idx = r.idx,
+                        orig_x = r.x,
+                        orig_y = r.y,
+                        start_mx = x,
+                        start_my = y,
+                        offset_x = x - screen_card_x,
+                        offset_y = y - screen_card_y
+                    }
                     return true
                 end
             end
@@ -575,6 +817,94 @@ function TableView:check_click(x, y)
     end
     
     return false
+end
+
+function TableView:on_drag_end()
+    if not self.dragged_card then return end
+    
+    local d = self.dragged_card
+    self.dragged_card = nil
+    
+    local mx, my = love.mouse.getPosition()
+    
+    -- Dist from center (Drop Target)
+    local dist_center = math.sqrt((mx - self.center_x)^2 + (my - self.center_y)^2)
+    
+    -- Dist from start (Click vs Drag)
+    local dist_drag = math.sqrt((mx - d.start_mx)^2 + (my - d.start_my)^2)
+    
+    local should_play = false
+    local start_scale = 1.2
+    
+    -- If dropped near center OR clicked (moved very little)
+    if dist_center < 150 then
+        should_play = true
+        start_scale = 1.2
+    elseif dist_drag < 10 then
+        should_play = true
+        start_scale = 1.1 -- Click scale
+    end
+    
+    
+    if should_play then
+        -- Play Card Logic
+        local card = d.card
+        local p = self.game.players[1]
+        local playable = self.game:get_playable_cards(p, self.game.lead_suit)
+        local is_valid = false
+        for _, c in ipairs(playable) do if c == card then is_valid = true break end end
+        
+        if is_valid then
+            -- Determine anim start pos
+            local start_x, start_y
+            if dist_drag < 10 then
+                 -- From Hand Pos
+                 start_x = self.center_x + d.orig_x
+                 start_y = (self.height - 100) + d.orig_y
+            else
+                 -- From Mouse Pos - Offset
+                 start_x = mx - d.offset_x
+                 start_y = my - d.offset_y
+            end
+            
+            -- End Pos: Center of table
+            local end_x = self.center_x 
+            local end_y = self.center_y + 50 - 55
+            
+             self:play_card_animation(card, start_x, start_y, end_x, end_y, 0.3, d.idx, function()
+                 self.particles:emit({
+                     x = end_x, 
+                     y = end_y, 
+                     count = 15,
+                     speed = 150,
+                     color = {1, 1, 0.5} 
+                 })
+            
+                 local success, err = self.game:player_play_card(1, card)
+                 if success then
+                     if gChatLog then gChatLog:add_message("You", {string.format("Plays %s", tostring(card))}, true) end
+                 end
+            end, start_scale) 
+            return
+        else
+            -- Invalid: Shake/Reject?
+            print("Invalid Move")
+        end
+    else
+        -- REORDER LOGIC
+        -- If dropped in hand area (not center), apply reorder
+        if self.drag_target_idx and self.drag_target_idx ~= d.idx then
+             local hand = self.game.players[1].hand
+             local new_idx = self.drag_target_idx
+             
+             -- Process reorder
+             table.remove(hand, d.idx)
+             table.insert(hand, new_idx, d.card)
+             -- No animation needed, next draw will show correct order
+        end
+    end
+    
+    -- Snap back (handled by next draw)
 end
 
 return TableView
