@@ -1145,30 +1145,41 @@ function TableView:on_drag_end()
                  start_x = self.center_x + d.orig_x
                  start_y = (self.height - 100) + d.orig_y
             else
-                 -- From Mouse Pos - Offset
-                 start_x = mx - d.offset_x
-                 start_y = my - d.offset_y
-            end
+                 -- Animation to center
+            local start_x = mx - d.offset_x
+            local start_y = my - d.offset_y
+            local start_scale = 1.0
             
-            -- End Pos: Center of table
-            local end_x = self.center_x 
-            local end_y = self.center_y + 50 - 55
+            -- Use same position calculation as on_card_played
+            local positions = {
+                [1] = {x=0, y=90},  -- Bottom Played
+            }
+            local offset = positions[1]
+            local end_x = self.center_x + offset.x - 40
+            local end_y = self.center_y + offset.y - 55
             
-             self:play_card_animation(card, start_x, start_y, end_x, end_y, 0.3, d.idx, function()
-                 self.particles:emit({
-                     x = end_x, 
-                     y = end_y, 
-                     count = 15,
-                     speed = 150,
-                     color = {1, 1, 0.5} 
-                 })
+            -- Track when this card lands
+            self.card_land_times = self.card_land_times or {}
             
-                 local success, err = self.game:player_play_card(1, card)
-                 if success then
-                     if gChatLog then gChatLog:add_message("You", {string.format("Plays %s", tostring(card))}, true) end
-                 end
+            self:play_card_animation(card, start_x, start_y, end_x, end_y, 0.3, d.idx, function()
+                self.particles:emit({
+                    x = end_x, 
+                    y = end_y, 
+                    count = 15,
+                    speed = 150,
+                    color = {1, 1, 0.5} 
+                })
+                
+                -- Mark when card landed
+                self.card_land_times[card] = love.timer.getTime()
+                
+                local success, err = self.game:player_play_card(1, card)
+                if success then
+                    if gChatLog then gChatLog:add_message("You", {string.format("Plays %s", tostring(card))}, true) end
+                end
             end, start_scale) 
             return
+        end
         else
             -- Invalid: Shake/Reject?
             print("Invalid Move")
