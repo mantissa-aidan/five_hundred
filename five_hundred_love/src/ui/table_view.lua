@@ -836,8 +836,30 @@ function TableView:draw_current_trick()
             end
             
             if positions[p_idx] then
-                local pos = positions[p_idx]
-                CardRenderer.draw_card(play.card, pos.x - 40, pos.y - 55, self.card_scale, true, false)
+                local offset = positions[p_idx]
+                local card_x = offset.x - 40 -- Adjust for card width
+                local card_y = offset.y - 55 -- Adjust for card height
+                
+                -- Trick Juice: Idle Float
+                local t = love.timer.getTime()
+                local seed = p_idx * 123.456 -- Different seed per seat
+                
+                local phase_y = seed
+                local phase_rot = seed * 0.7
+                local speed_y = 2.0 + math.sin(seed)*0.5 
+                local speed_rot = 1.5 + math.cos(seed)*0.5 
+                
+                local ambient_y = math.sin(t * speed_y + phase_y) * 2.0 -- Slightly stronger than hand
+                local ambient_rot = math.cos(t * speed_rot + phase_rot) * 0.02 -- Subtle wobble
+                
+                card_y = card_y + ambient_y
+                
+                CardRenderer.draw_card(play.card, card_x, card_y, self.card_scale, true, false, {
+                    scale_x = 1, -- Base scale for params
+                    scale_y = 1, 
+                    shadow_offset = 10, -- Higher shadow for played cards
+                    rotation = ambient_rot
+                })
             end
         end
     end
