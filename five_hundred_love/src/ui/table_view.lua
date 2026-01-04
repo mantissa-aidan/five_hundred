@@ -877,7 +877,7 @@ end
 function TableView:draw_hud()
     local padding = 10
     local x, y = 10, 10
-    local w, h = 220, 90
+    local w, h = 150, 120  -- Increased height for score
     
     -- Panel BG
     love.graphics.setColor(0, 0, 0, 0.8)
@@ -911,41 +911,62 @@ function TableView:draw_hud()
         trump_suit = suits[bid.suit] or "None"
     end
     
-    -- Big Text (Contract)
+    -- Contract Text
     love.graphics.setColor(1, 1, 1)
-    -- Scaling text slightly for "Medium" feel if no font
-    -- Scaling text slightly for "Medium" feel if no font
-    if gFonts and gFonts.medium then
-        love.graphics.setFont(gFonts.medium)
+    if gFonts and gFonts.small then
+        love.graphics.setFont(gFonts.small)
     end
-    love.graphics.print(contract_str, x + 15, y + 15)
+    love.graphics.print(contract_str, x + 10, y + 10)
     
-    -- SCORE
+    -- TRICKS THIS ROUND
     local us = self.hud_state.us_score
     local them = self.hud_state.them_score
     
-    love.graphics.print("Tricks:", x + 15, y + 50)
+    love.graphics.print("Tricks:", x + 10, y + 35)
     
     local s_us = self.hud_state.us_scale.val
     local s_them = self.hud_state.them_scale.val
     
-    -- Draw Scores with Pop
+    -- Draw Tricks with Pop
     love.graphics.push()
-    love.graphics.translate(x + 90, y + 60)
+    love.graphics.translate(x + 70, y + 42)
     love.graphics.scale(s_us, s_us)
     love.graphics.setColor(0.5, 1, 0.5) -- Greenish for Us
-    love.graphics.print(tostring(us), -5, -10)
+    love.graphics.print(tostring(us), -5, -7)
     love.graphics.pop()
     
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("-", x + 110, y + 50)
+    love.graphics.print("-", x + 85, y + 35)
     
     love.graphics.push()
-    love.graphics.translate(x + 130, y + 60)
+    love.graphics.translate(x + 100, y + 42)
     love.graphics.scale(s_them, s_them)
     love.graphics.setColor(1, 0.5, 0.5) -- Reddish for Them
-    love.graphics.print(tostring(them), -5, -10)
+    love.graphics.print(tostring(them), -5, -7)
     love.graphics.pop()
+    
+    -- TOTAL SCORE
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Score:", x + 10, y + 60)
+    
+    local team_a_score = self.game.teams[1] and self.game.teams[1].score or 0
+    local team_b_score = self.game.teams[2] and self.game.teams[2].score or 0
+    
+    love.graphics.setColor(0.5, 1, 0.5)
+    love.graphics.print(tostring(team_a_score), x + 70, y + 60)
+    
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("-", x + 85, y + 60)
+    
+    love.graphics.setColor(1, 0.5, 0.5)
+    love.graphics.print(tostring(team_b_score), x + 100, y + 60)
+    
+    -- Goal indicator
+    love.graphics.setColor(0.7, 0.7, 0.7)
+    if gFonts and gFonts.small then
+        love.graphics.setFont(gFonts.small)
+    end
+    love.graphics.print("(to 500)", x + 10, y + 85)
 end
 
 function TableView:check_click(x, y)
