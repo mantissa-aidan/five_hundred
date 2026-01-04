@@ -561,7 +561,7 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     love.graphics.print(player.name, -30, -80)
     
     -- Bid Indicator
-    if self.game.state == "BIDDING" then
+    if self.game.state == "BIDDING" and self.game.player_last_action then
         local action = self.game.player_last_action[player_idx]
         if action then
             -- Position: "centre side of hand"
