@@ -91,7 +91,8 @@ function CardAtlas.load()
     -- Actually user provided png. Let's assume it has multiple backs.
     -- Let's arbitrarily pick the Red/Blue one at 0,0 or 140,0.
     -- Kenney cards are 140x190.
-    CardAtlas.back_quad = love.graphics.newQuad(140, 0, 140, 190, bw, bh) -- 2nd one (usually blue)
+    -- Red is usually first (0,0), Blue second (140,0)
+    CardAtlas.back_quad = love.graphics.newQuad(0, 0, 140, 190, bw, bh) -- 1st one (Red)
 end
 
 function CardAtlas.get_quad(card)

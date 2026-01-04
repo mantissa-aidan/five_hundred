@@ -2,6 +2,8 @@ local CardRenderer = require "src.ui.card_renderer"
 local Utils = require "src.core.utils"
 local BiddingView = require "src.ui.bidding_view"
 local Config = require "src.config"
+local Card = require "src.core.card"
+local Suit = Card.Suit
 
 local TableView = Utils.class("TableView")
 local ParticleSystem = require "src.ui.particle_system"

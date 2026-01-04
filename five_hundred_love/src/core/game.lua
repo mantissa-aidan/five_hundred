@@ -266,7 +266,7 @@ function Game:player_bid(player_idx, tricks, suit, type)
         type = "BID",
         tricks = tricks,
         suit = suit,
-        score = new_bid.score,
+        score = new_bid.score or 0, -- Ensure numeric
         str = tostring(new_bid)
     }
     
