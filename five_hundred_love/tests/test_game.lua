@@ -663,4 +663,91 @@ describe("Player Turn Check", function()
 
 end)
 
+describe("Round Scoring", function()
+
+    local function setup_and_complete_round(bid_tricks, actual_tricks_won_by_declarer_team)
+        local game = create_game()
+        game:start_new_round()
+        
+        -- Bid
+        local bidder_idx = game.current_player_idx
+        game:player_bid(bidder_idx, bid_tricks, Suit.SPADES, BidType.SUIT_TRUMP)
+        game:player_pass(game.current_player_idx)
+        game:player_pass(game.current_player_idx)
+        game:player_pass(game.current_player_idx)
+        
+        -- Discard
+        local declarer = game.players[game.current_player_idx]
+        local discards = {declarer.hand[1], declarer.hand[2], declarer.hand[3]}
+        game:player_discard_kitty(game.current_player_idx, discards)
+        
+        -- Manually set tricks won to simulate round outcome
+        -- Declarer team is Team A (P1, P3) or Team B (P2, P4)
+        local declarer_team_idx = (bidder_idx == 1 or bidder_idx == 3) and 1 or 2
+        
+        -- Reset all tricks
+        for _, p in ipairs(game.players) do
+            p.tricks_won_this_round = 0
+        end
+        
+        -- Award tricks to declarer team
+        if declarer_team_idx == 1 then
+            game.players[1].tricks_won_this_round = math.floor(actual_tricks_won_by_declarer_team / 2)
+            game.players[3].tricks_won_this_round = math.ceil(actual_tricks_won_by_declarer_team / 2)
+        else
+            game.players[2].tricks_won_this_round = math.floor(actual_tricks_won_by_declarer_team / 2)
+            game.players[4].tricks_won_this_round = math.ceil(actual_tricks_won_by_declarer_team / 2)
+        end
+        
+        -- Manually trigger scoring
+        game:score_round()
+        
+        return game, declarer_team_idx
+    end
+
+    it("awards positive points when contract is made", function()
+        local game, team_idx = setup_and_complete_round(6, 6)
+        
+        local declarer_team = game.teams[team_idx]
+        assert_equal(40, declarer_team.score, "Team should gain 40 points for making 6 Spades")
+    end)
+
+    it("awards positive points when contract is exceeded", function()
+        local game, team_idx = setup_and_complete_round(6, 8)
+        
+        local declarer_team = game.teams[team_idx]
+        assert_equal(40, declarer_team.score, "Team should gain 40 points (bid amount, not overtricks)")
+    end)
+
+    it("deducts points when contract fails", function()
+        local game, team_idx = setup_and_complete_round(7, 6)
+        
+        local declarer_team = game.teams[team_idx]
+        assert_equal(-140, declarer_team.score, "Team should lose 140 points for failing 7 Spades")
+    end)
+
+    it("deducts points when contract badly fails", function()
+        local game, team_idx = setup_and_complete_round(10, 5)
+        
+        local declarer_team = game.teams[team_idx]
+        assert_equal(-440, declarer_team.score, "Team should lose 440 points for failing 10 Spades")
+    end)
+
+    it("transitions to ROUND_OVER state after scoring", function()
+        local game = setup_and_complete_round(6, 6)
+        
+        assert_equal(Game.STATE.ROUND_OVER, game.state)
+    end)
+
+    it("opposing team score remains unchanged", function()
+        local game, declarer_team_idx = setup_and_complete_round(6, 6)
+        
+        local opposing_team_idx = (declarer_team_idx == 1) and 2 or 1
+        local opposing_team = game.teams[opposing_team_idx]
+        
+        assert_equal(0, opposing_team.score, "Opposing team score should not change")
+    end)
+
+end)
+
 return TestRunner

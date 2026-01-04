@@ -498,10 +498,11 @@ function Game:score_round()
         for _, p in ipairs(t.players) do if p == declarer then declarer_team = t end end
     end
     
+    
     -- Calculate team tricks
     local total_tricks = 0
     for _, p in ipairs(declarer_team.players) do
-        total_tricks = total_tricks + (p.tricks_won_round or 0)
+        total_tricks = total_tricks + (p.tricks_won_this_round or 0)
     end
     
     -- Update Scores
