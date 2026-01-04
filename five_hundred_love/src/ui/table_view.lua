@@ -363,13 +363,12 @@ function TableView:draw()
             local curr_x = anim.start_pos.x + (anim.end_pos.x - anim.start_pos.x) * t
             local curr_y = anim.start_pos.y + (anim.end_pos.y - anim.start_pos.y) * t
             
+            
             -- Simple params - no stretch
             local params = {scale_x = 1, scale_y = 1, rotation = 0, shadow_offset = 10}
             
-            -- Keep card upright throughout (no rotation)
-            
-            -- Use CardRenderer directly with global coords
-            CardRenderer.draw_card(anim.card, curr_x - 40, curr_y, self.card_scale, true, false, params)
+            -- Draw at interpolated position (already includes the -40 offset)
+            CardRenderer.draw_card(anim.card, curr_x, curr_y, self.card_scale, true, false, params)
         end
     end
     
