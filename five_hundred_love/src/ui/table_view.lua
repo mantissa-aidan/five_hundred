@@ -814,9 +814,11 @@ function TableView:draw_hud()
     -- Big Text (Contract)
     love.graphics.setColor(1, 1, 1)
     -- Scaling text slightly for "Medium" feel if no font
-    local default_font = love.graphics.getFont()
-    local scale = 1.2
-    love.graphics.print(contract_str, x + 15, y + 15, 0, scale, scale)
+    -- Scaling text slightly for "Medium" feel if no font
+    if gFonts and gFonts.medium then
+        love.graphics.setFont(gFonts.medium)
+    end
+    love.graphics.print(contract_str, x + 15, y + 15)
     
     -- SCORE
     local us = self.hud_state.us_score

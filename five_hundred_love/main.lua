@@ -189,8 +189,17 @@ function love.load()
     lurker.postswap = reload_ui -- Call this after swap
     
     -- Load Unicode font (DejaVu Sans has suit symbols ♠♣♦♥)
-    local font = love.graphics.newFont("assets/fonts/DejaVuSans.ttf", 12)
-    love.graphics.setFont(font)
+    -- Also loading Lambda for UI
+    gFonts = {
+        small = love.graphics.newFont("assets/fonts/Lambda-Regular.ttf", 16),
+        medium = love.graphics.newFont("assets/fonts/Lambda-Regular.ttf", 24),
+        large = love.graphics.newFont("assets/fonts/Lambda-Regular.ttf", 48),
+        symbols = love.graphics.newFont("assets/fonts/DejaVuSans.ttf", 18) -- Fallback for suits if needed?
+    }
+    -- Actually Lambda might not have suits. 
+    -- If Lambda lacks Unicode suits, we might need a fallback or stick to emoji/images.
+    -- For now set default to medium.
+    love.graphics.setFont(gFonts.medium)
     
     -- Initialize Game
     local player_names = {"You", "Bot 1", "Partner", "Bot 3"}
