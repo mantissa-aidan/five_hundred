@@ -89,13 +89,11 @@ function TableView:on_card_played(p_idx, card)
         [4] = {x=50, y=0}   
     }
     local offset = positions[p_idx] or {x=0,y=0}
-    local end_x = self.center_x + offset.x - 40 -- center offset? No, positions are relative
-    -- Actually draw_current_trick does translate(center). 
-    -- So Global End Pos = center_x + offset.x, center_y + offset.y
-    -- Note: card is drawn at (x-40, y-55). 
-    -- So for center visual, we target (center_x + offset.x, center_y + offset.y - 55)
     
-    local anim_end_x = self.center_x + offset.x
+    -- Match the exact position from draw_current_trick
+    -- draw_current_trick does: translate(center), then draws at (offset.x - 40, offset.y - 55)
+    -- So absolute position is: center_x + offset.x - 40, center_y + offset.y - 55
+    local anim_end_x = self.center_x + offset.x - 40
     local anim_end_y = self.center_y + offset.y - 55
     
     self:play_card_animation(card, start_x, start_y, anim_end_x, anim_end_y, 0.4, nil)
