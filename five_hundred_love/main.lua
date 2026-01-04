@@ -183,6 +183,12 @@ local gTime = 0
 local gScreenShake = 0
 
 function love.load()
+    -- Initialize RNG
+    math.randomseed(os.time())
+    -- Pop a few random numbers to clear any startup bias
+    math.random()
+    math.random()
+    math.random()
     -- Hot Reload Setup (Lurker)
     lurker = require "src.ext.lurker"
     lurker.path = "src" -- Only scan src directory
