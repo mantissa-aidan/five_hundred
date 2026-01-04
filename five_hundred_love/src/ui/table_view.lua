@@ -191,6 +191,7 @@ function TableView:animate_deal()
     self.pending_animations = {}
     self.dealing_in_progress = true
     self.is_animating = true
+    self.dealt_cards = {} -- Track which cards have been dealt (landed)
     
     print("[DEAL] Starting deal animation")
     
@@ -209,8 +210,12 @@ function TableView:animate_deal()
                 print(string.format("[DEAL] Queueing card %d for P%d: %s -> (%.1f, %.1f) delay=%.2f", 
                     round, p_idx, tostring(card), end_x, end_y, delay))
                 
+                -- Capture card reference for callback
+                local card_ref = card
                 self:play_card_animation_delayed(card, deck_x, deck_y, end_x, end_y, 0.2, delay, function()
-                    -- Card landed
+                    -- Mark card as dealt
+                    self.dealt_cards[card_ref] = true
+                    
                     if round == 10 and p_idx == 4 then
                         -- Last card dealt, now deal kitty
                         self:deal_kitty(delay + card_delay)
@@ -669,11 +674,6 @@ function TableView:draw_status_info()
 end
 
 function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
-    -- Don't draw hands during dealing animation
-    if self.dealing_in_progress then
-        return
-    end
-    
     local player = self.game.players[player_idx]
     if not player then return end
     
@@ -809,20 +809,24 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     local deferred_draws = {}
 
     for i, card in ipairs(player.hand) do
-        -- Init spring if missing
-        local spring = nil
-        if is_human then
-            if not self.hand_springs[i] then
-                 self.hand_springs[i] = {
-                    scale = {val=1, vel=0, target=1},
-                    pitch = {val=0, vel=0, target=0},
-                    roll  = {val=0, vel=0, target=0}
-                }
+        -- During dealing, only show cards that have landed
+        if self.dealing_in_progress and not (self.dealt_cards and self.dealt_cards[card]) then
+            -- Skip this card - it hasn't been dealt yet
+        else
+            -- Init spring if missing
+            local spring = nil
+            if is_human then
+                if not self.hand_springs[i] then
+                     self.hand_springs[i] = {
+                        scale = {val=1, vel=0, target=1},
+                        pitch = {val=0, vel=0, target=0},
+                        roll  = {val=0, vel=0, target=0}
+                    }
+                end
+                spring = self.hand_springs[i]
             end
-            spring = self.hand_springs[i]
-        end
-        
-        if not animating_indices[i] then
+            
+            if not animating_indices[i] then
             if is_human and self.dragged_card and self.dragged_card.idx == i then
                 -- Skip rendered dragged card
             else
