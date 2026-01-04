@@ -100,7 +100,7 @@ function TableView:on_card_played(p_idx, card)
     self:play_card_animation(card, start_x, start_y, anim_end_x, anim_end_y, 0.4, nil)
 end
 
-function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale, delay)
+function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale, delay, face_up)
     table.insert(self.animations, {
         type = "FLY_IN",
         card = card,
@@ -111,7 +111,8 @@ function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, dur
         duration = duration,
         target_idx = card_idx,
         on_complete = on_complete,
-        start_scale = start_scale or 1.0
+        start_scale = start_scale or 1.0,
+        face_up = face_up -- Default true if nil in renderer? Or pass explicit logic.
     })
 end
 
@@ -223,10 +224,18 @@ function TableView:on_deal()
             for k=1, count do
                 hand_counts[p] = hand_counts[p] + 1
                 
+                local tx, ty
+                local card_obj = nil
+                local face_up = false
+                local target_idx_val = nil
+                
                 if p == 1 then
-                    -- Schedule Human Animation AT current_delay
+                    -- Human
                     local h_idx = hand_counts[p]
                     local hand = self.game.players[1].hand
+                    card_obj = hand[h_idx]
+                    target_idx_val = h_idx
+                    face_up = true -- Deal face up for user convenience/smoothness
                     
                     -- Pos Calc
                     local hand_size = 10
@@ -236,17 +245,34 @@ function TableView:on_deal()
                     local total_w = (hand_size - 1) * spread + card_w
                     if total_w > available_width then spread = (available_width - card_w) / (hand_size - 1) end
                     local start_x = -total_w / 2
-                    local tx = self.center_x + (start_x + (h_idx-1)*spread)
-                    local ty = self.height - 100 - 60
+                    tx = self.center_x + (start_x + (h_idx-1)*spread)
+                    ty = self.height - 100 - 60
+                else
+                    -- Bots
+                    if p == 2 then tx, ty = 50, self.center_y
+                    elseif p == 3 then tx, ty = self.center_x, 50
+                    elseif p == 4 then tx, ty = self.width - 50, self.center_y
+                    end
                     
-                    self:play_card_animation(hand[h_idx], self.center_x, self.center_y, tx, ty, 0.4, h_idx, nil, 0.2, current_delay)
+                    -- Use a dummy card (Back)
+                    -- We just need ANY card object but render it face down.
+                    -- If we pass nil, renderer might crash.
+                    -- Pass first card of P1 hand? or create dummy?
+                    -- CardRenderer just needs `card.suit` `card.rank` if face up.
+                    -- If face down, it ignores suit/rank.
+                    -- So we can pass self.game.players[1].hand[1] safely if face_up=false.
+                    card_obj = self.game.players[1].hand[1]
+                    face_up = false
+                    target_idx_val = nil -- Don't hide anything in Human hand
                 end
+                
+                self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, target_idx_val, nil, 0.2, current_delay, face_up)
                 
                 -- Increment Frame Time
                 current_delay = current_delay + card_interval
             end
             
-            -- Small pause between players?
+            -- Small pause between players
             current_delay = current_delay + 0.1
         end
     end
@@ -255,12 +281,38 @@ function TableView:on_deal()
     
     -- Sequence
     deal_packet(3)
-    current_delay = current_delay + 0.2 -- Kitty deal time
+    
+    -- Kitty (1 Card)
+    -- Animate to Center + 100? Or just "The kitty pile"? 
+    -- Kitty usually face down.
+    -- Target: Center X, Center Y + 20 (stack).
+    for k=1, 1 do
+         -- Dummy card for kitty
+         local card_obj = self.game.players[1].hand[1] 
+         local tx, ty = self.center_x, self.center_y + 20 -- Slightly offset from deck
+         self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, nil, nil, 0.2, current_delay, false)
+         current_delay = current_delay + card_interval
+    end
+    current_delay = current_delay + 0.2
     
     deal_packet(4)
+    for k=1, 1 do
+         -- Kitty 2
+         local card_obj = self.game.players[1].hand[1] 
+         local tx, ty = self.center_x + 5, self.center_y + 25 
+         self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, nil, nil, 0.2, current_delay, false)
+         current_delay = current_delay + card_interval
+    end
     current_delay = current_delay + 0.2
     
     deal_packet(3)
+    for k=1, 1 do
+         -- Kitty 3
+         local card_obj = self.game.players[1].hand[1] 
+         local tx, ty = self.center_x - 5, self.center_y + 25 
+         self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, nil, nil, 0.2, current_delay, false)
+         current_delay = current_delay + card_interval
+    end
 end
 
 -- ...
@@ -519,7 +571,15 @@ function TableView:draw()
             end
             
             -- Use CardRenderer directly with global coords
-            CardRenderer.draw_card(anim.card, curr_x - 40, curr_y, self.card_scale, true, false, params)
+            -- Handle Face Up override from animation
+            local is_face_up = true
+            if anim.face_up ~= nil then is_face_up = anim.face_up end
+            
+            -- If it's the dealer deal, usually we deal face down?
+            -- But for Human we want to see them arrive face up? Or arrive face down then flip?
+            -- Let's stick to what we pass in.
+            
+            CardRenderer.draw_card(anim.card, curr_x - 40, curr_y, self.card_scale, is_face_up, false, params)
         end
     end
     
