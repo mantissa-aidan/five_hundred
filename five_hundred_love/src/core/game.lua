@@ -69,6 +69,10 @@ function Game:set_on_card_play(callback)
     self.on_card_play_callback = callback
 end
 
+function Game:set_on_deal_complete(callback)
+    self.on_deal_complete_callback = callback
+end
+
 -- New Event Hooks
 function Game:set_on_phase_change(callback)
     self.on_phase_change_callback = callback
@@ -97,6 +101,11 @@ function Game:start_new_round()
     self:log("Starting New Round")
     self.dealer_idx = (self.dealer_idx % 4) + 1
     self:deal_cards()
+    
+    -- Trigger deal animation callback
+    if self.on_deal_complete_callback then
+        self.on_deal_complete_callback()
+    end
     
     -- Reset Round State
     self.state = Game.STATE.BIDDING

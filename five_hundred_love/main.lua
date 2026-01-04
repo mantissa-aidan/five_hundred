@@ -93,6 +93,13 @@ local function register_callbacks()
             "Team B: " .. data.team_b_score
         }, false, {1, 0.8, 0})
     end)
+    
+    -- Dealing animation
+    gGame:set_on_deal_complete(function()
+        if gTableView and gTableView.animate_deal then
+            gTableView:animate_deal()
+        end
+    end)
 end
 
 local run_tests -- Forward declaration
