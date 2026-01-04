@@ -36,6 +36,10 @@ function TableView:init(game)
         self:on_card_played(p_idx, card)
     end)
     
+    game:set_on_cards_dealt(function()
+        self:on_deal()
+    end)
+    
     -- UI Polish State
     self.turn_alphas = {0,0,0,0} -- Alpha for each player's turn indicator
     self.hud_state = {
@@ -96,13 +100,14 @@ function TableView:on_card_played(p_idx, card)
     self:play_card_animation(card, start_x, start_y, anim_end_x, anim_end_y, 0.4, nil)
 end
 
-function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale)
+function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale, delay)
     table.insert(self.animations, {
         type = "FLY_IN",
         card = card,
         start_pos = {x=start_x, y=start_y},
         end_pos = {x=end_x, y=end_y},
         t = 0,
+        delay = delay or 0, -- Add Delay Param
         duration = duration,
         target_idx = card_idx,
         on_complete = on_complete,
@@ -113,11 +118,60 @@ end
 function TableView:update_animations(dt)
     for i = #self.animations, 1, -1 do
         local anim = self.animations[i]
-        anim.t = anim.t + dt
-        if anim.t >= anim.duration then
-            if anim.on_complete then anim.on_complete() end
-            table.remove(self.animations, i)
+        
+        if anim.delay and anim.delay > 0 then
+            anim.delay = anim.delay - dt
+        else
+            anim.t = anim.t + dt
+            if anim.t >= anim.duration then
+                if anim.on_complete then anim.on_complete() end
+                table.remove(self.animations, i)
+            end
         end
+    end
+end
+
+function TableView:on_deal()
+    -- Animate Human Hand Deal
+    local start_delay = 0.5
+    local stagger = 0.08 -- 80ms stagger
+    
+    local hand = self.game.players[1].hand
+    -- Calculate spread for target X
+    local hand_size = #hand
+    local available_width = self.width - 200
+    local card_w = 80 * self.card_scale
+    local spread = 60 * self.card_scale
+    local total_w = (hand_size - 1) * spread + card_w
+    if total_w > available_width then
+        spread = (available_width - card_w) / (hand_size - 1)
+    end
+    local start_x = self.center_x - (total_w / 2)
+    -- Actually this start_x logic is relative to center if drawn centered?
+    -- draw_player_hand uses `local start_x = -total_w / 2` and then translates.
+    -- BUT play_card_animation uses global coords (because it draws in global space or on top).
+    -- Wait, play_card_animation calls CardRenderer at x, y. 
+    -- draw draws relative to center.
+    -- We need Global Target X/Y.
+    
+    -- In draw_player_hand (Human):
+    -- translate(center_x, height-100)
+    -- card_x = start_x + (i-1)*spread.
+    -- So Global X = center_x + start_x + (i-1)*spread.
+    -- Global Y = height - 100 + (-60).
+    
+    -- Correct Start_X logic from draw_player_hand:
+    local visual_start_x = -total_w / 2
+    
+    for i, card in ipairs(hand) do
+        local local_card_x = visual_start_x + (i-1) * spread
+        local target_x = self.center_x + local_card_x -- Global X
+        local target_y = self.height - 100 - 60       -- Global Y
+        
+        -- Start from Deck (Center Screen)
+        local sx, sy = self.center_x, self.center_y
+        
+        self:play_card_animation(card, sx, sy, target_x, target_y, 0.4, i, nil, 0.2, start_delay + (i-1)*stagger)
     end
 end
 

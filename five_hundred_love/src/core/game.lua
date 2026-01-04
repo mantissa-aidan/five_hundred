@@ -86,6 +86,10 @@ function Game:set_on_round_end(callback)
     self.on_round_end_callback = callback
 end
 
+function Game:set_on_cards_dealt(callback)
+    self.on_cards_dealt_callback = callback
+end
+
 function Game:log(msg)
     print("[GAME] " .. msg)
     table.insert(self.message_log, msg)
@@ -145,6 +149,10 @@ function Game:deal_cards()
     for k=1,3 do
         table.insert(self.kitty, cards[idx])
         idx = idx + 1
+    end
+    
+    if self.on_cards_dealt_callback then
+        self.on_cards_dealt_callback()
     end
 end
 
