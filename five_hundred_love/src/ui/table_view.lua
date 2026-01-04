@@ -635,10 +635,15 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
                      local dist = math.abs(visual_idx - center)
                      local signed_dist = visual_idx - center
                      
-                     -- Push down at edges
-                     card_y = card_y + (dist * dist) * 1.5 
+                     -- Push up at edges (Inverted Fan)
+                     card_y = card_y - (dist * dist) * 1.5 
                      
-                     -- Rotate (Left tilts left, Right tilts right)
+                     -- Rotate (Left tilts right, Right tilts left) - Inverted rotation too?
+                     -- Usually rotation complements the arch.
+                     -- If we arch up (frown), left side should tilt right?
+                     -- Let's stick to the visual curve first. 
+                     -- Previous: signed_dist * 0.1 (Left is negative -> Rot Left).
+                     -- visual_idx increases left to right.
                      fan_rot = signed_dist * 0.1 -- radians
                 end
                 
