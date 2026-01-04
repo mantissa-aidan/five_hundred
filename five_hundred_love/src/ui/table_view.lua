@@ -497,7 +497,7 @@ end
 
 function TableView:draw_tricks_history()
     love.graphics.setColor(1, 1, 1, 0.5)
-    love.graphics.print("Tricks History: " .. #self.game.tricks_history, 10, 70)
+    -- love.graphics.print("Tricks History: " .. #self.game.tricks_history, 10, 70)
 end
 
 function TableView:draw_status_info()
@@ -723,10 +723,10 @@ function TableView:draw_current_trick()
     if not trick or #trick == 0 then return end
     
     local positions = {
-        [1] = {x=0, y=50},  -- Bottom Played
-        [2] = {x=-50, y=0}, -- Left Played
-        [3] = {x=0, y=-50}, -- Top Played
-        [4] = {x=50, y=0}   -- Right Played
+        [1] = {x=0, y=80},  -- Bottom Played
+        [2] = {x=-100, y=0}, -- Left Played
+        [3] = {x=0, y=-80}, -- Top Played
+        [4] = {x=100, y=0}   -- Right Played
     }
     
     love.graphics.push()
@@ -793,16 +793,22 @@ function TableView:draw_hud()
     local bid = self.game.winning_bid
     local contract_str = "Bidding..."
     
+    -- Suit Mapping
+    local suits = {[0]="Clubs", [1]="Diamonds", [2]="Hearts", [3]="Spades", [4]="NoTrump"}
+    local function format_bid(tricks, suit_idx)
+         return string.format("%d %s", tricks, suits[suit_idx] or "?")
+    end
+    
     if self.game.state == "BIDDING" then
         local highest = self.game.highest_bid
         if highest then
-             contract_str = string.format("Bid: %d %s", highest.tricks, highest.suit)
+             contract_str = "Bid: " .. format_bid(highest.tricks, highest.suit)
         else
              contract_str = "Bidding"
         end
     elseif bid then
-        contract_str = string.format("Contract: %d %s", bid.tricks, bid.suit)
-        trump_suit = bid.suit 
+        contract_str = "Contract: " .. format_bid(bid.tricks, bid.suit)
+        trump_suit = suits[bid.suit] or "None"
     end
     
     -- Big Text (Contract)
