@@ -356,46 +356,19 @@ function TableView:draw()
     for _, anim in ipairs(self.animations) do
         if anim.type == "FLY_IN" then
             local progress = anim.t / anim.duration
-            -- Easing: Back Out (goes past destination and comes back)
-            local function easeOutBack(x)
-                local c1 = 1.70158
-                local c3 = c1 + 1
-                return 1 + c3 * math.pow(x - 1, 3) + c1 * math.pow(x - 1, 2)
+            -- Smooth easing without overshoot
+            local function easeOutCubic(x)
+                return 1 - math.pow(1 - x, 3)
             end
-            local t = easeOutBack(progress)
+            local t = easeOutCubic(progress)
             
             local curr_x = anim.start_pos.x + (anim.end_pos.x - anim.start_pos.x) * t
             local curr_y = anim.start_pos.y + (anim.end_pos.y - anim.start_pos.y) * t
             
-            -- Stretch Effect during flight
-            local params = {scale_x = 1, scale_y = 1, rotation = 0}
+            -- Simple params - no stretch
+            local params = {scale_x = 1, scale_y = 1, rotation = 0, shadow_offset = 10}
             
-            -- Peak stretch at mid-flight
-            -- Fade out stretch near end (progress > 0.8)
-            local stretch = math.sin(progress * math.pi) * 0.3
-            if progress > 0.8 then stretch = stretch * (1.0 - progress)/0.2 end
-            
-            -- Interpolate Base Scale (Start Scale -> 1.0)
-            local base_scale = anim.start_scale + (1.0 - anim.start_scale) * progress
-            
-            params.scale_x = base_scale * (1.0 - stretch * 0.5) -- Narrow
-            params.scale_y = base_scale * (1.0 + stretch) -- Long
-            
-            -- Align with movement vector
-            local dx = anim.end_pos.x - anim.start_pos.x
-            local dy = anim.end_pos.y - anim.start_pos.y
-            
-            -- Rotate towards 0 at the end
-            local flight_angle = math.atan2(dy, dx) - math.pi/2
-            
-            -- Interpolate rotation: Flight Angle -> 0
-            -- Smooth transition near end
-            if progress > 0.8 then
-                 local end_t = (progress - 0.8) / 0.2
-                 params.rotation = flight_angle * (1 - end_t)
-            else
-                 params.rotation = flight_angle
-            end
+            -- Keep card upright throughout (no rotation)
             
             -- Use CardRenderer directly with global coords
             CardRenderer.draw_card(anim.card, curr_x - 40, curr_y, self.card_scale, true, false, params)
