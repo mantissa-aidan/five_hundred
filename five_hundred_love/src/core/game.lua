@@ -140,35 +140,26 @@ function Game:deal_cards()
     
     local deal_seq = {3, 4, 3} -- Packets for players
     
-    -- We track which cards go where for animation syncing if needed, 
-    -- but for now just distribute logic.
+    local start_p = (self.dealer_idx % 4) + 1
     
-    -- Round 1: 3 cards each
-    for i=1,4 do
-        for k=1,3 do
-            self.players[i]:add_card_to_hand(cards[idx]); idx = idx + 1
+    -- Helper to iterate players starting from start_p
+    local function deal_round(count)
+        for i=0, 3 do
+            local p_idx = ((start_p + i - 1) % 4) + 1
+            for k=1, count do
+                self.players[p_idx]:add_card_to_hand(cards[idx])
+                idx = idx + 1
+            end
         end
+        -- Kitty after each round
+        table.insert(self.kitty, cards[idx])
+        idx = idx + 1
     end
-    -- Kitty 1
-    table.insert(self.kitty, cards[idx]); idx = idx + 1
     
-    -- Round 2: 4 cards each
-    for i=1,4 do
-        for k=1,4 do
-            self.players[i]:add_card_to_hand(cards[idx]); idx = idx + 1
-        end
-    end
-    -- Kitty 1
-    table.insert(self.kitty, cards[idx]); idx = idx + 1
-    
-    -- Round 3: 3 cards each
-    for i=1,4 do
-        for k=1,3 do
-            self.players[i]:add_card_to_hand(cards[idx]); idx = idx + 1
-        end
-    end
-    -- Kitty 1
-    table.insert(self.kitty, cards[idx]); idx = idx + 1
+    -- Execute Deal Rounds
+    deal_round(3)
+    deal_round(4)
+    deal_round(3)
     
     -- Sort Hands
     for _, p in ipairs(self.players) do p:sort_hand() end

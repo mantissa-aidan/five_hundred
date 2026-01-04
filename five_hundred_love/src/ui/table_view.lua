@@ -149,27 +149,25 @@ function TableView:on_deal()
     
     -- Helper to spawn animation
     local function deal_packet(count)
-        for p=1, 4 do
+        -- Iterate players starting from Left of Dealer
+        local dealer_idx = self.game.dealer_idx or 4 -- Default 4 (so 1 starts)
+        local start_p = (dealer_idx % 4) + 1
+        
+        for i=0, 3 do
+            local p = ((start_p + i - 1) % 4) + 1
+            local player_idx = p
+            
             for k=1, count do
-                local player_idx = p
                 hand_counts[p] = hand_counts[p] + 1
                 local h_idx = hand_counts[p]
                 
-                -- Target Pos
+                -- Target Pos logic (Same as before)
                 local tx, ty
                 local card_obj = nil
                 
                 if player_idx == 1 then
-                    -- Human: Calculate visual slot (approximate since we don't know sorted order yet?)
-                    -- Actually Game has already sorted the hand!
-                    -- So card at `h_idx` in `players[1].hand` is NOT necessarily the card being dealt right now physically.
-                    -- Visual Trick: We just animate the card at `players[1].hand[h_idx]` arriving now.
-                    -- Even if logically it shouldn't be dealt yet.
-                    -- It looks smoother to fill the hand left-to-right.
-                    
                     local hand = self.game.players[1].hand
-                    local hand_size = 10 -- We know final size
-                    -- Use spread logic
+                    local hand_size = 10
                     local available_width = self.width - 200
                     local card_w = 80 * self.card_scale
                     local spread = 60 * self.card_scale
@@ -183,64 +181,86 @@ function TableView:on_deal()
                     
                     card_obj = hand[h_idx]
                 else
-                    -- Bots: Center of their hand zone
                     if p == 2 then tx, ty = 50, self.center_y
                     elseif p == 3 then tx, ty = self.center_x, 50
                     elseif p == 4 then tx, ty = self.width - 50, self.center_y
                     end
-                    -- Use "back" of a dummy card logic? 
-                    -- play_card_animation expects a card object.
-                    -- If nil, it crashes?
-                    -- We can pass a dummy card or `Card.new(Suit.SPADES, Rank.ACE)` but flag it to draw back.
-                    -- Actually CardRenderer handles nil? No.
-                    -- We'll pass the first card of their hand and force draw_back in Renderer?
-                    -- Or just animate P1 only for simpler polish?
-                    -- User asked for "Fly in animation... deal animation should follow...".
-                    -- Let's stick to Human + Kitty for now to avoid visual clutter of 40 animations.
-                    -- Wait, "Fly animations are all happening at once".
-                    -- Implies they SAW animations.
-                    -- Previous code only animated Human.
-                    -- So let's stick to Human + Kitty pattern logic.
                 end
                 
                 if player_idx == 1 then
+                    -- Animate Human Card
                     self:play_card_animation(card_obj, self.center_x, self.center_y, tx, ty, 0.4, h_idx, nil, 0.2, current_delay)
                     current_delay = current_delay + card_interval
                 end
             end
-            -- Delay between players?
-            if player_idx == 1 then -- Only adding delay if we animated
-               -- current_delay = current_delay + 0.1
+            
+            if player_idx == 1 then 
+                 -- Add delay after Human receives packet so we can perceive the turn?
+                 -- No, `packet_delay` handles the wait between rounds.
+                 -- `current_delay` logic is strictly scheduling Human animations.
+                 -- If P2 is dealt before P1, P1's animation should start AFTER P2's imaginary animation time.
+                 -- So we should increment `current_delay` regardless of who the player is, to simulate the time taken to deal to them.
+                 -- Dealing ~0.1s per card.
             end
+            
+            -- Simulate time passing for everyone
+            current_delay = current_delay + (count * card_interval)
         end
     end
     
-    -- Sequence: 3, 3, 3, 3...
-    -- But if we only animate Human (P1), we only care about when P1 gets cards.
-    -- P1 gets 3. Then P2(3), P3(3), P4(3). Kitty(1).
-    -- So P1 waits for others.
+    -- Current Delay Logic Note: The previous code updated `current_delay` TWICE for Human (once inside loop, once by accumulation)?
+    -- Let's fix. `current_delay` is the "Clock" for when the NEXT animation starts.
     
-    -- Real Sequence Delays:
-    -- Round 1
-    deal_packet(3) -- P1 gets 3
-    current_delay = current_delay + packet_delay -- Wait for P2,3,4 (simulated)
+    -- Correct Helper:
+    local function deal_packet_corrected(count)
+        local dealer_idx = self.game.dealer_idx or 4
+        local start_p = (dealer_idx % 4) + 1
+        
+        for i=0, 3 do
+            local p = ((start_p + i - 1) % 4) + 1
+            
+            -- Animate this player's packet
+            for k=1, count do
+                hand_counts[p] = hand_counts[p] + 1
+                
+                if p == 1 then
+                    -- Schedule Human Animation AT current_delay
+                    local h_idx = hand_counts[p]
+                    local hand = self.game.players[1].hand
+                    
+                    -- Pos Calc
+                    local hand_size = 10
+                    local available_width = self.width - 200
+                    local card_w = 80 * self.card_scale
+                    local spread = 60 * self.card_scale
+                    local total_w = (hand_size - 1) * spread + card_w
+                    if total_w > available_width then spread = (available_width - card_w) / (hand_size - 1) end
+                    local start_x = -total_w / 2
+                    local tx = self.center_x + (start_x + (h_idx-1)*spread)
+                    local ty = self.height - 100 - 60
+                    
+                    self:play_card_animation(hand[h_idx], self.center_x, self.center_y, tx, ty, 0.4, h_idx, nil, 0.2, current_delay)
+                end
+                
+                -- Increment Frame Time
+                current_delay = current_delay + card_interval
+            end
+            
+            -- Small pause between players?
+            current_delay = current_delay + 0.1
+        end
+    end
     
-    -- Kitty 1
-    current_delay = current_delay + 0.1
+    deal_packet = deal_packet_corrected -- Swap
     
-    -- Round 2
-    deal_packet(4) -- P1 gets 4
-    current_delay = current_delay + packet_delay
+    -- Sequence
+    deal_packet(3)
+    current_delay = current_delay + 0.2 -- Kitty deal time
     
-    -- Kitty 1
-    current_delay = current_delay + 0.1
+    deal_packet(4)
+    current_delay = current_delay + 0.2
     
-    -- Round 3
-    deal_packet(3) -- P1 gets 3
-    current_delay = current_delay + packet_delay
-    
-    -- Kitty 1
-    -- End.
+    deal_packet(3)
 end
 
 -- ...
