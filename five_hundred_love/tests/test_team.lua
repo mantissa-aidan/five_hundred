@@ -21,7 +21,7 @@ describe("Team", function()
         assert_equal(2, #team.players)
         assert_equal(p1, team.players[1])
         assert_equal(p2, team.players[2])
-        assert_equal(0, team.team_score)
+        assert_equal(0, team.score)
         assert_false(team.has_bid_this_round)
     end)
 
@@ -37,16 +37,16 @@ describe("Team", function()
 
     it("updates score correctly", function()
         local team = Team.new("Team Alpha", {Player.new("Alice"), Player.new("Bob")})
-        assert_equal(0, team.team_score)
+        assert_equal(0, team.score)
 
         team:update_score(100)
-        assert_equal(100, team.team_score)
+        assert_equal(100, team.score)
 
         team:update_score(50)
-        assert_equal(150, team.team_score)
+        assert_equal(150, team.score)
 
         team:update_score(-200)
-        assert_equal(-50, team.team_score)
+        assert_equal(-50, team.score)
     end)
 
     it("calculates total tricks won this round", function()

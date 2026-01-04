@@ -3,6 +3,9 @@ local Utils = require "src.core.utils"
 local Team = Utils.class("Team")
 
 function Team:init(name, players)
+    if players and #players > 2 then 
+        error("Team size limit 2") 
+    end
     self.name = name
     self.players = players or {}
     self.score = 0  -- Initialize score to 0
