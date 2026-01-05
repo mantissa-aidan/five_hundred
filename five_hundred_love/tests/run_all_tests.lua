@@ -72,6 +72,7 @@ local test_modules = {
     {name = "Strategy Tests", path = "tests.test_strategy"},
     {name = "View Logic Tests", path = "tests.test_view_logic"},
     {name = "Regression Tests", path = "tests.test_regression"},
+    {name = "Round Over Logic Tests", path = "tests.test_round_over_logic"},
 }
 
 -- Run each test module

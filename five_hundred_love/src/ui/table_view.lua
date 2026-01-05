@@ -5,6 +5,10 @@ local Config = require "src.config"
 local Card = require "src.core.card"
 local Suit = Card.Suit
 
+local HAND_SPREAD_HUMAN = 90
+local HAND_SPREAD_BOT = 30
+local HAND_Y_OFFSET = -60
+
 local TableView = Utils.class("TableView")
 local ParticleSystem = require "src.ui.particle_system"
 
@@ -48,7 +52,27 @@ function TableView:init(game)
     -- Animation State
     self.is_animating = false
     self.animation_delay_timer = 0
-    self.animation_delay_duration = 0.3 -- Pause after each animation
+    self.animation_delay_duration = 1.0 -- Slower pace (was 0.3)
+    
+    -- Background Shader Setup
+    self.bg_shader = love.graphics.newShader("src/shaders/background.glsl")
+    print("[TableView] Shader loaded:", self.bg_shader)
+    self.bg_shader = love.graphics.newShader("src/shaders/background.glsl")
+    print("[TableView] Shader loaded:", self.bg_shader)
+    self.bg_time = 0
+    
+    -- Turn Animation State
+    self.last_player_idx = nil
+    self.visual_current_player_idx = game.current_player_idx -- Decoupled visual state
+    self.turn_start_time = 0
+    
+    -- Visual Action Queue (for sequencing events)
+    self.action_queue = {}
+    self.visual_current_player_idx = game.current_player_idx -- Decoupled visual state
+    self.turn_start_time = 0
+    
+    -- Visual Action Queue (for sequencing events)
+    self.action_queue = {}
 end
 
 function TableView:resize(w, h)
@@ -120,6 +144,16 @@ function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, dur
         target_idx = card_idx,
         on_complete = on_complete,
         start_scale = start_scale or 1.0
+    })
+    
+    -- Queue Current Turn State to apply AFTER animation
+    -- This captures the state *after* the card is played (which logic has already processed)
+    -- But since logic has processed it, game.current_player_idx is ALREADY the next player.
+    -- So we want to capture that specific "Next Player" index and enforce it later.
+    
+    table.insert(self.action_queue, {
+        type = "UPDATE_TURN",
+        player_idx = self.game.current_player_idx -- This is the FUTURE turn (Next Player)
     })
 end
 
@@ -259,10 +293,10 @@ function TableView:get_deal_target_position(p_idx, card_idx)
     if p_idx == 1 then
         -- Bottom player (human) - use hand layout
         local hand_size = 10
-        local total_width = (hand_size - 1) * 60
+        local total_width = (hand_size - 1) * HAND_SPREAD_HUMAN
         local start_x = -total_width / 2
-        local card_x = start_x + (card_idx - 1) * 60
-        local card_y = 0
+        local card_x = start_x + (card_idx - 1) * HAND_SPREAD_HUMAN
+        local card_y = HAND_Y_OFFSET
         
         return self.center_x + card_x, self.height - 100 + card_y
     else
@@ -385,13 +419,37 @@ function TableView:update_hand_springs(dt)
 end
 
 function TableView:update(dt)
+    self.bg_time = self.bg_time + dt
     self:update_animations(dt)
     self:update_hand_springs(dt)
-    self.particles:update(dt)
+    -- self.particles:update(dt)
     if self.bidding_view then self.bidding_view:update(dt) end
+
+    -- Process Action Queue (if not animating and no delay)
+    if #self.action_queue > 0 and not self.is_animating and self.animation_delay_timer <= 0 then
+        local action = table.remove(self.action_queue, 1)
+        if action.type == "UPDATE_TURN" then
+            if self.visual_current_player_idx ~= action.player_idx then
+                self.visual_current_player_idx = action.player_idx
+                self.turn_start_time = love.timer.getTime()
+                self.last_player_idx = action.player_idx
+            end
+        end
+    end
     
-    -- Update Turn Indicators
-    local current_p = self.game.current_player_idx
+    -- Detect Game State Turn Changes and Queue Them
+    if self.game.current_player_idx ~= self.visual_current_player_idx then
+         -- Only apply change if NOTHING is happening (idle)
+         if not self.is_animating and self.animation_delay_timer <= 0 then
+             self.visual_current_player_idx = self.game.current_player_idx
+             self.turn_start_time = love.timer.getTime() -- Trigger flash
+             self.last_player_idx = self.visual_current_player_idx
+         end
+    end
+    
+    -- Update Turn Indicators using VISUAL state
+    local current_p = self.visual_current_player_idx
+    
     for i=1, 4 do
         local target = (current_p == i and (self.game.state == "PLAYING" or self.game.state == "BIDDING")) and 1.0 or 0.0
         if self.game.state == "GAME_OVER" then target = 0 end
@@ -470,7 +528,17 @@ function TableView:draw()
     -- Draw Background (Green Felt) - only in game area
     -- Draw Background (Green Felt) - only in game area
     love.graphics.setColor(Config.colors.background)
-    love.graphics.rectangle("fill", 0, 0, self.width, self.height) 
+    
+    if self.bg_shader then
+        love.graphics.setShader(self.bg_shader)
+        self.bg_shader:send("time", self.bg_time)
+        self.bg_shader:send("resolution", {self.width, self.height})
+    end
+    
+    -- Draw simple full-screen rect
+    love.graphics.rectangle("fill", 0, 0, self.width, self.height)
+    
+    love.graphics.setShader() 
     
     self:draw_hud()
     self:draw_tricks_history()
@@ -495,6 +563,10 @@ function TableView:draw()
     
     if self.game.state == "TRICK_OVER" then
         self:draw_next_trick_btn()
+    end
+    
+    if self.game.state == "ROUND_OVER" then
+        self:draw_round_over_modal()
     end
     
     -- Draw Animations (including dealing)
@@ -536,7 +608,7 @@ function TableView:draw()
     love.graphics.setScissor()
     
     -- Draw Particles (Global coordinates, on top)
-    self.particles:draw()
+    -- if self.particles then self.particles:draw() end
 end
 
 function TableView:draw_debug_overlay()
@@ -681,12 +753,16 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     local hand_size = #player.hand
     
     -- Tighter spread for bots (Fan), Normal for human
-    local spread = is_human and 90 or 30  
+    local spread = is_human and HAND_SPREAD_HUMAN or HAND_SPREAD_BOT  
     local start_x = -((hand_size - 1) * spread) / 2
     
     love.graphics.push()
     love.graphics.translate(x, y)
     if rotation then love.graphics.rotate(rotation) end
+    
+    -- Turn Indicator (Spotlight)
+    -- Turn Indicator (Spotlight)
+    -- Turn Indicator (Spotlight) removed - Integrating into existing white box below
     
     
     -- Draw Indicator if turn_alpha > 0
@@ -704,9 +780,34 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
         love.graphics.setLineWidth(3)
         love.graphics.rectangle("line", rx, ry, rw, rh, 15, 15)
         
-        -- Glow
-        love.graphics.setColor(1, 1, 1, alpha * 0.1)
+        -- Glow / Flash Fill
+        -- Calculate Pulse based on turn start time (reusing logic)
+        local flash_alpha = 0
+        if self.visual_current_player_idx == player_idx and self.game.state == "PLAYING" then
+             local t = love.timer.getTime()
+             local elapsed = t - (self.turn_start_time or 0)
+             local flash_dur = 1.0
+             local attack_dur = 0.1
+             
+             local p = 0
+             if elapsed < attack_dur then
+                 p = elapsed / attack_dur
+             else
+                 local decay_t = (elapsed - attack_dur) / (flash_dur - attack_dur)
+                 p = 1.0 - math.min(1.0, math.max(0.0, decay_t))
+                 p = p * p 
+             end
+             flash_alpha = p
+        end
+        
+        -- Base transparency is alpha * 0.1
+        -- Add flash on top
+        local final_fill_alpha = (alpha * 0.1) + (flash_alpha * 0.8) -- Flash makes it bright
+        
+        if flash_alpha > 0.01 then love.graphics.setBlendMode("add") end
+        love.graphics.setColor(1, 1, 1, final_fill_alpha)
         love.graphics.rectangle("fill", rx, ry, rw, rh, 15, 15)
+        love.graphics.setBlendMode("alpha")
     end
 
     -- Name Tag
@@ -841,7 +942,7 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
                 end
                 
                 local card_x = start_x + (visual_idx-1) * spread
-                local card_y = -60
+                local card_y = HAND_Y_OFFSET
                 
                 -- Fan Logic for Opponents
                 local fan_rot = 0
@@ -864,9 +965,7 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
                 end
                 
                 -- Highlight current player
-                if self.game.current_player_idx == player_idx and self.game.state == "PLAYING" then
-                     love.graphics.setColor(1, 1, 0)
-                end
+                -- Highlight removed (moved to spotlight)
                 
                 local show_face = is_human or gDebugMode or (self.game.state == "GAME_OVER")
                 local params = {scale_x = 1, scale_y = 1, kx = 0, ky = 0, shadow_offset = 5, rotation = fan_rot}
@@ -930,6 +1029,7 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
                      })
                 end
             end
+            end
         end
     end
     
@@ -953,8 +1053,20 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
 end
 
 function TableView:draw_current_trick()
+    love.graphics.push()
+    love.graphics.translate(self.center_x, self.center_y)
+    
+    -- Draw Placemat
+    love.graphics.setColor(0, 0, 0, 0.3) -- Semi-transparent black
+    local pw, ph = 340, 340 -- Size to cover the cross of cards
+    love.graphics.rectangle("fill", -pw/2, -ph/2, pw, ph, 40, 40) -- Rounded corners
+    love.graphics.setColor(1, 1, 1, 1)
+
     local trick = self.game.current_trick
-    if not trick or #trick == 0 then return end
+    if not trick or #trick == 0 then 
+        love.graphics.pop()
+        return 
+    end
     
     local positions = {
         [1] = {x=0, y=90},  -- Bottom Played
@@ -963,8 +1075,7 @@ function TableView:draw_current_trick()
         [4] = {x=120, y=0}   -- Right Played
     }
     
-    love.graphics.push()
-    love.graphics.translate(self.center_x, self.center_y)
+    -- Matrix pushed/translated above
     
     -- Filter animating cards
     local animating_set = {}
@@ -1038,106 +1149,161 @@ end
 
 
 function TableView:draw_hud()
-    local padding = 10
-    local x, y = 10, 10
-    local w, h = 150, 120  -- Increased height for score
+    local x, y = 20, 20
+    local w, h = 260, 320 -- Compact panel (Fits above hand)
     
     -- Panel BG
-    love.graphics.setColor(0, 0, 0, 0.8)
-    love.graphics.rectangle("fill", x, y, w, h, 8, 8)
+    love.graphics.setColor(0, 0, 0, 0.9)
+    love.graphics.rectangle("fill", x, y, w, h, 12, 12)
     
     -- Border
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.setLineWidth(2)
-    love.graphics.rectangle("line", x, y, w, h, 8, 8)
+    love.graphics.rectangle("line", x, y, w, h, 12, 12)
     
-    -- TRUMP INFO
-    local trump_suit = self.game.trump_suit or "None"
+    local left_pad = x + 15
+    local cursor_y = y + 15
+    
+    -- Data Prep
     local bid = self.game.winning_bid
-    local contract_str = "Bidding..."
+    local suits = {[0]="CLUBS", [1]="DIAMONDS", [2]="HEARTS", [3]="SPADES", [4]="NO TRUMP"}
+    local tricks_bid = 0
+    local suit_str = "..."
+    local declarer_name = "..."
+    local human_team = self.game.players[1].team
+    local team_goal = 0
+    local role_text = "..."
+    local role_color = {1, 1, 1}
     
-    -- Suit Mapping
-    local suits = {[0]="Clubs", [1]="Diamonds", [2]="Hearts", [3]="Spades", [4]="NoTrump"}
-    local function format_bid(tricks, suit_idx)
-         return string.format("%d %s", tricks, suits[suit_idx] or "?")
-    end
-    
-    if self.game.state == "BIDDING" then
-        local highest = self.game.highest_bid
-        if highest then
-             contract_str = "Bid: " .. format_bid(highest.tricks, highest.suit)
+    if bid then
+        tricks_bid = bid.tricks
+        suit_str = suits[bid.suit]
+        declarer_name = bid.player.name
+        
+        -- Logic: Declarer is Player Index 1 (User) or 3 (Partner) -> Attacking
+        local declarer_idx = bid.player.index
+        local is_attacking = (declarer_idx == 1 or declarer_idx == 3)
+        
+        if is_attacking then
+            team_goal = bid.tricks
+            role_text = "OFFENSE (ATTACKING)"
+            role_color = {0.4, 1, 0.4} -- Green
         else
-             contract_str = "Bidding"
+            -- Extending: if bid is 7, they need 7. We need to win enough to stop them.
+            -- Total 10. They need X. We need 10 - X + 1.
+            team_goal = 11 - bid.tricks
+            role_text = "DEFENSE (STOP THEM)"
+            role_color = {1, 0.6, 0.2} -- Orange
         end
-    elseif bid then
-        contract_str = "Contract: " .. format_bid(bid.tricks, bid.suit)
-        trump_suit = suits[bid.suit] or "None"
+    elseif self.game.highest_bid then
+        tricks_bid = self.game.highest_bid.tricks
+        suit_str = suits[self.game.highest_bid.suit]
+        declarer_name = self.game.highest_bid.player.name .. " (Prov)"
+        team_goal = "?"
     end
-    
-    -- Contract Text
+
+    -- 1. CONTRACT HEADER (Medium)
     love.graphics.setColor(1, 1, 1)
-    if gFonts and gFonts.small then
-        love.graphics.setFont(gFonts.small)
-    end
-    love.graphics.print(contract_str, x + 10, y + 10)
+    if gFonts and gFonts.medium then love.graphics.setFont(gFonts.medium) end
     
-    -- TRICKS THIS ROUND
+    local header_text = string.format("%d %s", tricks_bid, suit_str)
+    if not bid and not self.game.highest_bid then header_text = "BIDDING..." end
+    
+    love.graphics.printf(header_text, x, cursor_y, w, "center")
+    
+    cursor_y = cursor_y + 35
+    
+    -- 2. DETAILS (Small)
+    love.graphics.setColor(0.9, 0.9, 0.9)
+    if gFonts and gFonts.small then love.graphics.setFont(gFonts.small) end
+    
+    if bid or self.game.highest_bid then
+        love.graphics.print("By " .. declarer_name, left_pad, cursor_y)
+        cursor_y = cursor_y + 20
+        
+        if bid then
+            -- Role
+            love.graphics.setColor(role_color)
+            love.graphics.print(role_text, left_pad, cursor_y)
+            cursor_y = cursor_y + 20
+            
+            -- Goal
+            love.graphics.setColor(1, 1, 0.5) -- Yellowish for goal
+            love.graphics.print("TEAM GOAL: WIN " .. team_goal, left_pad, cursor_y)
+            cursor_y = cursor_y + 30
+        else
+            cursor_y = cursor_y + 50
+        end
+    else
+        cursor_y = cursor_y + 50
+    end
+    
+    -- 3. TRICKS (Medium Header)
+    love.graphics.setColor(1, 1, 1)
+    if gFonts and gFonts.medium then love.graphics.setFont(gFonts.medium) end
+    love.graphics.print("TRICKS", left_pad, cursor_y)
+    
+    -- Big Numbers (Large) adjacent
     local us = self.hud_state.us_score
     local them = self.hud_state.them_score
     
-    love.graphics.print("Tricks:", x + 10, y + 35)
+    cursor_y = cursor_y + 30
     
-    local s_us = self.hud_state.us_scale.val
-    local s_them = self.hud_state.them_scale.val
+    if gFonts and gFonts.large then love.graphics.setFont(gFonts.large) end
     
-    -- Draw Tricks with Pop
-    love.graphics.push()
-    love.graphics.translate(x + 70, y + 42)
-    love.graphics.scale(s_us, s_us)
-    love.graphics.setColor(0.5, 1, 0.5) -- Greenish for Us
-    love.graphics.print(tostring(us), -5, -7)
-    love.graphics.pop()
+    -- Won
+    love.graphics.setColor(0.4, 1, 0.4)
+    love.graphics.print(tostring(us), left_pad + 20, cursor_y - 5)
     
+    -- Lost
+    love.graphics.setColor(1, 0.4, 0.4)
+    love.graphics.print(tostring(them), left_pad + 140, cursor_y - 5)
+    
+    -- Labels (Small) underneath
+    cursor_y = cursor_y + 45
+    if gFonts and gFonts.small then love.graphics.setFont(gFonts.small) end
+    
+    love.graphics.setColor(0.4, 1, 0.4)
+    love.graphics.print("WON", left_pad + 25, cursor_y)
+    
+    love.graphics.setColor(1, 0.4, 0.4)
+    love.graphics.print("LOST", left_pad + 145, cursor_y)
+    
+    cursor_y = cursor_y + 35
+    
+    -- 4. SCORE (Medium Header)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("-", x + 85, y + 35)
+    if gFonts and gFonts.medium then love.graphics.setFont(gFonts.medium) end
+    love.graphics.print("SCORE", left_pad, cursor_y)
     
-    love.graphics.push()
-    love.graphics.translate(x + 100, y + 42)
-    love.graphics.scale(s_them, s_them)
-    love.graphics.setColor(1, 0.5, 0.5) -- Reddish for Them
-    love.graphics.print(tostring(them), -5, -7)
-    love.graphics.pop()
-    
-    -- TOTAL SCORE
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Score:", x + 10, y + 60)
-    
+    -- Score Value (Large)
     local team_a_score = self.game.teams[1] and self.game.teams[1].score or 0
-    local team_b_score = self.game.teams[2] and self.game.teams[2].score or 0
+    if gFonts and gFonts.large then love.graphics.setFont(gFonts.large) end
     
-    love.graphics.setColor(0.5, 1, 0.5)
-    love.graphics.print(tostring(team_a_score), x + 70, y + 60)
+    -- Right align score? Or just offset
+    cursor_y = cursor_y + 30
+    if team_a_score >= 0 then love.graphics.setColor(1,1,1) else love.graphics.setColor(1, 0.5, 0.5) end
+    love.graphics.print(tostring(team_a_score), left_pad + 50, cursor_y - 5)
     
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("-", x + 85, y + 60)
-    
-    love.graphics.setColor(1, 0.5, 0.5)
-    love.graphics.print(tostring(team_b_score), x + 100, y + 60)
-    
-    -- Goal indicator
-    love.graphics.setColor(0.7, 0.7, 0.7)
-    if gFonts and gFonts.small then
-        love.graphics.setFont(gFonts.small)
-    end
-    love.graphics.print("(to 500)", x + 10, y + 85)
+    -- To 500 (Small)
+    cursor_y = cursor_y + 45
+    love.graphics.setColor(0.6, 0.6, 0.6)
+    if gFonts and gFonts.small then love.graphics.setFont(gFonts.small) end
+    love.graphics.print("(to 500)", left_pad + 55, cursor_y)
 end
 
 function TableView:check_click(x, y)
+    -- Pass click to bidding view if active
     if self.game.state == "BIDDING" then
-        return self.bidding_view:check_click(x, y)
+        if self.bidding_view then
+            self.bidding_view:check_click(x, y)
+        end
+        return
     end
     
+    -- Trick Over: Next Trick
     if self.game.state == "TRICK_OVER" then
+        -- Use the rect stored during draw to ensure sync
         if self.next_trick_btn_rect then
             local b = self.next_trick_btn_rect
             if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
@@ -1148,6 +1314,19 @@ function TableView:check_click(x, y)
         return false -- Eat clicks
     end
     
+    -- Round Over: Next Round
+    if self.game.state == "ROUND_OVER" then
+        if self.round_over_btn_rect then
+            local b = self.round_over_btn_rect
+            if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
+                self.game:start_new_round()
+                return true
+            end
+        end
+        return true -- Eat all clicks
+    end
+    
+    -- Pass click to Kitty Discard UI
     if self.game.state == "KITTY" and self.game.current_player_idx == 1 then
         -- Check Discard Button
         if self.discard_btn_rect then
@@ -1241,6 +1420,92 @@ function TableView:check_click(x, y)
     end
     
     return false
+end
+
+function TableView:draw_round_over_modal()
+    -- Semi-transparent overlay
+    love.graphics.setColor(0, 0, 0, 0.7)
+    love.graphics.rectangle("fill", 0, 0, self.width, self.height)
+    
+    -- Modal Box
+    local w, h = 500, 400
+    local x = self.center_x - w/2
+    local y = self.center_y - h/2
+    
+    love.graphics.setColor(0.1, 0.1, 0.1, 0.95)
+    love.graphics.rectangle("fill", x, y, w, h, 15, 15)
+    
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.setLineWidth(3)
+    love.graphics.rectangle("line", x, y, w, h, 15, 15)
+    
+    -- Determine Result
+    local bid = self.game.winning_bid
+    if not bid then return end -- Safety
+    
+    local declarer_team = bid.player.team
+    local tricks_won = 0
+    -- Count tricks won by declarer team based on self.hud_state
+    -- Using hud_state requires it being up to date.
+    if declarer_team == self.game.teams[1] then
+        tricks_won = self.hud_state.us_score
+    else
+        tricks_won = self.hud_state.them_score
+    end
+    
+    local success = tricks_won >= bid.tricks
+    
+    local is_user_team = (declarer_team == self.game.teams[1])
+    local result_text = ""
+    local color = {1, 1, 1}
+    
+    if is_user_team then
+        if success then
+            result_text = "YOU WON!"
+            color = {0.4, 1, 0.4} -- Green
+        else
+            result_text = "YOU LOST!"
+            color = {1, 0.4, 0.4} -- Red
+        end
+    else
+        if success then
+            result_text = "THEY WON!"
+            color = {1, 0.4, 0.4} -- Red (Bad for us)
+        else
+            result_text = "THEY LOST!"
+            color = {0.4, 1, 0.4} -- Green (Good for us)
+        end
+    end
+    
+    if gFonts and gFonts.large then love.graphics.setFont(gFonts.large) end
+    love.graphics.setColor(color)
+    love.graphics.printf(result_text, x, y + 40, w, "center")
+    
+    -- New Scores
+    if gFonts and gFonts.medium then love.graphics.setFont(gFonts.medium) end
+    love.graphics.setColor(1, 1, 1)
+    
+    local team_a_score = self.game.teams[1].score
+    local team_b_score = self.game.teams[2].score
+    
+    love.graphics.printf("Team A: " .. team_a_score, x, y + 120, w, "center")
+    love.graphics.printf("Team B: " .. team_b_score, x, y + 160, w, "center")
+    
+    -- Continue Button
+    local btn_w, btn_h = 200, 60
+    local btn_x = self.center_x - btn_w/2
+    local btn_y = self.center_y + 100
+    
+    love.graphics.setColor(0.2, 0.6, 0.2)
+    love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 8, 8)
+    
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.rectangle("line", btn_x, btn_y, btn_w, btn_h, 8, 8)
+    
+    love.graphics.printf("Next Round", btn_x, btn_y + 15, btn_w, "center")
+    
+    -- Store for click detection
+    self.round_over_btn_rect = {x = btn_x, y = btn_y, w = btn_w, h = btn_h}
 end
 
 function TableView:on_drag_end()

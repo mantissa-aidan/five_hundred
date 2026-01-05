@@ -319,7 +319,17 @@ function love.update(dt)
             if strategy and not strategy.is_human then
                 if not strategy.last_action_time then strategy.last_action_time = love.timer.getTime() end
 
-                if love.timer.getTime() - strategy.last_action_time > AI_DELAY then
+                if not strategy.last_action_time then strategy.last_action_time = love.timer.getTime() end
+                
+                -- Wait for Visual Turn Sync (Flash then Trick)
+                if gTableView.visual_current_player_idx ~= p_idx then
+                     -- Visuals haven't caught up yet. Wait.
+                else
+                    -- Visuals are ready. Check "Thinking Time" relative to Turn Start (Flash).
+                    local time_since_turn_start = love.timer.getTime() - (gTableView.turn_start_time or 0)
+                    local MIN_THINK_TIME = 0.8 -- Wait 0.8s after flash before playing
+                    
+                    if time_since_turn_start > MIN_THINK_TIME and love.timer.getTime() - strategy.last_action_time > AI_DELAY then
                    if gGame.state == "BIDDING" then
                        local action, params = strategy:decide_bid(gGame, p_idx)
                        if action == "pass" then
@@ -352,6 +362,7 @@ function love.update(dt)
                    end
                    strategy.last_action_time = love.timer.getTime()
                 end
+                end -- End time check
             end
         end
     end
@@ -366,6 +377,27 @@ function love.keypressed(key)
     elseif key == "d" then
         gDebugMode = not gDebugMode
         gChatLog:add_message("System", {"Debug mode: " .. (gDebugMode and "ON" or "OFF")}, false, {0.5, 0.5, 0.3})
+    -- Debug: Force Round Over
+    elseif key == 'o' and gDebugMode then
+        if gGame then
+             -- Mock a state that allows Round Over UI to show
+             local Bid = require "src.core.bid"
+             local p = gGame.players[1]
+             -- 7 Spades by Player 1
+             gGame.winning_bid = Bid.new(p, 7, 3, "SUIT_TRUMP")
+             gGame.state = "ROUND_OVER"
+             gGame.teams[1].score = 40
+             gGame.teams[2].score = 0
+             
+             -- Mock trick counts
+             -- We need TableView to pick this up. 
+             -- TableView calculation relies on gGame players tricks_won?
+             -- Actually TableView calculates from history. 
+             -- But draw_round_over_modal uses hud_state.
+             -- hud_state uses gGame.players[i].tricks_won_this_round.
+             
+             p.tricks_won_this_round = 7 -- Success
+        end
     elseif key == "space" then
         if gPaused then return end
         -- Skip dealing animation first

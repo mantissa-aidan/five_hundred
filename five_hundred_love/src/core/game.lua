@@ -25,8 +25,10 @@ Game.STATE = {
 
 function Game:init(player_names, team_names)
     self.players = {}
-    for _, name in ipairs(player_names) do
-        table.insert(self.players, Player.new(name))
+    for i, name in ipairs(player_names) do
+        local p = Player.new(name)
+        p.index = i
+        table.insert(self.players, p)
     end
     
     self.teams = {
