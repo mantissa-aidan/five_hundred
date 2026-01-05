@@ -14,6 +14,13 @@ if not love then
                 local c = f:read("*a")
                 f:close()
                 return c
+            end,
+            getInfo = function(path)
+                -- Mock: assume sound files exist
+                if path:match("%.wav$") then
+                    return {type = "file"}
+                end
+                return nil
             end
         },
         math = math,
@@ -32,6 +39,25 @@ if not love then
         },
         mouse = {
             getPosition = function() return 0, 0 end
+        },
+        audio = {
+            newSource = function(path, source_type)
+                -- Mock audio source
+                return {
+                    play = function() end,
+                    stop = function() end,
+                    clone = function(self)
+                        return {
+                            play = function() end,
+                            stop = function() end,
+                            isPlaying = function() return false end,
+                            setVolume = function() end
+                        }
+                    end,
+                    isPlaying = function() return false end,
+                    setVolume = function() end
+                }
+            end
         }
     }
 end
@@ -102,6 +128,12 @@ function TestRunner.run()
 end
 
 -- Assertion helpers
+function TestRunner.assert(value, msg)
+    if not value then
+        error((msg or "Assertion failed") .. ": got " .. tostring(value))
+    end
+end
+
 function TestRunner.assert_equal(expected, actual, msg)
     if expected ~= actual then
         error((msg or "Assertion failed") .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual))

@@ -15,6 +15,13 @@ if not love then
                 local c = f:read("*a")
                 f:close()
                 return c
+            end,
+            getInfo = function(path)
+                -- Mock: assume sound files exist
+                if path:match("%.wav$") then
+                    return {type = "file"}
+                end
+                return nil
             end
         },
         math = math,
@@ -33,6 +40,25 @@ if not love then
         },
         mouse = {
             getPosition = function() return 0, 0 end
+        },
+        audio = {
+            newSource = function(path, source_type)
+                -- Mock audio source
+                return {
+                    play = function() end,
+                    stop = function() end,
+                    clone = function(self)
+                        return {
+                            play = function() end,
+                            stop = function() end,
+                            isPlaying = function() return false end,
+                            setVolume = function() end
+                        }
+                    end,
+                    isPlaying = function() return false end,
+                    setVolume = function() end
+                }
+            end
         }
     }
 end
@@ -71,6 +97,8 @@ local test_modules = {
     {name = "Game Tests", path = "tests.test_game"},
     {name = "Strategy Tests", path = "tests.test_strategy"},
     {name = "View Logic Tests", path = "tests.test_view_logic"},
+    {name = "Audio Manager Tests", path = "tests.test_audio_manager"},
+    {name = "Audio Integration Tests", path = "tests.test_audio_integration"},
     {name = "Regression Tests", path = "tests.test_regression"},
     {name = "Round Over Logic Tests", path = "tests.test_round_over_logic"},
 }

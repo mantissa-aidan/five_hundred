@@ -1,6 +1,8 @@
 local Game = require "src.core.game"
 local TableView = require "src.ui.table_view"
 local ChatLog = require "src.ui.chat_log"
+local CardRenderer = require "src.ui.card_renderer"
+local AudioManager = require "src.core.audio_manager"
 local NNStrategy = require "src.ai.nn_strategy"
 local HumanStrategy = require "src.ai.human_strategy"
 local RandomStrategy = require "src.ai.random_strategy"
@@ -10,12 +12,23 @@ local Config = require "src.config"
 -- Player strategies (indexed by player position 1-4)
 gStrategies = {}  -- Global so TableView can access for debug info
 
+-- Global Game State
+gGame = nil
+gTableView = nil
+gBiddingView = nil
+gScoreStars = nil
+gDebugMode = Config.debug.auto_start
+gChatLog = nil
+gAudioManager = nil
+
+-- Global Resources
+gFonts = {}
+
 -- Game state flags
 gPaused = false
-gDebugMode = Config.debug.auto_start
 
 -- Chat log instance
-gChatLog = nil
+-- gChatLog = nil -- Moved to global game state
 
 -- AI pacing timer
 local ai_timer = 0
@@ -236,6 +249,10 @@ function love.load()
     gCanvas = love.graphics.newCanvas(screen_w, screen_h)
     gCanvas:setFilter("nearest", "nearest")
     
+    -- Initialize Audio
+    gAudioManager = AudioManager.new()
+    print("[Main] AudioManager Initialized")
+    
     local shader_code = love.filesystem.read("src/shaders/crt.glsl")
     if shader_code then
         gCRTShader = love.graphics.newShader(shader_code)
@@ -277,6 +294,8 @@ function love.update(dt)
         gScreenShake = gScreenShake - dt * 5 -- Decay
         if gScreenShake < 0 then gScreenShake = 0 end
     end
+    
+    if gAudioManager then gAudioManager:update(dt) end
     
     if gAppState == "LOADING" then
         -- Check channel for loaded weights
@@ -349,6 +368,14 @@ function love.update(dt)
                    elseif gGame.state == "PLAYING" then
                        local player = gGame.players[p_idx]
                        local playable = gGame:get_playable_cards(player, gGame.lead_suit)
+                       -- 1. Try Direct Play (Global to prevent GC)
+                       local path = "assets/sounds/click.wav"
+                       if love.filesystem.getInfo(path) then
+             gDebugSource = love.audio.newSource(path, "static")
+             gDebugSource:play()
+             print("Direct Source Play Attempted: " .. tostring(gDebugSource))
+        else                    print("Direct Source Play Attempted: " .. tostring(gDebugSource))
+                       end
                        local card = strategy:decide_play(gGame, p_idx, playable)
                        if card then
                            gGame:player_play_card(p_idx, card)
@@ -377,26 +404,19 @@ function love.keypressed(key)
     elseif key == "d" then
         gDebugMode = not gDebugMode
         gChatLog:add_message("System", {"Debug mode: " .. (gDebugMode and "ON" or "OFF")}, false, {0.5, 0.5, 0.3})
+    elseif key == "m" then
+        if gAudioManager then 
+            local enabled = gAudioManager:toggle_mute()
+            if gChatLog then gChatLog:add_message("System", {enabled and "Audio Unmuted" or "Audio Muted"}, true) end
+        end
     -- Debug: Force Round Over
     elseif key == 'o' and gDebugMode then
         if gGame then
-             -- Mock a state that allows Round Over UI to show
-             local Bid = require "src.core.bid"
-             local p = gGame.players[1]
-             -- 7 Spades by Player 1
-             gGame.winning_bid = Bid.new(p, 7, 3, "SUIT_TRUMP")
              gGame.state = "ROUND_OVER"
-             gGame.teams[1].score = 40
-             gGame.teams[2].score = 0
-             
-             -- Mock trick counts
-             -- We need TableView to pick this up. 
-             -- TableView calculation relies on gGame players tricks_won?
-             -- Actually TableView calculates from history. 
-             -- But draw_round_over_modal uses hud_state.
-             -- hud_state uses gGame.players[i].tricks_won_this_round.
-             
-             p.tricks_won_this_round = 7 -- Success
+             local p = gGame.players[1]
+             gGame.winning_bid = {player = p, tricks = 7, suit = "CLUBS"}
+             gGame.teams[1].score = 100
+             gGame.teams[2].score = 200
         end
     elseif key == "space" then
         if gPaused then return end

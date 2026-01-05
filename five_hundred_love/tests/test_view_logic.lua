@@ -349,7 +349,6 @@ describe("Game State Integration with View", function()
         assert_not_nil(view.game.highest_bid)
         assert_equal(40, view.game.highest_bid.points)
     end)
-
 end)
 
 return TestRunner

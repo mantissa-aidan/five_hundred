@@ -16,7 +16,6 @@ function TableView:init(game)
     self.game = game
     
     -- Layout Config - table takes left portion, leaving space for chat on right
-    -- Layout Config - table takes left portion, leaving space for chat on right
     local chat_width = Config.layout.chat_width
     self.width = love.graphics.getWidth() - chat_width
     self.height = love.graphics.getHeight()
@@ -28,8 +27,6 @@ function TableView:init(game)
     
     self.bidding_view = BiddingView.new(game, self.width, self.height)
     self.selected_discards = {} -- Set of card indices for P1
-    self.selected_discards = {} -- Set of card indices for P1
-    self.animations = {} -- List of {type, card, start_pos, end_pos, t, duration}
     self.animations = {} -- List of {type, card, start_pos, end_pos, t, duration}
     self.pending_animations = {} -- Delayed animations waiting to start
     self.particles = ParticleSystem.new()
@@ -57,19 +54,23 @@ function TableView:init(game)
     -- Background Shader Setup
     self.bg_shader = love.graphics.newShader("src/shaders/background.glsl")
     print("[TableView] Shader loaded:", self.bg_shader)
-    self.bg_shader = love.graphics.newShader("src/shaders/background.glsl")
-    print("[TableView] Shader loaded:", self.bg_shader)
     self.bg_time = 0
+    
+    self.last_hovered_idx = nil
+    
+    -- Per-player hand springs for smooth reorganization
+    self.hand_springs = {
+        [1] = {},  -- P1 (human)
+        [2] = {},  -- P2 (bot)
+        [3] = {},  -- P3 (bot)
+        [4] = {}   -- P4 (bot)
+    }
     
     -- Turn Animation State
     self.last_player_idx = nil
     self.visual_current_player_idx = game.current_player_idx -- Decoupled visual state
     self.turn_start_time = 0
-    
-    -- Visual Action Queue (for sequencing events)
-    self.action_queue = {}
-    self.visual_current_player_idx = game.current_player_idx -- Decoupled visual state
-    self.turn_start_time = 0
+    self.last_game_state = "WAITING"
     
     -- Visual Action Queue (for sequencing events)
     self.action_queue = {}
@@ -91,7 +92,10 @@ function TableView:resize(w, h)
 end
 
 function TableView:on_card_played(p_idx, card)
-    if p_idx == 1 then return end -- P1 cards don't animate
+    if p_idx == 1 then 
+        if gAudioManager then gAudioManager:play("CARD_SLIDE") end
+        return 
+    end -- P1 cards don't animate
     
     -- Determine start position based on player index
     -- P2 (Left): 50, center_y
@@ -103,40 +107,49 @@ function TableView:on_card_played(p_idx, card)
     elseif p_idx == 4 then start_x, start_y = self.width - 50, self.center_y
     else return end
     
-    -- End Pos: Center + offset matching P1 layout?
-    -- Actually center is fine. draw_current_trick has offsets.
-    -- Let's fly to strict center for now or match target pos.
-    
-    -- Match the exact position from draw_current_trick (MUST MATCH EXACTLY!)
+    -- Calculate end position - must match EXACTLY where draw_current_trick draws the card
+    -- draw_current_trick translates to (center_x, center_y) then draws at (offset.x - 40, offset.y - 55)
     local positions = {
-        [1] = {x=0, y=90},  -- Bottom Played
-        [2] = {x=-120, y=0}, -- Left Played
-        [3] = {x=0, y=-90}, -- Top Played
-        [4] = {x=120, y=0}   -- Right Played
+        [1] = {x=0, y=90},  -- Bottom
+        [2] = {x=-120, y=0}, -- Left
+        [3] = {x=0, y=-90}, -- Top
+        [4] = {x=120, y=0}   -- Right
     }
-    local offset = positions[p_idx] or {x=0,y=0}
+    local offset = positions[p_idx]
     
-    -- Match the exact position from draw_current_trick
-    -- draw_current_trick does: translate(center), then draws at (offset.x - 40, offset.y - 55)
-    -- So absolute position is: center_x + offset.x - 40, center_y + offset.y - 55
-    local anim_end_x = self.center_x + offset.x - 40
-    local anim_end_y = self.center_y + offset.y - 55
+    -- Absolute position: center + offset - card adjustments
+    local end_x = self.center_x + offset.x - 40
+    local end_y = self.center_y + offset.y - 55
     
-    -- Track when this card lands to disable float initially
+    -- Get card index in hand  
+    local card_idx = nil
+    local player = self.game.players[p_idx]
+    if player then
+        for i, c in ipairs(player.hand) do
+            if c == card then
+                card_idx = i
+                break
+            end
+        end
+    end
+    
     self.card_land_times = self.card_land_times or {}
     
-    self:play_card_animation(card, start_x, start_y, anim_end_x, anim_end_y, 0.4, nil, function()
+    self:play_card_animation(p_idx, card, start_x, start_y, end_x, end_y, 0.3, card_idx, function()
         -- Mark when card landed
         self.card_land_times[card] = love.timer.getTime()
     end)
 end
 
-function TableView:play_card_animation(card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale)
+function TableView:play_card_animation(p_idx, card, start_x, start_y, end_x, end_y, duration, card_idx, on_complete, start_scale)
     self.is_animating = true -- Block game updates
+    
+    if gAudioManager then gAudioManager:play("CARD_SLIDE") end
     
     table.insert(self.animations, {
         type = "FLY_IN",
         card = card,
+        player_idx = p_idx,  -- Track which player this animation belongs to
         start_pos = {x=start_x, y=start_y},
         end_pos = {x=end_x, y=end_y},
         t = 0,
@@ -163,6 +176,11 @@ function TableView:update_animations(dt)
         local pending = self.pending_animations[i]
         pending.delay = pending.delay - dt
         if pending.delay <= 0 then
+            -- Play deal sound when animation actually starts
+            if pending.type == "FLY_IN" and gAudioManager then
+                gAudioManager:play("DEAL")
+            end
+            
             -- Start the animation
             table.insert(self.animations, {
                 type = pending.type,
@@ -203,7 +221,7 @@ function TableView:update_animations(dt)
     end
 end
 
-function TableView:play_card_animation_delayed(card, start_x, start_y, end_x, end_y, duration, delay, on_complete)
+function TableView:play_card_animation_delayed(card, start_x, start_y, end_x, end_y, duration, delay, on_complete, start_scale)
     self.is_animating = true
     
     table.insert(self.pending_animations, {
@@ -325,17 +343,28 @@ end
 
 
 function TableView:update_hand_springs(dt)
-    if not self.hand_springs then self.hand_springs = {} end
+    if not self.hand_springs then 
+        self.hand_springs = {
+            [1] = {}, [2] = {}, [3] = {}, [4] = {}
+        }
+    end
     
     local player = self.game.players[1]
     if not player then return end
     
     local hand_size = #player.hand
+    local player_springs = self.hand_springs[1]  -- P1 springs
     
     -- Ensure spring state exists
     for i=1, hand_size do
-        if not self.hand_springs[i] then
-            self.hand_springs[i] = {
+        if not player_springs[i] then
+            -- Calculate initial position for new spring
+            local spread = 90
+            local start_x = -((hand_size - 1) * spread) / 2
+            local initial_x = start_x + (i-1) * spread
+            
+            player_springs[i] = {
+                x = {val=initial_x, vel=0, target=initial_x},  -- Position interpolation
                 scale = {val=1, vel=0, target=1},
                 pitch = {val=0, vel=0, target=0},
                 roll  = {val=0, vel=0, target=0}
@@ -358,25 +387,43 @@ function TableView:update_hand_springs(dt)
              local card_y = -60
              if self.selected_discards[i] then card_y = card_y - 20 end
              
-             local screen_x = self.center_x + card_x - 40
+             local screen_x = self.center_x + card_x
              local screen_y = (self.height - 100) + card_y
              
+             -- Correct Dimensions (from CardRenderer logic)
+             -- CardWidth(140) * RenderScale(0.6) * self.card_scale(1.3) ~= 109
+             -- CardHeight(190) * RenderScale(0.6) * self.card_scale(1.3) ~= 148
+             local w = 109
+             local h = 148
+             
              -- Hit test
-             if mx >= screen_x and mx <= screen_x + 80*self.card_scale and
-                my >= screen_y and my <= screen_y + 110*self.card_scale then
+             if mx >= screen_x and mx <= screen_x + w and
+                my >= screen_y and my <= screen_y + h then
                  hovered_idx = i
                  break
              end
          end
     end
+
     
-    -- 2. Update Springs
+    -- Play sound on hover change
+    if hovered_idx ~= self.last_hovered_idx then
+        if hovered_idx and gAudioManager then
+             gAudioManager:play("CARD_HOVER")
+        end
+        self.last_hovered_idx = hovered_idx
+    end
+    -- 2. Update Spring Targets and Integrate
     local stiffness = 600
-    local damping = 25
+    local damping = 40  -- Increased from 25 to reduce bounciness
     
     for i=1, hand_size do
-        local s = self.hand_springs[i]
+        local s = player_springs[i]
         local is_hovering = (i == hovered_idx)
+        
+        -- Update X position target (for smooth reorganization)
+        local target_x = start_x + (i-1) * spread
+        s.x.target = target_x
         
         -- Targets
         if is_hovering then
@@ -404,24 +451,64 @@ function TableView:update_hand_springs(dt)
         end
         
         -- Physics Step
-        local function update_spring(prop, dt)
-            local diff = prop.target - prop.val
-            local force = diff * stiffness
-            prop.vel = prop.vel * (1 - damping * dt) -- Damping
-            prop.vel = prop.vel + force * dt
-            prop.val = prop.val + prop.vel * dt
+        -- Integrate all springs
+        local function integrate_spring(spring, dt, k, d)
+            local f = -k * (spring.val - spring.target) - d * spring.vel
+            spring.vel = spring.vel + f * dt
+            spring.val = spring.val + spring.vel * dt
         end
         
-        update_spring(s.scale, dt)
-        update_spring(s.pitch, dt)
-        update_spring(s.roll, dt)
+        integrate_spring(s.x, dt, stiffness, damping)  -- Position
+        integrate_spring(s.scale, dt, stiffness, damping)
+        integrate_spring(s.pitch, dt, stiffness, damping)
+        integrate_spring(s.roll, dt, stiffness, damping)
+    end
+end
+
+function TableView:update_all_player_springs(dt)
+    -- Update position springs for ALL players (smooth reorganization after card removal)
+    if not self.hand_springs then return end
+    
+    local stiffness = 600
+    local damping = 40  -- Increased from 25 to reduce bounciness
+    
+    for player_idx = 1, 4 do
+        local player = self.game.players[player_idx]
+        if player then
+            local hand_size = #player.hand
+            local player_springs = self.hand_springs[player_idx]
+            
+            if player_springs then
+                -- Determine spread for this player
+                local is_human = (player_idx == 1)
+                local spread = is_human and HAND_SPREAD_HUMAN or HAND_SPREAD_BOT
+                local start_x = -((hand_size - 1) * spread) / 2
+                
+                -- Update spring targets and integrate
+                for i = 1, hand_size do
+                    if player_springs[i] then
+                        local s = player_springs[i]
+                        
+                        -- Update position target
+                        local target_x = start_x + (i-1) * spread
+                        s.x.target = target_x
+                        
+                        -- Integrate position spring
+                        local f = -stiffness * (s.x.val - s.x.target) - damping * s.x.vel
+                        s.x.vel = s.x.vel + f * dt
+                        s.x.val = s.x.val + s.x.vel * dt
+                    end
+                end
+            end
+        end
     end
 end
 
 function TableView:update(dt)
     self.bg_time = self.bg_time + dt
     self:update_animations(dt)
-    self:update_hand_springs(dt)
+    self:update_hand_springs(dt)  -- P1 hover/interaction springs
+    self:update_all_player_springs(dt)  -- Position springs for all players
     -- self.particles:update(dt)
     if self.bidding_view then self.bidding_view:update(dt) end
 
@@ -433,6 +520,11 @@ function TableView:update(dt)
                 self.visual_current_player_idx = action.player_idx
                 self.turn_start_time = love.timer.getTime()
                 self.last_player_idx = action.player_idx
+                
+                -- Turn Alert
+                if action.player_idx == 1 and gAudioManager then
+                    gAudioManager:play("ALERT")
+                end
             end
         end
     end
@@ -444,7 +536,25 @@ function TableView:update(dt)
              self.visual_current_player_idx = self.game.current_player_idx
              self.turn_start_time = love.timer.getTime() -- Trigger flash
              self.last_player_idx = self.visual_current_player_idx
+             
+             -- Turn Alert
+             if self.visual_current_player_idx == 1 and gAudioManager then
+                 gAudioManager:play("ALERT")
+             end
          end
+    end
+    
+    -- Detect Game State Changes (e.g. Kitty Reveal)
+    if self.game.state ~= self.last_game_state then
+        if self.game.state == "KITTY" then
+            if gAudioManager then gAudioManager:play("CARD_FLIP") end
+        end
+        self.last_game_state = self.game.state
+    end
+    
+    -- Reset Round Over Sound Flag
+    if self.game.state ~= "ROUND_OVER" then
+        self.round_over_sound_played = false
     end
     
     -- Update Turn Indicators using VISUAL state
@@ -883,7 +993,8 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     local animating_indices = {}
     if self.animations then
         for _, anim in ipairs(self.animations) do
-            if anim.type == "FLY_IN" and anim.target_idx then
+            -- Only skip rendering if animation belongs to THIS player
+            if anim.type == "FLY_IN" and anim.target_idx and anim.player_idx == player_idx then
                 animating_indices[anim.target_idx] = true
             end
         end
@@ -914,34 +1025,42 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
         if self.dealing_in_progress and not (self.dealt_cards and self.dealt_cards[card]) then
             -- Skip this card - it hasn't been dealt yet
         else
-            -- Init spring if missing
-            local spring = nil
-            if is_human then
-                if not self.hand_springs[i] then
-                     self.hand_springs[i] = {
-                        scale = {val=1, vel=0, target=1},
-                        pitch = {val=0, vel=0, target=0},
-                        roll  = {val=0, vel=0, target=0}
-                    }
+            local visual_idx = i
+            if drag_target_idx then
+                local d_idx = self.dragged_card.idx
+                if i < d_idx and i >= drag_target_idx then
+                    visual_idx = i + 1
+                elseif i > d_idx and i <= drag_target_idx then
+                    visual_idx = i - 1
                 end
-                spring = self.hand_springs[i]
+            end
+
+            -- Init spring if missing (for ALL players now, not just human)
+            local player_springs = self.hand_springs[player_idx]
+            if not player_springs then
+                self.hand_springs[player_idx] = {}
+                player_springs = self.hand_springs[player_idx]
             end
             
-            if not animating_indices[i] then
+            if not player_springs[i] then
+                -- Calculate initial position for new spring
+                local initial_x = start_x + (visual_idx-1) * spread
+                player_springs[i] = {
+                    x = {val=initial_x, vel=0, target=initial_x},
+                    scale = {val=1, vel=0, target=1},
+                    pitch = {val=0, vel=0, target=0},
+                    roll = {val=0, vel=0, target=0}
+                }
+            end
+            local spring = player_springs[i]
+            
+            -- Don't skip cards during animation - let springs handle smooth transitions
             if is_human and self.dragged_card and self.dragged_card.idx == i then
-                -- Skip rendered dragged card
+                -- Skip rendered dragged card (user is dragging it)
             else
-                local visual_idx = i
-                if drag_target_idx then
-                    local d_idx = self.dragged_card.idx
-                    if i < d_idx and i >= drag_target_idx then
-                        visual_idx = i + 1
-                    elseif i > d_idx and i <= drag_target_idx then
-                        visual_idx = i - 1
-                    end
-                end
+                -- Calculate card position using interpolated spring value
+                local card_x = spring.x.val
                 
-                local card_x = start_x + (visual_idx-1) * spread
                 local card_y = HAND_Y_OFFSET
                 
                 -- Fan Logic for Opponents
@@ -1018,17 +1137,20 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
                 end
                 
                 if is_human then
+                     -- Use correct dimensions matching hit-test
+                     local w = 109  -- CardWidth(140) * RenderScale(0.6) * card_scale(1.3)
+                     local h = 148  -- CardHeight(190) * RenderScale(0.6) * card_scale(1.3)
+                     
                      table.insert(self.hand_card_rects, {
                          idx = i,
-                         x = card_x - 40,
+                         x = card_x - 40,  -- Still need -40 for draw offset
                          y = card_y, 
-                         w = 80 * self.card_scale, 
-                         h = 110 * self.card_scale,
+                         w = w, 
+                         h = h,
                          cx = card_x, 
-                         cy = card_y + 55,
+                         cy = card_y + 74,  -- Half of 148
                      })
                 end
-            end
             end
         end
     end
@@ -1307,6 +1429,7 @@ function TableView:check_click(x, y)
         if self.next_trick_btn_rect then
             local b = self.next_trick_btn_rect
             if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
+                if gAudioManager then gAudioManager:play("CLICK") end
                 self.game:next_trick()
                 return true
             end
@@ -1319,6 +1442,10 @@ function TableView:check_click(x, y)
         if self.round_over_btn_rect then
             local b = self.round_over_btn_rect
             if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
+                if gAudioManager then 
+                    gAudioManager:play("CLICK") 
+                    gAudioManager:play("SHUFFLE") 
+                end
                 self.game:start_new_round()
                 return true
             end
@@ -1346,6 +1473,7 @@ function TableView:check_click(x, y)
                 
                 self.game:player_discard_kitty(1, discards)
                 self.selected_discards = {}
+                if gAudioManager then gAudioManager:play("CLICK") end
                 return true
             end
         end
@@ -1477,6 +1605,23 @@ function TableView:draw_round_over_modal()
         end
     end
     
+
+    
+    -- Play Sound once per modal appearance
+    if not self.round_over_sound_played then
+        if gAudioManager then
+            if is_user_team then
+                 if success then gAudioManager:play("WIN")
+                 else gAudioManager:play("LOSE") end
+            else
+                 -- They won/lost
+                 if success then gAudioManager:play("LOSE") -- Bad for us
+                 else gAudioManager:play("WIN") end -- Good for us
+            end
+        end
+        self.round_over_sound_played = true
+    end
+    
     if gFonts and gFonts.large then love.graphics.setFont(gFonts.large) end
     love.graphics.setColor(color)
     love.graphics.printf(result_text, x, y + 40, w, "center")
@@ -1510,6 +1655,9 @@ end
 
 function TableView:on_drag_end()
     if not self.dragged_card then return end
+    
+    -- Play immediate audio feedback
+    if gAudioManager then gAudioManager:play("CLICK") end
     
     local d = self.dragged_card
     self.dragged_card = nil
@@ -1569,7 +1717,8 @@ function TableView:on_drag_end()
             -- Track when this card lands
             self.card_land_times = self.card_land_times or {}
             
-            self:play_card_animation(card, start_x, start_y, end_x, end_y, 0.3, d.idx, function()
+            
+            self:play_card_animation(1, card, start_x, start_y, end_x, end_y, 0.3, d.idx, function()
                 self.particles:emit({
                     x = end_x, 
                     y = end_y, 
