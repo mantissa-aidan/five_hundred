@@ -89,6 +89,14 @@ venv.bak/
 
 # OS specific
 .DS_Store
-Thumbs.db wandb/
+Thumbs.db
+
+# Weights & Biases
+wandb/
+
+# Large log files
+*.log.bak
+**/static/*.log
+**/static/*.log.bak
 
 *.asd
