@@ -3,15 +3,25 @@ local Utils = require "src.core.utils"
 local AudioManager = Utils.class("AudioManager")
 
 AudioManager.SOUNDS = {
-    CARD_SLIDE = "slide_1.wav",
-    CARD_FLIP = "flip.wav",
-    CARD_HOVER = "card_hover.wav",
-    DEAL = "flip.wav",
+    CARD_SLIDE = "Card_Deal_4.wav",
+    CARD_FLIP = "Card_Deal_4.wav",
+    CARD_HOVER = "pop.wav",
+    DEAL = "deal_2.wav",
     CLICK = "click.wav",
     ALERT = "alert.wav",
     WIN = "win.wav",
     LOSE = "lose.wav",
-    SHUFFLE = "slide_2.wav" -- Substituting slide_2 for shuffle
+    SHUFFLE = "shuffle.wav",
+    
+    -- UI Sounds (Aliased to existing assets)
+    BTN_HOVER_1 = "low.wav", -- Standard Button
+    BTN_CLICK_1 = "tom.wav",
+    
+    BID_HOVER = "low.wav",   -- Bidding Grid
+    BID_CLICK = "tom.wav",       -- Thud for selection
+    
+    NEXT_TRICK_HOVER = "low.wav.wav", -- Tick sound
+    NEXT_TRICK_CLICK = "high.wav"
 }
 
 function AudioManager:init()
@@ -77,7 +87,21 @@ function AudioManager:play(sound_id)
         -- Store reference to prevent Garbage Collection
         table.insert(self.active_sources, clone)
         
-        print("[AudioManager] PLAYING: " .. tostring(sound_id))
+        local filename = self.SOUNDS[sound_id] or "unknown"
+        
+        -- Get caller information (2 levels up: this function -> play -> caller)
+        local info = debug.getinfo(2, "Sln")
+        local caller = "unknown"
+        if info then
+            if info.name then
+                caller = info.name
+            elseif info.source and info.currentline then
+                -- If no function name, show file:line
+                caller = string.format("%s:%d", info.short_src, info.currentline)
+            end
+        end
+        
+        -- print(string.format("[AudioManager] PLAYING: %s (%s) from %s", sound_id, filename, caller))
     else
         -- Silent fail / Debug log
         print("[AudioManager] Warning: Sound not loaded: " .. tostring(sound_id))

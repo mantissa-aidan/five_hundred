@@ -11,6 +11,7 @@ local HAND_Y_OFFSET = -60
 
 local TableView = Utils.class("TableView")
 local ParticleSystem = require "src.ui.particle_system"
+local Button = require "src.ui.button"
 
 function TableView:init(game)
     self.game = game
@@ -46,6 +47,27 @@ function TableView:init(game)
         them_scale={val=1, vel=0, target=1}
     }
     
+    -- UI Buttons
+    self.next_trick_btn = Button.new(0, 0, 200, 60, "Next Trick", "action", function()
+        self.game:next_trick()
+    end)
+    self.next_trick_btn.color = {0.2, 0.6, 1.0}
+    
+    self.discard_btn = Button.new(0, 0, 160, 50, "Discard 3 Cards", "normal", function()
+        local to_discard = {}
+        for c_ref, _ in pairs(self.selected_discards) do
+             table.insert(to_discard, c_ref)
+        end
+        local success, err = self.game:player_discard_kitty(1, to_discard)
+        if success then
+             self.selected_discards = {}
+             if gChatLog then gChatLog:add_message("You", {"Discard complete"}, true) end
+        else
+             print("Discard Failed: " .. tostring(err))
+        end
+    end)
+    self.discard_btn.color = {1, 0.5, 0}
+    
     -- Animation State
     self.is_animating = false
     self.animation_delay_timer = 0
@@ -77,10 +99,8 @@ function TableView:init(game)
 end
 
 function TableView:resize(w, h)
-    -- Recalculate dimensions (chat log takes fixed 300px)
-    -- Recalculate dimensions (chat log takes fixed 300px)
-    local chat_width = Config.layout.chat_width
-    self.width = w - chat_width
+    -- Recalculate dimensions
+    self.width = w
     self.height = h
     self.center_x = self.width / 2
     self.center_y = self.height / 2
@@ -88,6 +108,17 @@ function TableView:resize(w, h)
     -- Resize child views
     if self.bidding_view then
         self.bidding_view:resize(self.width, self.height)
+    end
+    
+    -- Update Button Positions
+    if self.next_trick_btn then
+        self.next_trick_btn.x = self.center_x - self.next_trick_btn.w/2
+        self.next_trick_btn.y = self.height - 180
+    end
+    
+    if self.discard_btn then
+        self.discard_btn.x = self.center_x - self.discard_btn.w/2
+        self.discard_btn.y = self.height - 250
     end
 end
 
@@ -191,7 +222,9 @@ function TableView:update_animations(dt)
                 duration = pending.duration,
                 target_idx = pending.target_idx,
                 on_complete = pending.on_complete,
-                start_scale = pending.start_scale
+                start_scale = pending.start_scale,
+                start_rot = pending.start_rot,
+                end_rot = pending.end_rot
             })
             table.remove(self.pending_animations, i)
         end
@@ -221,7 +254,7 @@ function TableView:update_animations(dt)
     end
 end
 
-function TableView:play_card_animation_delayed(card, start_x, start_y, end_x, end_y, duration, delay, on_complete, start_scale)
+function TableView:play_card_animation_delayed(card, start_x, start_y, end_x, end_y, duration, delay, on_complete, start_scale, start_rot, end_rot)
     self.is_animating = true
     
     table.insert(self.pending_animations, {
@@ -233,7 +266,9 @@ function TableView:play_card_animation_delayed(card, start_x, start_y, end_x, en
         delay = delay,
         target_idx = nil,
         on_complete = on_complete,
-        start_scale = 1.0
+        start_scale = start_scale or 1.0,
+        start_rot = start_rot or 0,
+        end_rot = end_rot or 0
     })
 end
 
@@ -244,6 +279,7 @@ function TableView:animate_deal()
     self.dealing_in_progress = true
     self.is_animating = true
     self.dealt_cards = {} -- Track which cards have been dealt (landed)
+    self.card_land_times = {} -- Clear old timestamps and references
     
     print("[DEAL] Starting deal animation")
     
@@ -253,14 +289,15 @@ function TableView:animate_deal()
     local card_delay = 0.05 -- 50ms between each card
     
     -- Deal 10 cards to each player in rotation
-    for round = 1, 10 do
+        for round = 1, 10 do
         for p_idx = 1, 4 do
             local card = self.game.players[p_idx].hand[round]
             if card then
-                local end_x, end_y = self:get_deal_target_position(p_idx, round)
+                local end_x, end_y, end_rot = self:get_deal_target_position(p_idx, round)
+                end_rot = end_rot or 0
                 
-                print(string.format("[DEAL] Queueing card %d for P%d: %s -> (%.1f, %.1f) delay=%.2f", 
-                    round, p_idx, tostring(card), end_x, end_y, delay))
+                print(string.format("[DEAL] Queueing card %d for P%d: %s -> (%.1f, %.1f) rot=%.2f", 
+                    round, p_idx, tostring(card), end_x, end_y, end_rot))
                 
                 -- Capture card reference for callback
                 local card_ref = card
@@ -270,9 +307,9 @@ function TableView:animate_deal()
                     
                     if round == 10 and p_idx == 4 then
                         -- Last card dealt, now deal kitty
-                        self:deal_kitty(delay + card_delay)
+                        self:deal_kitty(delay)
                     end
-                end)
+                end, 1.0, 0, end_rot) -- Pass start_scale=1.0, start_rot=0, end_rot
                 
                 delay = delay + card_delay
             end
@@ -316,15 +353,72 @@ function TableView:get_deal_target_position(p_idx, card_idx)
         local card_x = start_x + (card_idx - 1) * HAND_SPREAD_HUMAN
         local card_y = HAND_Y_OFFSET
         
-        return self.center_x + card_x, self.height - 100 + card_y
+        -- Fix: Subtract 40 from X to match draw_player_hand's drawing offset
+        return self.center_x + card_x - 40, self.height - 100 + card_y
     else
-        -- Other players - just approximate positions (they won't show individual cards anyway)
+    -- Calculate precise positions for bots matching draw_player_hand
+        local hand_size = 10
+        local spread = HAND_SPREAD_BOT
+        local total_width = (hand_size - 1) * spread
+        local start_x = -total_width / 2
+        local card_x = start_x + (card_idx - 1) * spread
+        
+        -- Current draw pos in local space (including -40 offset)
+        local local_x = card_x - 40
+        local local_y = HAND_Y_OFFSET
+        
+        -- Card Dimensions for centering
+        local scale = (self.card_scale or 1.0) * 0.6 -- RenderScale
+        local w = 140 * scale
+        local h = 190 * scale
+        local hw, hh = w/2, h/2
+        
+        -- Local Center (relative to player pivot)
+        local cx = local_x + hw
+        local cy = local_y + hh
+        
+        -- Fan Rotation (Same as draw_player_hand)
+        local center_idx = (hand_size + 1) / 2
+        local signed_dist = card_idx - center_idx
+        local dist = math.abs(signed_dist)
+        local fan_rot = -signed_dist * 0.1
+        
+        -- Fan Curve (Push up at edges - same as draw_player_hand)
+        -- In draw_player_hand: card_y = card_y - (dist * dist) * 1.5
+        local_y = local_y - (dist * dist) * 1.5
+        
+        -- Local Center (relative to player pivot)
+        local cx = local_x + hw
+        local cy = local_y + hh
+        
+        -- Transform based on player
+        -- We calculate Global Center, then subtract (hw, hh) to get Unrotated Top-Left Target
+        
         if p_idx == 2 then
-            return 100, self.center_y
+            -- Left Player: (110, center_y), Rot -90 (-pi/2)
+            -- x' = y
+            -- y' = -x
+            local origin_x, origin_y = 110, self.center_y
+            local gx = origin_x + cy
+            local gy = origin_y - cx
+            return gx - hw, gy - hh, -math.pi/2 + fan_rot
+            
         elseif p_idx == 3 then
-            return self.center_x, 100
-        else -- p_idx == 4
-            return self.width - 100, self.center_y
+            -- Top Player: (center_x, 50), Rot 0
+            local origin_x, origin_y = self.center_x, 50
+            local gx = origin_x + cx
+            local gy = origin_y + cy
+            return gx - hw, gy - hh, 0 + fan_rot
+            
+        elseif p_idx == 4 then
+            -- Right Player: (width - 110, center_y), Rot 90 (pi/2)
+            -- x' = -y
+            -- y' = x
+            local origin_x, origin_y = self.width - 110, self.center_y
+            local gx = origin_x - cy
+            local gy = origin_y + cx
+            
+            return gx - hw, gy - hh, math.pi/2 + fan_rot
         end
     end
 end
@@ -365,6 +459,7 @@ function TableView:update_hand_springs(dt)
             
             player_springs[i] = {
                 x = {val=initial_x, vel=0, target=initial_x},  -- Position interpolation
+                y = {val=0, vel=0, target=0},                  -- Y Position interpolation (new)
                 scale = {val=1, vel=0, target=1},
                 pitch = {val=0, vel=0, target=0},
                 roll  = {val=0, vel=0, target=0}
@@ -380,27 +475,21 @@ function TableView:update_hand_springs(dt)
     
     -- Need to check if over hand area generally first?
     -- Only check if game allows interaction
+     -- Need to check if over hand area generally first?
+    -- Only check if game allows interaction
     if self.game.state == "PLAYING" or self.game.state == "KITTY" or self.game.state == "BIDDING" then
-         -- Iterate backwards for Z-order
-         for i = hand_size, 1, -1 do
-             local card_x = start_x + (i-1) * spread
-             local card_y = -60
-             if self.selected_discards[i] then card_y = card_y - 20 end
+         -- Use cached rects from draw (includes springs and correct offsets)
+         if self.hand_card_rects then
+             local local_mx = mx - self.center_x
+             local local_my = my - (self.height - 100)
              
-             local screen_x = self.center_x + card_x
-             local screen_y = (self.height - 100) + card_y
-             
-             -- Correct Dimensions (from CardRenderer logic)
-             -- CardWidth(140) * RenderScale(0.6) * self.card_scale(1.3) ~= 109
-             -- CardHeight(190) * RenderScale(0.6) * self.card_scale(1.3) ~= 148
-             local w = 109
-             local h = 148
-             
-             -- Hit test
-             if mx >= screen_x and mx <= screen_x + w and
-                my >= screen_y and my <= screen_y + h then
-                 hovered_idx = i
-                 break
+             for i = #self.hand_card_rects, 1, -1 do
+                 local r = self.hand_card_rects[i]
+                 if local_mx >= r.x and local_mx <= r.x + r.w and
+                    local_my >= r.y and local_my <= r.y + r.h then
+                     hovered_idx = r.idx
+                     break
+                 end
              end
          end
     end
@@ -497,6 +586,14 @@ function TableView:update_all_player_springs(dt)
                         local f = -stiffness * (s.x.val - s.x.target) - damping * s.x.vel
                         s.x.vel = s.x.vel + f * dt
                         s.x.val = s.x.val + s.x.vel * dt
+                        
+                         -- Integrate Y spring (displacement)
+                        if s.y then
+                             s.y.target = 0
+                             local fy = -stiffness * (s.y.val - s.y.target) - damping * s.y.vel
+                             s.y.vel = s.y.vel + fy * dt
+                             s.y.val = s.y.val + s.y.vel * dt
+                        end
                     end
                 end
             end
@@ -510,7 +607,15 @@ function TableView:update(dt)
     self:update_hand_springs(dt)  -- P1 hover/interaction springs
     self:update_all_player_springs(dt)  -- Position springs for all players
     -- self.particles:update(dt)
-    if self.bidding_view then self.bidding_view:update(dt) end
+    if self.bidding_view then self.bidding_view:update(dt, self.dealing_in_progress) end
+    
+    if self.next_trick_btn and self.game.state == "TRICK_OVER" then
+        self.next_trick_btn:update(dt)
+    end
+    
+    if self.discard_btn and self.game.state == "KITTY" and self.game.kitty_owner_idx == 1 then
+        self.discard_btn:update(dt)
+    end
 
     -- Process Action Queue (if not animating and no delay)
     if #self.action_queue > 0 and not self.is_animating and self.animation_delay_timer <= 0 then
@@ -692,9 +797,13 @@ function TableView:draw()
             local curr_x = anim.start_pos.x + (anim.end_pos.x - anim.start_pos.x) * t
             local curr_y = anim.start_pos.y + (anim.end_pos.y - anim.start_pos.y) * t
             
+            -- Interpolate rotation (new)
+            local s_rot = anim.start_rot or 0
+            local e_rot = anim.end_rot or 0
+            local curr_rot = s_rot + (e_rot - s_rot) * t
             
             -- Simple params - no stretch
-            local params = {scale_x = 1, scale_y = 1, rotation = 0, shadow_offset = 10}
+            local params = {scale_x = 1, scale_y = 1, rotation = curr_rot, shadow_offset = 10}
             
             -- Draw at interpolated position (already includes the -40 offset)
             -- Draw face down for dealing animation, face up for trick animations
@@ -793,17 +902,9 @@ function TableView:draw_debug_overlay()
 end
 
 function TableView:draw_next_trick_btn()
-    local btn_w, btn_h = 200, 60
-    local btn_x = self.center_x - btn_w/2
-    local btn_y = self.height - 180 -- Above hand
-    
-    love.graphics.setColor(0.2, 0.6, 1.0)
-    love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 10)
-    
-    love.graphics.setColor(1,1,1)
-    love.graphics.printf("Next Trick", btn_x, btn_y + 15, btn_w, "center")
-    
-    self.next_trick_btn_rect = {x=btn_x, y=btn_y, w=btn_w, h=btn_h}
+    if self.next_trick_btn then
+        self.next_trick_btn:draw()
+    end
 end
 
 function TableView:draw_discard_ui()
@@ -811,20 +912,10 @@ function TableView:draw_discard_ui()
     for _ in pairs(self.selected_discards) do count = count + 1 end
     
     if count == 3 then
-        local btn_w, btn_h = 160, 50
-        local btn_x = self.center_x - btn_w/2
-        local btn_y = self.height - 250
-        
-        love.graphics.setColor(1, 0.5, 0)
-        love.graphics.rectangle("fill", btn_x, btn_y, btn_w, btn_h, 10)
-        
-        love.graphics.setColor(1,1,1)
-        love.graphics.print("Discard 3 Cards", btn_x + 20, btn_y + 15)
-        
-        -- Store button rect for click check
-        self.discard_btn_rect = {x=btn_x, y=btn_y, w=btn_w, h=btn_h}
+        if self.discard_btn then
+            self.discard_btn:draw()
+        end
     else
-        self.discard_btn_rect = nil
         love.graphics.setColor(1,1,1)
         love.graphics.print("Select 3 cards to discard", self.center_x - 100, self.height - 250)
     end
@@ -990,15 +1081,18 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     -- Store card rects only for Human/Bottom for clicking
     if is_human then self.hand_card_rects = {} end
     
-    local animating_indices = {}
-    if self.animations then
-        for _, anim in ipairs(self.animations) do
-            -- Only skip rendering if animation belongs to THIS player
-            if anim.type == "FLY_IN" and anim.target_idx and anim.player_idx == player_idx then
-                animating_indices[anim.target_idx] = true
+    local animating_cards = {}
+    local function collect_anim_cards(list)
+        if list then
+            for _, anim in ipairs(list) do
+                if anim.type == "FLY_IN" and anim.card then
+                    animating_cards[anim.card] = true
+                end
             end
         end
     end
+    collect_anim_cards(self.animations)
+    collect_anim_cards(self.pending_animations)
     
     -- Calculate Drag Target Index (Visual Slot)
     local drag_target_idx = nil
@@ -1021,9 +1115,12 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     local deferred_draws = {}
 
     for i, card in ipairs(player.hand) do
-        -- During dealing, only show cards that have landed
-        if self.dealing_in_progress and not (self.dealt_cards and self.dealt_cards[card]) then
-            -- Skip this card - it hasn't been dealt yet
+        -- Skip drawing if card is currently animating (to avoid duplicates)
+        -- Or if dealing and not landed
+        local dealing_skip = self.dealing_in_progress and not (self.dealt_cards and self.dealt_cards[card])
+        
+        if dealing_skip or animating_cards[card] then
+            -- Skip this card
         else
             local visual_idx = i
             if drag_target_idx then
@@ -1047,6 +1144,7 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
                 local initial_x = start_x + (visual_idx-1) * spread
                 player_springs[i] = {
                     x = {val=initial_x, vel=0, target=initial_x},
+                    y = {val=0, vel=0, target=0},
                     scale = {val=1, vel=0, target=1},
                     pitch = {val=0, vel=0, target=0},
                     roll = {val=0, vel=0, target=0}
@@ -1061,7 +1159,9 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
                 -- Calculate card position using interpolated spring value
                 local card_x = spring.x.val
                 
-                local card_y = HAND_Y_OFFSET
+                local card_base_y = HAND_Y_OFFSET
+                if spring.y then card_base_y = card_base_y + spring.y.val end
+                local card_y = card_base_y
                 
                 -- Fan Logic for Opponents
                 local fan_rot = 0
@@ -1425,16 +1525,15 @@ function TableView:check_click(x, y)
     
     -- Trick Over: Next Trick
     if self.game.state == "TRICK_OVER" then
-        -- Use the rect stored during draw to ensure sync
-        if self.next_trick_btn_rect then
-            local b = self.next_trick_btn_rect
-            if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
-                if gAudioManager then gAudioManager:play("CLICK") end
-                self.game:next_trick()
-                return true
-            end
+        if self.next_trick_btn then
+             -- Check click against button bounds (handled by button Logic but needs triggering)
+             -- Button updates hovered state.
+             if x >= self.next_trick_btn.x and x <= self.next_trick_btn.x + self.next_trick_btn.w and
+                y >= self.next_trick_btn.y and y <= self.next_trick_btn.y + self.next_trick_btn.h then
+                 return self.next_trick_btn:click()
+             end
         end
-        return false -- Eat clicks
+        return false
     end
     
     -- Round Over: Next Round
@@ -1456,56 +1555,45 @@ function TableView:check_click(x, y)
     -- Pass click to Kitty Discard UI
     if self.game.state == "KITTY" and self.game.current_player_idx == 1 then
         -- Check Discard Button
-        if self.discard_btn_rect then
-            local b = self.discard_btn_rect
-            if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
-                -- Perform Discard
-                local discards = {}
-                local indices = {}
-                for idx, _ in pairs(self.selected_discards) do table.insert(indices, idx) end
-                table.sort(indices, function(a,b) return a > b end) -- Sort desc to remove safely?
-                -- Actually we just pass card objects to game logic
-                
-                local p_hand = self.game.players[1].hand
-                for _, idx in ipairs(indices) do
-                    table.insert(discards, p_hand[idx])
+        if self.discard_btn then
+             local btn = self.discard_btn
+             local count = 0
+             for _ in pairs(self.selected_discards) do count = count + 1 end
+             
+             if count == 3 then
+                 if x >= btn.x and x <= btn.x + btn.w and
+                    y >= btn.y and y <= btn.y + btn.h then
+                     return btn:click()
+                 end
+             end
+        end
+    -- Check Hand Cards (Selection)
+    local local_x = x - self.center_x
+    local local_y = y - (self.height - 100)
+    
+    if self.hand_card_rects then
+        for i = #self.hand_card_rects, 1, -1 do
+            local r = self.hand_card_rects[i]
+            if local_x >= r.x and local_x <= r.x + r.w and local_y >= r.y and local_y <= r.y + r.h then
+                -- Toggle selection
+                if self.selected_discards[r.idx] then
+                    self.selected_discards[r.idx] = nil
+                else
+                     -- Check limit
+                     local count = 0
+                     for _ in pairs(self.selected_discards) do count = count + 1 end
+                     if count < 3 then
+                         self.selected_discards[r.idx] = true
+                     end
                 end
-                
-                self.game:player_discard_kitty(1, discards)
-                self.selected_discards = {}
-                if gAudioManager then gAudioManager:play("CLICK") end
                 return true
             end
         end
-        
-        -- Check Hand Cards
-        -- Transform x,y to local space of hand (center_x, height-100)
-        local local_x = x - self.center_x
-        local local_y = y - (self.height - 100)
-        
-        -- Check in reverse order (top rendered first)
-        if self.hand_card_rects then
-            for i = #self.hand_card_rects, 1, -1 do
-                local r = self.hand_card_rects[i]
-                if local_x >= r.x and local_x <= r.x + r.w and local_y >= r.y and local_y <= r.y + r.h then
-                    -- Toggle selection
-                    if self.selected_discards[r.idx] then
-                        self.selected_discards[r.idx] = nil
-                    else
-                         -- Check limit
-                         local count = 0
-                         for _ in pairs(self.selected_discards) do count = count + 1 end
-                         if count < 3 then
-                             self.selected_discards[r.idx] = true
-                         end
-                    end
-                    return true
-                end
-            end
-        end
-    
-    
-    elseif self.game.state == "PLAYING" and self.game.current_player_idx == 1 then
+    end
+    return true -- Consume clicks in KITTY
+end -- End KITTY
+
+if self.game.state == "PLAYING" and self.game.current_player_idx == 1 then
         -- Play Card / Drag Start
         local local_x = x - self.center_x
         local local_y = y - (self.height - 100)
@@ -1541,6 +1629,12 @@ function TableView:check_click(x, y)
                         offset_x = x - screen_card_x,
                         offset_y = y - screen_card_y
                     }
+                    
+                    -- Play sound when starting to drag
+                    if gAudioManager then
+                        gAudioManager:play("CARD_HOVER")
+                    end
+                    
                     return true
                 end
             end
@@ -1739,6 +1833,24 @@ function TableView:on_drag_end()
         else
             -- Invalid: Shake/Reject?
             print("Invalid Move")
+            
+            -- Smooth Snap Back
+             local p_springs = self.hand_springs[1]
+             if p_springs and p_springs[d.idx] then
+                  local s = p_springs[d.idx]
+                  s.x.val = (mx - self.center_x - d.offset_x) + 40
+                  s.x.vel = 0
+                  
+                  local hand_orig_y = self.height - 100
+                  local base_y = HAND_Y_OFFSET
+                   if self.selected_discards[d.idx] then base_y = base_y - 20 end
+                   
+                  local visual_y = my - hand_orig_y - d.offset_y
+                  if s.y then
+                       s.y.val = visual_y - base_y
+                       s.y.vel = 0
+                  end
+             end
         end
     else
         -- REORDER LOGIC
@@ -1751,6 +1863,27 @@ function TableView:on_drag_end()
              table.remove(hand, d.idx)
              table.insert(hand, new_idx, d.card)
              -- No animation needed, next draw will show correct order
+             
+             -- Apply smooth snap from drop position
+             local p_springs = self.hand_springs[1]
+             if p_springs and p_springs[new_idx] then
+                  local s = p_springs[new_idx]
+                  -- Set spring to drop position so it slides to target
+                  -- X: global_mx - center_x - offset_x + 40
+                  s.x.val = (mx - self.center_x - d.offset_x) + 40
+                  s.x.vel = 0
+                  
+                  -- Y: global_my - hand_origin - offset_y - base_y
+                  local hand_orig_y = self.height - 100
+                  local base_y = HAND_Y_OFFSET -- -60?
+                  if self.selected_discards[new_idx] then base_y = base_y - 20 end
+                  
+                  local visual_y = my - hand_orig_y - d.offset_y
+                  if s.y then
+                       s.y.val = visual_y - base_y
+                       s.y.vel = 0
+                  end
+             end
         end
     end
     

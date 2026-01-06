@@ -27,6 +27,10 @@ function ChatLog:init(x, y, w, h)
     
     -- Avatar colors
     self.avatar_colors = Config.colors.avatar
+    
+    self.visible = true
+    self.anim_progress = 1.0
+    self.target_progress = 1.0
 end
 
 function ChatLog:clear()
@@ -37,13 +41,28 @@ end
 function ChatLog:resize(x, y, w, h)
     self.x = x
     self.y = y
-    self.width = w
-    self.height = h
-    self:scroll_to_bottom()
+    
+    -- Only resize content triggering scroll if dimensions change
+    if self.width ~= w or self.height ~= h then
+        self.width = w
+        self.height = h
+        self:scroll_to_bottom()
+    end
 end
 
 function ChatLog:update(dt)
-    -- No per-frame update needed yet
+    -- Init animation state if missing (hot-reload safety)
+    if not self.anim_progress then self.anim_progress = self.visible and 1.0 or 0.0 end
+    if not self.target_progress then self.target_progress = self.visible and 1.0 or 0.0 end
+
+    -- Smoothly interpolate animation progress
+    local speed = 15 -- Increased speed for snappier feel
+    self.anim_progress = self.anim_progress + (self.target_progress - self.anim_progress) * speed * dt
+    
+    -- Snap if close
+    if math.abs(self.target_progress - self.anim_progress) < 0.01 then
+        self.anim_progress = self.target_progress
+    end
 end
 
 -- Add a message to the log
@@ -79,11 +98,22 @@ function ChatLog:scroll(delta)
     self.scroll_offset = math.max(0, math.min(self.scroll_offset, max_scroll))
 end
 
+function ChatLog:toggle_visibility()
+    self.visible = not self.visible
+    self.target_progress = self.visible and 1.0 or 0.0
+    
+    return self.visible
+end
+
 function ChatLog:draw()
+    if self.anim_progress < 0.01 then return end
+    
     local old_font = love.graphics.getFont()
     if gFonts and gFonts.small then love.graphics.setFont(gFonts.small) end
     -- Background
-    love.graphics.setColor(self.bg_color)
+    -- Background (Transparent Panel)
+    local r, g, b = unpack(self.bg_color)
+    love.graphics.setColor(r, g, b, 0.85) -- 85% opacity
     love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, 5)
     
     -- Border

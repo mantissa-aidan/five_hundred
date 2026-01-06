@@ -38,9 +38,9 @@ describe("BiddingView Initialization", function()
         local action_buttons = 0
 
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "SELECT_BID" then
+            if btn.is_grid_btn then
                 bid_buttons = bid_buttons + 1
-            elseif btn.type == "PASS" or btn.type == "SUBMIT" then
+            elseif btn.text == "Pass" or btn.is_submit then
                 action_buttons = action_buttons + 1
             end
         end
@@ -84,7 +84,7 @@ describe("BiddingView Bid Validity", function()
         -- Check that 6 Spades is valid (lowest bid)
         local found_6s = false
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "SELECT_BID" and btn.tricks == 6 and btn.suit == Suit.SPADES then
+            if btn.is_grid_btn and btn.tricks == 6 and btn.suit == Suit.SPADES then
                 found_6s = true
                 -- Validity check is done in draw(), but we can verify structure
                 assert_equal(BidType.SUIT_TRUMP, btn.bid_type)
@@ -98,7 +98,7 @@ describe("BiddingView Bid Validity", function()
         local view = BiddingView.new(game, 1920, 1080)
 
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "SELECT_BID" then
+            if btn.is_grid_btn then
                 assert_not_nil(btn.x, "Button should have x position")
                 assert_not_nil(btn.y, "Button should have y position")
                 assert_not_nil(btn.w, "Button should have width")
@@ -115,7 +115,7 @@ describe("BiddingView Bid Validity", function()
         local view = BiddingView.new(game, 1920, 1080)
 
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "SELECT_BID" and btn.suit == Suit.NO_TRUMP then
+            if btn.is_grid_btn and btn.suit == Suit.NO_TRUMP then
                 assert_equal(BidType.NO_TRUMP, btn.bid_type)
             end
         end
@@ -126,7 +126,7 @@ describe("BiddingView Bid Validity", function()
         local view = BiddingView.new(game, 1920, 1080)
 
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "SELECT_BID" and btn.suit ~= Suit.NO_TRUMP then
+            if btn.is_grid_btn and btn.suit ~= Suit.NO_TRUMP then
                 assert_equal(BidType.SUIT_TRUMP, btn.bid_type)
             end
         end
@@ -227,7 +227,7 @@ describe("BiddingView Button Types", function()
 
         local pass_count = 0
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "PASS" then
+            if btn.text == "Pass" then
                 pass_count = pass_count + 1
             end
         end
@@ -241,7 +241,7 @@ describe("BiddingView Button Types", function()
 
         local submit_count = 0
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "SUBMIT" then
+            if btn.is_submit then
                 submit_count = submit_count + 1
             end
         end
@@ -254,7 +254,7 @@ describe("BiddingView Button Types", function()
         local view = BiddingView.new(game, 1920, 1080)
 
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "PASS" then
+            if btn.text == "Pass" then
                 assert_equal("Pass", btn.text)
             end
         end
@@ -265,7 +265,7 @@ describe("BiddingView Button Types", function()
         local view = BiddingView.new(game, 1920, 1080)
 
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "SUBMIT" then
+            if btn.is_submit then
                 assert_equal("Place Bid", btn.text)
             end
         end
@@ -282,7 +282,7 @@ describe("BiddingView Bid Button Grid", function()
         local trick_counts = {[6]=0, [7]=0, [8]=0, [9]=0, [10]=0}
 
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "SELECT_BID" and trick_counts[btn.tricks] then
+            if btn.is_grid_btn and trick_counts[btn.tricks] then
                 trick_counts[btn.tricks] = trick_counts[btn.tricks] + 1
             end
         end
@@ -305,7 +305,7 @@ describe("BiddingView Bid Button Grid", function()
         }
 
         for _, btn in ipairs(view.buttons) do
-            if btn.type == "SELECT_BID" and suit_counts[btn.suit] then
+            if btn.is_grid_btn and suit_counts[btn.suit] then
                 suit_counts[btn.suit] = suit_counts[btn.suit] + 1
             end
         end

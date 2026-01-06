@@ -290,6 +290,22 @@ function love.update(dt)
     lurker.update() -- Check for file changes
     gTime = gTime + dt
     
+    -- Update Chat Animation
+    if gChatLog then 
+        gChatLog:update(dt) 
+        
+        -- Continuous Layout Update during animation
+        if gTableView then
+             local w, h = love.graphics.getDimensions()
+             local chat_w = Config.layout.chat_width
+             local slide = chat_w * gChatLog.anim_progress
+             
+             local game_w = w - slide
+             gTableView:resize(game_w, h)
+             gChatLog:resize(w - slide, 0, chat_w, h)
+        end
+    end
+    
     if gScreenShake > 0 then
         gScreenShake = gScreenShake - dt * 5 -- Decay
         if gScreenShake < 0 then gScreenShake = 0 end
@@ -437,6 +453,10 @@ function love.keypressed(key)
         if gChatLog then gChatLog:clear() end
         gChatLog:add_message("System", {"New round started"}, false, {0.3, 0.5, 0.3})
         gPaused = false
+    elseif key == "p" then
+        if gChatLog then 
+            gChatLog:toggle_visibility() 
+        end
     end
 end
 
@@ -451,11 +471,21 @@ function love.resize(w, h)
     gCanvas:setFilter("nearest", "nearest")
     
     local chat_width = Config.layout.chat_width
+    local game_w = w
+    
     if gChatLog then
-        gChatLog:resize(w - chat_width, 0, chat_width, h)
+        if gChatLog.visible then
+            -- Game takes left portion, Chat takes right portion
+            game_w = w - chat_width
+            gChatLog:resize(game_w, 0, chat_width, h)
+        else
+            -- Game takes full width
+            game_w = w
+        end
     end
+    
     if gTableView then
-        gTableView:resize(w, h)
+        gTableView:resize(game_w, h)
     end
 end
 

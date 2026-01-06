@@ -1,0 +1,987 @@
+[1m[36m
+╔═══════════════════════════════════════════════════════════╗
+║           Five Hundred Love - Test Suite                  ║
+╚═══════════════════════════════════════════════════════════╝
+[0m
+[1m[34m
+▶ Running: Card Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[32m  ✓ [0mCard > creates a standard card correctly
+[32m  ✓ [0mCard > creates a Joker correctly
+[32m  ✓ [0mCard > auto-corrects Joker suit to NO_TRUMP
+[32m  ✓ [0mCard > throws error for non-Joker with NO_TRUMP suit
+[32m  ✓ [0mCard > compares cards for equality
+[32m  ✓ [0mCard > converts to string correctly
+[32m  ✓ [0mCard > Joker converts to string as 'Joker'
+[32m  ✓ [0mSuit > has correct enum values
+[32m  ✓ [0mRank > has correct enum values
+
+[1m=== Results ===[0m
+[32m  Passed: 9[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: Deck Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[32m  ✓ [0mDeck > creates a deck with 43 cards
+[32m  ✓ [0mDeck > contains one Joker
+[32m  ✓ [0mDeck > contains two red fours (Hearts and Diamonds)
+[32m  ✓ [0mDeck > contains cards from 5-A for all suits (40 cards)
+[32m  ✓ [0mDeck > shuffle changes card order
+[32m  ✓ [0mDeck > deal removes cards from deck
+[32m  ✓ [0mDeck > deal returns correct cards
+[32m  ✓ [0mDeck > deal throws error for negative cards
+[32m  ✓ [0mDeck > deal throws error for too many cards
+[32m  ✓ [0mDeck > create_deck resets the deck
+
+[1m=== Results ===[0m
+[32m  Passed: 10[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: Player Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[32m  ✓ [0mPlayer > creates a player with name
+[32m  ✓ [0mPlayer > adds single card to hand
+[32m  ✓ [0mPlayer > adds multiple cards to hand
+[32m  ✓ [0mPlayer > plays card from hand and removes it
+[32m  ✓ [0mPlayer > throws error when playing card not in hand
+[32m  ✓ [0mPlayer > sorts hand by suit then rank
+[32m  ✓ [0mPlayer > resets for new round
+[32m  ✓ [0mPlayer > increments score correctly
+[32m  ✓ [0mPlayer > increments tricks won
+[32m  ✓ [0mPlayer > converts to string with name and score
+
+[1m=== Results ===[0m
+[32m  Passed: 10[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: Team Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[32m  ✓ [0mTeam > creates a team with name and 2 players
+[32m  ✓ [0mTeam > throws error for more than 2 players
+[32m  ✓ [0mTeam > updates score correctly
+[32m  ✓ [0mTeam > calculates total tricks won this round
+[32m  ✓ [0mTeam > resets for new round
+[32m  ✓ [0mTeam > converts to string with name and score
+
+[1m=== Results ===[0m
+[32m  Passed: 6[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: Bid Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[32m  ✓ [0mBidType > has correct enum values
+[32m  ✓ [0mBid > creates a valid suit bid
+[32m  ✓ [0mBid > creates a valid no trump bid
+[32m  ✓ [0mBid > creates a valid Misere bid
+[32m  ✓ [0mBid > creates a valid Open Misere bid
+[32m  ✓ [0mBid > throws error for suit bid below 6 tricks
+[32m  ✓ [0mBid > throws error for no trump bid below 6 tricks
+[32m  ✓ [0mBid > throws error for Misere with non-zero tricks
+[32m  ✓ [0mBid > throws error for suit trump without valid suit
+[32m  ✓ [0mBid > throws error for tricks out of range
+[32m  ✓ [0mBid Points (Avondale Scoring) > calculates 6 Spades correctly
+[32m  ✓ [0mBid Points (Avondale Scoring) > calculates 6 Clubs correctly
+[32m  ✓ [0mBid Points (Avondale Scoring) > calculates 6 Diamonds correctly
+[32m  ✓ [0mBid Points (Avondale Scoring) > calculates 6 Hearts correctly
+[32m  ✓ [0mBid Points (Avondale Scoring) > calculates 6 No Trump correctly
+[32m  ✓ [0mBid Points (Avondale Scoring) > calculates 10 No Trump correctly
+[32m  ✓ [0mBid Points (Avondale Scoring) > calculates 8 Hearts correctly
+[32m  ✓ [0mBid Comparison > compares bids by points
+[32m  ✓ [0mBid Comparison > 6 NT beats all 6-level suit bids
+[32m  ✓ [0mBid Comparison > Misere beats 7 No Trump
+[32m  ✓ [0mBid Comparison > Open Misere is highest bid
+[32m  ✓ [0mBid String Representation > converts suit bid to string
+[32m  ✓ [0mBid String Representation > converts Misere to string
+
+[1m=== Results ===[0m
+[32m  Passed: 23[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: Game Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[32m  ✓ [0mGame Initialization > creates a game with 4 players
+[32m  ✓ [0mGame Initialization > creates a game with 2 teams
+[32m  ✓ [0mGame Initialization > assigns players to correct teams
+[32m  ✓ [0mGame Initialization > starts in WAITING state
+[32m  ✓ [0mGame Initialization > initializes with nil winning bid and trump
+[32m  ✓ [0mGame States > has all required states
+[32m  ✓ [0mDealing Cards > deals 10 cards to each player
+[32m  ✓ [0mDealing Cards > creates a kitty of 3 cards
+[32m  ✓ [0mDealing Cards > deals all 43 cards
+[32m  ✓ [0mDealing Cards > deals unique cards
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mStarting New Round > transitions to BIDDING state
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mStarting New Round > rotates dealer
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mStarting New Round > sets current player to left of dealer
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mStarting New Round > resets bidding state
+[32m  ✓ [0mEffective Suit Calculation > returns actual suit for non-trump games
+[32m  ✓ [0mEffective Suit Calculation > returns actual suit for cards in No Trump
+[32m  ✓ [0mEffective Suit Calculation > returns trump for Joker in suit games
+[32m  ✓ [0mEffective Suit Calculation > returns NO_TRUMP for Joker in No Trump games
+[32m  ✓ [0mEffective Suit Calculation > left bower is considered trump suit
+[32m  ✓ [0mEffective Suit Calculation > right bower stays in trump suit
+[32m  ✓ [0mEffective Suit Calculation > non-jack cards keep original suit even when trump
+[32m  ✓ [0mCard Strength Calculation > Joker is always strongest
+[32m  ✓ [0mCard Strength Calculation > right bower beats left bower
+[32m  ✓ [0mCard Strength Calculation > trump beats led suit
+[32m  ✓ [0mCard Strength Calculation > led suit beats off suit
+[32m  ✓ [0mCard Strength Calculation > higher rank beats lower rank in same suit
+[32m  ✓ [0mPlayable Cards > returns all cards when leading
+[32m  ✓ [0mPlayable Cards > must follow suit when able
+[32m  ✓ [0mPlayable Cards > can play any card when void in led suit
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[32m  ✓ [0mBidding Actions > accepts valid first bid
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mBidding Actions > rejects bid when not current player
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Clubs (60)
+[32m  ✓ [0mBidding Actions > rejects lower bid than current highest
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 bids 6 Clubs (60)
+[32m  ✓ [0mBidding Actions > accepts higher bid
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[32m  ✓ [0mBidding Actions > player can pass
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 bids 6 Spades (40)
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P4 bids 6 Spades (40)
+[GAME] Kitty given to P4
+[32m  ✓ [0mBidding Actions > rejects bid from passed player
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[32m  ✓ [0mBidding End Conditions > transitions to KITTY when one player remains with bid
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] All passed. Redeal.
+[GAME] Starting New Round
+[GAME] Bidding starts with P4
+[32m  ✓ [0mBidding End Conditions > redeals when all pass without bid
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[32m  ✓ [0mKitty Phase > gives kitty to winning bidder
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[32m  ✓ [0mKitty Phase > requires discarding 3 cards
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[32m  ✓ [0mKitty Phase > transitions to PLAYING after discard
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[32m  ✓ [0mPlaying Phase > allows current player to play card
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[32m  ✓ [0mPlaying Phase > rejects play from non-current player
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[32m  ✓ [0mPlaying Phase > sets lead suit on first play
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[32m  ✓ [0mPlaying Phase > advances to next player after play
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Trick won by P2
+[32m  ✓ [0mTrick Resolution > records trick in history after 4 cards played
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Trick won by P4
+[32m  ✓ [0mTrick Resolution > transitions to TRICK_OVER after 4 cards
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Trick won by P4
+[32m  ✓ [0mTrick Resolution > awards trick to winner
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Trick won by P4
+[32m  ✓ [0mTrick Resolution > next_trick resets for new trick
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mAction Request > returns BID during bidding
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[32m  ✓ [0mAction Request > returns DISCARD during kitty
+[32m  ✓ [0mAction Request > returns nil for WAITING state
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mPlayer Turn Check > correctly identifies current player turn
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mRound Scoring > awards positive points when contract is made
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mRound Scoring > awards positive points when contract is exceeded
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 7 Spades (140)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 7 Spades (140)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Failed!
+[32m  ✓ [0mRound Scoring > deducts points when contract fails
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 10 Spades (440)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 10 Spades (440)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Failed!
+[32m  ✓ [0mRound Scoring > deducts points when contract badly fails
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mRound Scoring > transitions to ROUND_OVER state after scoring
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mRound Scoring > opposing team score remains unchanged
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mRound Scoring > calls round end callback exactly once with correct data
+
+[1m=== Results ===[0m
+[32m  Passed: 59[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: Strategy Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[32m  ✓ [0mStrategy Base Class > throws error for unimplemented decide_bid
+[32m  ✓ [0mStrategy Base Class > throws error for unimplemented decide_play
+[32m  ✓ [0mStrategy Base Class > throws error for unimplemented decide_discard
+[32m  ✓ [0mStrategy Base Class > requires_input returns false by default
+[32m  ✓ [0mRandomStrategy > can be instantiated
+[32m  ✓ [0mRandomStrategy > requires_input returns false
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mRandomStrategy Bidding > returns pass or bid action
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mRandomStrategy Bidding > bid action includes valid parameters
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 8 Hearts (300)
+[32m  ✓ [0mRandomStrategy Bidding > only returns valid bids higher than current
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[32m  ✓ [0mRandomStrategy Card Play > returns a card from playable cards
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[32m  ✓ [0mRandomStrategy Card Play > consistently returns valid cards
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[32m  ✓ [0mRandomStrategy Discard > returns 3 cards
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[32m  ✓ [0mRandomStrategy Discard > returns cards from player hand
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 bids 7 Clubs (160)
+[GAME] P1 bids 7 Diamonds (180)
+[GAME] P2 passes
+[GAME] P4 passes
+[GAME] Winning Bid: P1 bids 7 Diamonds (180)
+[GAME] Kitty given to P1
+[32m  ✓ [0mStrategy Integration > can play a full bidding round with RandomStrategy
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Trick won by P2
+[GAME] Trick won by P1
+[GAME] Trick won by P4
+[32m  ✓ [0mStrategy Integration > can play multiple tricks with RandomStrategy
+
+[1m=== Results ===[0m
+[32m  Passed: 15[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: View Logic Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[31m  ✗ [0mBiddingView Initialization > creates buttons for all standard bids
+[31m    Error: ./tests/test_runner.lua:139: Should have 25 bid selection buttons: expected 25, got 0[0m
+[32m  ✓ [0mBiddingView Initialization > sets correct dimensions
+[32m  ✓ [0mBiddingView Initialization > centers in container
+[32m  ✓ [0mBiddingView Initialization > starts with no selected bid
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[31m  ✗ [0mBiddingView Bid Validity > all bids valid when no highest bid
+[31m    Error: ./tests/test_runner.lua:145: Should have 6 Spades button: expected true, got false[0m
+[32m  ✓ [0mBiddingView Bid Validity > bid buttons have correct structure
+[32m  ✓ [0mBiddingView Bid Validity > no trump buttons have correct bid type
+[32m  ✓ [0mBiddingView Bid Validity > suit buttons have SUIT_TRUMP bid type
+[32m  ✓ [0mBiddingView Resize > updates position on resize
+[32m  ✓ [0mBiddingView Resize > recreates buttons on resize
+[32m  ✓ [0mBiddingView Click Handling > ignores clicks when not in BIDDING state
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mBiddingView Click Handling > ignores clicks when not player 1 turn
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mBiddingView Selection State > can store selected bid
+[32m  ✓ [0mBiddingView Selection State > selected bid can be cleared
+[31m  ✗ [0mBiddingView Button Types > has exactly one PASS button
+[31m    Error: ./tests/test_runner.lua:139: Assertion failed: expected 1, got 0[0m
+[31m  ✗ [0mBiddingView Button Types > has exactly one SUBMIT button
+[31m    Error: ./tests/test_runner.lua:139: Assertion failed: expected 1, got 0[0m
+[32m  ✓ [0mBiddingView Button Types > PASS button has correct text
+[32m  ✓ [0mBiddingView Button Types > SUBMIT button has correct text
+[31m  ✗ [0mBiddingView Bid Button Grid > has buttons for all trick counts 6-10
+[31m    Error: ./tests/test_runner.lua:139: Should have 5 buttons for 7 tricks (one per suit): expected 5, got 0[0m
+[31m  ✗ [0mBiddingView Bid Button Grid > has buttons for all suits
+[31m    Error: ./tests/test_runner.lua:139: Should have 5 buttons for suit 0 (one per trick level): expected 5, got 0[0m
+[32m  ✓ [0mGame State Integration with View > view references correct game
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[32m  ✓ [0mGame State Integration with View > view sees game state changes
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[32m  ✓ [0mGame State Integration with View > view sees highest bid updates
+
+[1m=== Results ===[0m
+[32m  Passed: 17[0m
+[31m  Failed: 6[0m
+
+[31m[1mFailed Tests:[0m
+[31m  - BiddingView Initialization > creates buttons for all standard bids[0m
+    ./tests/test_runner.lua:139: Should have 25 bid selection buttons: expected 25, got 0
+[31m  - BiddingView Bid Validity > all bids valid when no highest bid[0m
+    ./tests/test_runner.lua:145: Should have 6 Spades button: expected true, got false
+[31m  - BiddingView Button Types > has exactly one PASS button[0m
+    ./tests/test_runner.lua:139: Assertion failed: expected 1, got 0
+[31m  - BiddingView Button Types > has exactly one SUBMIT button[0m
+    ./tests/test_runner.lua:139: Assertion failed: expected 1, got 0
+[31m  - BiddingView Bid Button Grid > has buttons for all trick counts 6-10[0m
+    ./tests/test_runner.lua:139: Should have 5 buttons for 7 tricks (one per suit): expected 5, got 0
+[31m  - BiddingView Bid Button Grid > has buttons for all suits[0m
+    ./tests/test_runner.lua:139: Should have 5 buttons for suit 0 (one per trick level): expected 5, got 0
+
+[1m[34m
+▶ Running: Audio Manager Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[AudioManager] Loaded: slide_1.wav
+[AudioManager] Loaded: flip.wav
+[AudioManager] Loaded: shuffle.wav
+[AudioManager] Loaded: deal_2.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: deal_2.wav
+[AudioManager] Loaded: card_hover.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: lose.wav
+[AudioManager] Loaded: slide_1.wav
+[AudioManager] Loaded: win.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: alert.wav
+[AudioManager] Loaded: card_hover.wav
+[AudioManager] Loaded: card_hover.wav
+[32m  ✓ [0mAudioManager > initializes with empty sources and active_sources
+[AudioManager] Loaded: slide_1.wav
+[AudioManager] Loaded: flip.wav
+[AudioManager] Loaded: shuffle.wav
+[AudioManager] Loaded: deal_2.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: deal_2.wav
+[AudioManager] Loaded: card_hover.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: lose.wav
+[AudioManager] Loaded: slide_1.wav
+[AudioManager] Loaded: win.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: alert.wav
+[AudioManager] Loaded: card_hover.wav
+[AudioManager] Loaded: card_hover.wav
+[32m  ✓ [0mAudioManager > clamps volume to [0, 1]
+[AudioManager] Loaded: slide_1.wav
+[AudioManager] Loaded: flip.wav
+[AudioManager] Loaded: shuffle.wav
+[AudioManager] Loaded: deal_2.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: deal_2.wav
+[AudioManager] Loaded: card_hover.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: lose.wav
+[AudioManager] Loaded: slide_1.wav
+[AudioManager] Loaded: win.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: alert.wav
+[AudioManager] Loaded: card_hover.wav
+[AudioManager] Loaded: card_hover.wav
+[32m  ✓ [0mAudioManager > respects mute toggle
+[32m  ✓ [0mAudioManager > has correct sound ID mappings
+
+[1m=== Results ===[0m
+[32m  Passed: 4[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: Audio Integration Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[32m  ✓ [0mAudio Integration > verifies AudioManager SOUNDS table is complete
+[GAME] Starting New Round
+[GAME] Bidding starts with Bot 2
+[32m  ✓ [0mAudio Integration > can create game and trigger on_card_play callback
+[GAME] Starting New Round
+[GAME] Bidding starts with Bot 2
+[32m  ✓ [0mAudio Integration > can detect state transitions to KITTY
+[AudioManager] Loaded: slide_1.wav
+[AudioManager] Loaded: flip.wav
+[AudioManager] Loaded: shuffle.wav
+[AudioManager] Loaded: deal_2.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: deal_2.wav
+[AudioManager] Loaded: card_hover.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: lose.wav
+[AudioManager] Loaded: slide_1.wav
+[AudioManager] Loaded: win.wav
+[AudioManager] Loaded: click.wav
+[AudioManager] Loaded: alert.wav
+[AudioManager] Loaded: card_hover.wav
+[AudioManager] Loaded: card_hover.wav
+[AudioManager] Warning: Sound not loaded: click.wav
+[AudioManager] Warning: Sound not loaded: slide_1.wav
+[32m  ✓ [0mAudio Integration > can create AudioManager and play sounds
+
+[1m=== Results ===[0m
+[32m  Passed: 4[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: Regression Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Trick won by P4
+[32m  ✓ [0mREGRESSION: State Machine > REG-001: Game correctly transitions through all phases
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] All passed. Redeal.
+[GAME] Starting New Round
+[GAME] Bidding starts with P4
+[32m  ✓ [0mREGRESSION: State Machine > REG-002: All pass redeals correctly
+[32m  ✓ [0mREGRESSION: Bower Rules > REG-010: Left bower is correctly identified as trump
+[32m  ✓ [0mREGRESSION: Bower Rules > REG-011: Right bower stays in trump suit
+[32m  ✓ [0mREGRESSION: Bower Rules > REG-012: Right bower beats left bower in strength
+[32m  ✓ [0mREGRESSION: Bower Rules > REG-013: Joker beats both bowers
+[32m  ✓ [0mREGRESSION: Following Suit > REG-020: Must follow suit when able
+[32m  ✓ [0mREGRESSION: Following Suit > REG-021: Can play any card when void
+[32m  ✓ [0mREGRESSION: Following Suit > REG-022: Left bower follows trump, not original suit
+[32m  ✓ [0mREGRESSION: Avondale Scoring > REG-030: Correct points for all 6-level bids
+[32m  ✓ [0mREGRESSION: Avondale Scoring > REG-031: Correct points for all 10-level bids
+[32m  ✓ [0mREGRESSION: Avondale Scoring > REG-032: Misere is 250 points
+[32m  ✓ [0mREGRESSION: Avondale Scoring > REG-033: Open Misere is 500 points
+[32m  ✓ [0mREGRESSION: Deck Composition > REG-040: Deck has exactly 43 cards
+[32m  ✓ [0mREGRESSION: Deck Composition > REG-041: Deck has one Joker
+[32m  ✓ [0mREGRESSION: Deck Composition > REG-042: Deck has only red fours (no black fours)
+[32m  ✓ [0mREGRESSION: Deck Composition > REG-043: No cards below 4 in deck
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 8 Clubs (260)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 8 Clubs (260)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Trick won by P3
+[GAME] Trick won by P3
+[GAME] Trick won by P2
+[GAME] Trick won by P4
+[GAME] Trick won by P3
+[GAME] Trick won by P2
+[GAME] Trick won by P2
+[GAME] Trick won by P4
+[GAME] Trick won by P4
+[GAME] Trick won by P4
+[GAME] Round Over
+[GAME] Contract Failed!
+[32m  ✓ [0mREGRESSION: Full Game Simulation > REG-050: Can complete a full round with random strategies
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Trick won by P3
+[GAME] Trick won by P3
+[GAME] Trick won by P3
+[GAME] Trick won by P3
+[GAME] Trick won by P1
+[GAME] Trick won by P3
+[GAME] Trick won by P1
+[GAME] Trick won by P3
+[GAME] Trick won by P1
+[GAME] Trick won by P1
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mREGRESSION: Full Game Simulation > REG-051: All cards played after 10 tricks
+[32m  ✓ [0mREGRESSION: Edge Cases > REG-060: Joker with NO_TRUMP suit creates correctly
+[32m  ✓ [0mREGRESSION: Edge Cases > REG-061: Cannot create non-Joker with NO_TRUMP suit
+[32m  ✓ [0mREGRESSION: Edge Cases > REG-062: Bid comparison handles edge cases
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[32m  ✓ [0mREGRESSION: Edge Cases > REG-063: Passed player cannot bid again
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 bids 6 Spades (40)
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] Winning Bid: P3 bids 6 Spades (40)
+[GAME] Kitty given to P3
+[GAME] Discard complete
+[GAME] Trick won by P3
+[GAME] Trick won by P4
+[GAME] Trick won by P4
+[GAME] Trick won by P4
+[GAME] Trick won by P1
+[GAME] Trick won by P1
+[GAME] Trick won by P3
+[GAME] Trick won by P1
+[GAME] Trick won by P2
+[GAME] Trick won by P4
+[GAME] Round Over
+[GAME] Contract Failed!
+[GAME] Starting New Round
+[GAME] Bidding starts with P4
+[GAME] P4 bids 6 Spades (40)
+[GAME] P1 passes
+[GAME] P2 passes
+[GAME] P3 passes
+[GAME] Winning Bid: P4 bids 6 Spades (40)
+[GAME] Kitty given to P4
+[GAME] Discard complete
+[GAME] Trick won by P1
+[GAME] Trick won by P1
+[GAME] Trick won by P1
+[GAME] Trick won by P2
+[GAME] Trick won by P2
+[GAME] Trick won by P3
+[GAME] Trick won by P2
+[GAME] Trick won by P1
+[GAME] Trick won by P2
+[GAME] Trick won by P2
+[GAME] Round Over
+[GAME] Contract Failed!
+[GAME] Starting New Round
+[GAME] Bidding starts with P1
+[GAME] P1 bids 6 Spades (40)
+[GAME] P2 passes
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] Winning Bid: P1 bids 6 Spades (40)
+[GAME] Kitty given to P1
+[GAME] Discard complete
+[GAME] Trick won by P1
+[GAME] Trick won by P4
+[GAME] Trick won by P2
+[GAME] Trick won by P2
+[GAME] Trick won by P2
+[GAME] Trick won by P2
+[GAME] Trick won by P3
+[GAME] Trick won by P2
+[GAME] Trick won by P4
+[GAME] Trick won by P3
+[GAME] Round Over
+[GAME] Contract Failed!
+[GAME] Starting New Round
+[GAME] Bidding starts with P2
+[GAME] P2 bids 6 Spades (40)
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 passes
+[GAME] Winning Bid: P2 bids 6 Spades (40)
+[GAME] Kitty given to P2
+[GAME] Discard complete
+[GAME] Trick won by P4
+[GAME] Trick won by P3
+[GAME] Trick won by P3
+[GAME] Trick won by P3
+[GAME] Trick won by P4
+[GAME] Trick won by P2
+[GAME] Trick won by P4
+[GAME] Trick won by P2
+[GAME] Trick won by P3
+[GAME] Trick won by P2
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mREGRESSION: Edge Cases > REG-064: Dealer rotates correctly through all 4 players
+
+[1m=== Results ===[0m
+[32m  Passed: 24[0m
+  Failed: 0
+
+[1m[34m
+▶ Running: Round Over Logic Tests[0m
+--------------------------------------------------
+[1m
+=== Running Tests ===[0m
+
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 bids 7 Spades (140)
+[GAME] P2 passes
+[GAME] Winning Bid: P1 bids 7 Spades (140)
+[GAME] Kitty given to P1
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mRound Over State > enters ROUND_OVER state after scoring
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 bids 7 Spades (140)
+[GAME] P2 passes
+[GAME] Winning Bid: P1 bids 7 Spades (140)
+[GAME] Kitty given to P1
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mRound Over State > requests NEXT_ROUND action
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 bids 7 Spades (140)
+[GAME] P2 passes
+[GAME] Winning Bid: P1 bids 7 Spades (140)
+[GAME] Kitty given to P1
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[32m  ✓ [0mRound Over State > updates scores correctly before state change
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 bids 7 Spades (140)
+[GAME] P2 passes
+[GAME] Winning Bid: P1 bids 7 Spades (140)
+[GAME] Kitty given to P1
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[GAME] Starting New Round
+[GAME] Bidding starts with P4
+[32m  ✓ [0mTransition to Next Round > starts new round on request
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 bids 7 Spades (140)
+[GAME] P2 passes
+[GAME] Winning Bid: P1 bids 7 Spades (140)
+[GAME] Kitty given to P1
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[GAME] Starting New Round
+[GAME] Bidding starts with P4
+[32m  ✓ [0mTransition to Next Round > preserves scores in new round
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 bids 7 Spades (140)
+[GAME] P2 passes
+[GAME] Winning Bid: P1 bids 7 Spades (140)
+[GAME] Kitty given to P1
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[GAME] Starting New Round
+[GAME] Bidding starts with P4
+[32m  ✓ [0mTransition to Next Round > resets round data (bids, tricks)
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] P3 passes
+[GAME] P4 passes
+[GAME] P1 bids 7 Spades (140)
+[GAME] P2 passes
+[GAME] Winning Bid: P1 bids 7 Spades (140)
+[GAME] Kitty given to P1
+[GAME] Discard complete
+[GAME] Round Over
+[GAME] Contract Made!
+[GAME] Starting New Round
+[GAME] Bidding starts with P4
+[GAME] Starting New Round
+[GAME] Bidding starts with P3
+[GAME] Starting New Round
+[GAME] Bidding starts with P4
+[32m  ✓ [0mTransition to Next Round > rotates dealer
+
+[1m=== Results ===[0m
+[32m  Passed: 7[0m
+  Failed: 0
+
+[1m[36m
+
+╔═══════════════════════════════════════════════════════════╗
+║                    TEST SUMMARY                           ║
+╚═══════════════════════════════════════════════════════════╝
+[0m
+  [32m✓ [0mCard Tests: 9 passed, 0 failed
+  [32m✓ [0mDeck Tests: 10 passed, 0 failed
+  [32m✓ [0mPlayer Tests: 10 passed, 0 failed
+  [32m✓ [0mTeam Tests: 6 passed, 0 failed
+  [32m✓ [0mBid Tests: 23 passed, 0 failed
+  [32m✓ [0mGame Tests: 59 passed, 0 failed
+  [32m✓ [0mStrategy Tests: 15 passed, 0 failed
+  [31m✗ [0mView Logic Tests: 17 passed, 6 failed
+  [32m✓ [0mAudio Manager Tests: 4 passed, 0 failed
+  [32m✓ [0mAudio Integration Tests: 4 passed, 0 failed
+  [32m✓ [0mRegression Tests: 24 passed, 0 failed
+  [32m✓ [0mRound Over Logic Tests: 7 passed, 0 failed
+════════════════════════════════════════════════════════════
+[1mTOTAL: [32m188 passed[0m[1m, [31m6 failed[0m
+[1m[31m
+✗ Some tests failed![0m
