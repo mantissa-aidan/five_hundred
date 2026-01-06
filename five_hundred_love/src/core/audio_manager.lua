@@ -5,8 +5,8 @@ local AudioManager = Utils.class("AudioManager")
 
 AudioManager.SOUNDS = {
     CARD_SLIDE = "slide_1.wav",
-    CARD_FLIP = "flip.wav",
-    CARD_HOVER = "card_hover.wav",
+    CARD_FLIP = "thud.wav",
+    CARD_HOVER = "card_hover_2.wav",
     DEAL = "deal_2.wav",
     CLICK = "click.wav",
     ALERT = "alert.wav",
@@ -116,6 +116,16 @@ function AudioManager:play(sound_id, params)
         end
         
         Debug:log("AUDIO", "PLAYING: %s (%s) from %s", sound_id, filename, caller)
+        
+        if (sound_id == "TRICK_WON" or sound_id == "TRICK_LOST") then
+             -- HOTFIX: Block phantom duplicate sound from on_trick_complete
+             -- The correct sound comes from 'update' (delayed).
+             -- The ghost sound comes from 'on_trick_complete' (immediate).
+             if caller and (string.find(caller, "on_trick") or string.find(caller, "completed")) then
+                 -- Debug:log("AUDIO", "Blocked phantom sound from %s", caller)
+                 return
+             end
+        end
     else
         -- Silent fail / Debug log
         Debug:log("AUDIO", "Warning: Sound not loaded: %s", tostring(sound_id))

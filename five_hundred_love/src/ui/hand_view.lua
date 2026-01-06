@@ -197,27 +197,60 @@ function HandView:get_deal_target_position(p_idx, card_idx, x, y, total_cards)
     local start_x = -((total_cards - 1) * spread) / 2
     local card_x = start_x + (card_idx - 1) * spread
 
+    -- Calculate Fan Logic (Curve) for Opponents
+    local offset_y = 0
+    local offset_rot = 0
+    if not is_human then
+         local center = (total_cards + 1) / 2
+         local dist = math.abs(card_idx - center)
+         local signed_dist = card_idx - center
+         
+         offset_y = - (dist * dist) * 1.5
+         offset_rot = - signed_dist * 0.1
+    end
+
     -- Player position mappings
     if p_idx == 1 then
-        -- Bottom (Human)
+        -- Bottom (Human) - Linear
         local target_x = self.center_x + card_x - 40
         local target_y = self.height - 100 + HandView.Y_OFFSET
         return target_x, target_y, 0
     elseif p_idx == 2 then
         -- Left (rotated -90)
-        local target_x = 110 + card_x * 0.5
+        -- Linear Base
+        local base_x = 110 + card_x * 0.5 -- This seems to involve a shift? 
+        -- Actually, if rotated -90:
+        -- Global X = Hand X + Local Y * sin(-90) + Local X * cos(-90)
+        -- Global Y = Hand Y + Local Y * cos(-90) - Local X * sin(-90)
+        -- Let's stick to the current linear approximation but ADD the curve.
+        -- Curve is along Local Y. 
+        -- Local Y = offset_y.
+        -- Rotated -90: Local Y maps to Global X (positive local Y -> positive global X? No.)
+        -- Rotation matrix for -90 (0 -1; 1 0) -> (x,y) -> (y, -x).
+        -- So Local (0, offset_y) -> (offset_y, 0).
+        -- So we add offset_y to Global X.
+        
+        local target_x = 110 + card_x * 0.5 + offset_y
         local target_y = (self.height / 2) + card_x * 0.3
-        return target_x, target_y, -math.pi / 2
+        return target_x, target_y, -math.pi / 2 + offset_rot
+        
     elseif p_idx == 3 then
-        -- Top
+        -- Top (No rotation or 180?)
+        -- Assuming 0 rotation based on previous code.
+        -- Local Y maps to Global Y.
         local target_x = self.center_x + card_x - 40
-        local target_y = 50 + HandView.Y_OFFSET
-        return target_x, target_y, 0
+        local target_y = 50 + HandView.Y_OFFSET + offset_y
+        return target_x, target_y, 0 + offset_rot
+        
     elseif p_idx == 4 then
         -- Right (rotated 90)
-        local target_x = self.center_x * 2 - 110 + card_x * 0.5
+        -- Rotation 90 (0 1; -1 0) -> (x,y) -> (-y, x).
+        -- Local (0, offset_y) -> (-offset_y, 0).
+        -- So subtract offset_y from Global X.
+        
+        local target_x = self.center_x * 2 - 110 + card_x * 0.5 - offset_y
         local target_y = (self.height / 2) - card_x * 0.3
-        return target_x, target_y, math.pi / 2
+        return target_x, target_y, math.pi / 2 + offset_rot
     end
 
     return self.center_x, self.height / 2, 0

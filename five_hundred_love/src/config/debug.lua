@@ -3,7 +3,7 @@
 
 local Debug = {
     -- Audio System
-    AUDIO = false,              -- AudioManager play calls and sound loading
+    AUDIO = true,              -- AudioManager play calls and sound loading
     
     -- UI Animations
     ANIMATION = false,          -- Animation progress and state changes
@@ -11,7 +11,7 @@ local Debug = {
     CHAT_ANIM = false,          -- Chat panel slide animation
     
     -- Game State
-    GAME_STATE = true,          -- Game phase transitions (BIDDING, PLAYING, etc.)
+    GAME_STATE = false,          -- Game phase transitions (BIDDING, PLAYING, etc.)
     DEAL = false,               -- Card dealing animation
     
     -- User Interactions

@@ -127,14 +127,38 @@ function TableView:resize(w, h)
 end
 
 function TableView:on_card_played(p_idx, card, power)
-    if p_idx == 1 then
-        if gAudioManager then gAudioManager:play("CARD_SLIDE") end
-        return
-    end -- P1 cards don't animate
+    -- Get card index in hand
+    local card_idx = nil
+    local player = self.game.players[p_idx]
+    if player then
+        for i, c in ipairs(player.hand) do
+            if c == card then
+                card_idx = i
+                break
+            end
+        end
+    end
 
     -- Determine start position based on player index
     local start_x, start_y
-    if p_idx == 2 then start_x, start_y = 50, self.center_y
+    if p_idx == 1 then 
+        if self.pending_drag_pos then
+            -- Use Drag Drop Position
+            start_x = self.pending_drag_pos.x
+            start_y = self.pending_drag_pos.y
+            self.pending_drag_pos = nil -- Consumption
+        else
+            -- P1: Start from Hand Position (Approximate)
+            local spread = 35
+            local count = player and #player.hand or 10
+            local center_offset = (count - 1) * spread / 2
+            local idx = card_idx or (count / 2)
+            local x_offset = (idx - 1) * spread - center_offset
+            
+            start_x = self.center_x + x_offset
+            start_y = self.height + 50 -- Start slightly off-screen bottom
+        end
+    elseif p_idx == 2 then start_x, start_y = 50, self.center_y
     elseif p_idx == 3 then start_x, start_y = self.center_x, 50
     elseif p_idx == 4 then start_x, start_y = self.width - 50, self.center_y
     else return end
@@ -150,18 +174,6 @@ function TableView:on_card_played(p_idx, card, power)
     local end_x = self.center_x + offset.x - 40
     local end_y = self.center_y + offset.y - 55
 
-    -- Get card index in hand
-    local card_idx = nil
-    local player = self.game.players[p_idx]
-    if player then
-        for i, c in ipairs(player.hand) do
-            if c == card then
-                card_idx = i
-                break
-            end
-        end
-    end
-
     -- Queue animation via AnimationManager
     local anim = self.anim
     anim:queue({
@@ -174,8 +186,20 @@ function TableView:on_card_played(p_idx, card, power)
         duration = 0.3,
         card_idx = card_idx,
         power = power, -- Pass power level (0-1)
+        play_sound = false,
         on_complete = function()
             anim:mark_card_dealt(card)
+            
+            -- Emit particles on land (for everyone)
+             if self.particles then
+                self.particles:emit({
+                    x = end_x,
+                    y = end_y,
+                    count = 15,
+                    speed = 150,
+                    color = {1, 1, 0.5}
+                })
+             end
         end
     })
 
@@ -391,6 +415,72 @@ function TableView:update(dt)
             self:on_drag_end()
         end
     end
+    
+    -- Update Delay Feedback
+    if self.trick_feedback then
+        local fb = self.trick_feedback
+        fb.timer = fb.timer + dt
+        
+        if fb.timer > fb.delay then
+            -- Trigger Effect
+            if not fb.sound_played then
+                if gAudioManager then gAudioManager:play(fb.sound, {volume=0.9}) end
+                fb.sound_played = true
+            end
+            
+            -- Animate Text with Easing
+            -- Normalized progress (0.0 to 1.0) over duration
+            local elapsed = fb.timer - fb.delay
+            local fade_in_dur = 0.3
+            local fade_out_start = fb.duration - 0.4 -- Fast wipe at end
+            
+            -- ENTRY: Pop & Spin
+            local t = math.min(1.0, elapsed / 0.3)
+            -- easeOutBack
+            local c1 = 1.70158
+            local c3 = c1 + 1
+            local ease_t = 1 + c3 * (t - 1)^3 + c1 * (t - 1)^2
+            
+            fb.scale = 0.5 + (ease_t * 0.5) -- Pop from 0.5 to 1.0
+            
+            -- Spin In (Dampen rotation to 0)
+            fb.rotation = fb.rotation * (1.0 - math.min(1.0, dt * 10)) -- Exponential decay to 0
+            
+            -- EXIT: Wipe Out & Fade
+            local wipe_dur = 0.5
+            local fade_out_start = fb.duration - wipe_dur
+            
+            if elapsed > fade_out_start then
+                local out_elapsed = elapsed - fade_out_start
+                local out_t = math.min(1.0, out_elapsed / wipe_dur)
+                
+                -- Smooth Wipe (easeInOutCubic)
+                -- t < 0.5 ? 4*t*t*t : 1 - (-2*t+2)^3 / 2
+                local wipe_ease
+                if out_t < 0.5 then
+                     wipe_ease = 4 * out_t * out_t * out_t
+                else
+                     wipe_ease = 1 - math.pow(-2 * out_t + 2, 3) / 2
+                end
+                
+                fb.scale_wipe = 1.0 - wipe_ease
+                fb.alpha = 1.0 - out_t
+            else
+                -- Hold Logic
+                if elapsed < fade_in_dur then
+                     fb.alpha = elapsed / fade_in_dur
+                else
+                     fb.alpha = 1.0
+                end
+                fb.scale_wipe = 1.0
+            end
+        end
+        
+        -- Expire
+        if fb.timer > (fb.delay + fb.duration) then
+            self.trick_feedback = nil
+        end
+    end
 end
 
 function TableView:on_trick_complete(data)
@@ -419,6 +509,27 @@ function TableView:on_trick_complete(data)
              gravity = 500
          })
     end
+    
+    -- Delay Feedback Logic
+    local is_friendly = (data.winner.name == "You" or data.winner.name == "Partner")
+    local text = is_friendly and "Trick Won" or "Trick Lost"
+    local color = is_friendly and {0.2, 0.8, 0.2, 1} or {0.9, 0.2, 0.2, 1}
+    local sound = is_friendly and "TRICK_WON" or "TRICK_LOST"
+    
+    -- Setup feedback state
+    self.trick_feedback = {
+        text = text,
+        color = color,
+        alpha = 0,
+        scale = 0.5,
+        scale_wipe = 1.0, -- For wipe out
+        rotation = (love.math.random() - 0.5) * 0.5, -- Random start rotation (-0.25 to 0.25 rad)
+        timer = 0,
+        duration = 1.6, -- Reduced duration (from 2.0)
+        delay = 0.6,    -- Wait before showing (let slam settle)
+        sound = sound,
+        sound_played = false
+    }
 end
 
 function TableView:draw()
@@ -498,15 +609,28 @@ function TableView:draw()
             
             -- Z-Axis Slam Effect (Scaling)
             local current_scale = 1.0
+            local shadow_boost = 0
+            
             if (anim.power or 0) > 0.4 then
                 -- Parabolic arc for Z-axis: sin(0..pi)
-                -- Scale up to 1.5x for max power
                 local z_arc = math.sin(progress * math.pi)
-                local scale_boost = (anim.power or 0) * 0.8 * z_arc -- Boost up to +0.8x scale
+                
+                -- Massive scale boost (up to 2.2x total scale)
+                local lift_amount = (anim.power or 0) * z_arc
+                local scale_boost = lift_amount * 1.2 
                 current_scale = 1.0 + scale_boost
+                
+                -- Shadow floats away significantly to sell "height"
+                -- Base 10 + extra 50 px based on lift
+                shadow_boost = lift_amount * 50
             end
 
-            local params = {scale_x = current_scale, scale_y = current_scale, rotation = curr_rot, shadow_offset = 10 * current_scale}
+            local params = {
+                scale_x = current_scale, 
+                scale_y = current_scale, 
+                rotation = curr_rot, 
+                shadow_offset = 10 + shadow_boost
+            }
             local face_up = not is_dealing
             CardRenderer.draw_card(anim.card, curr_x, curr_y, self.card_scale, face_up, false, params)
         end
@@ -968,6 +1092,67 @@ function TableView:draw_player_hand(player_idx, x, y, is_human, rotation)
     if is_human and self.hand_view then
         self.hand_view.card_rects = self.hand_card_rects
     end
+    
+end
+
+function TableView:draw_feedback_overlay()
+    -- Draw Delay Feedback Overlay (Top Layer)
+    if self.trick_feedback and self.trick_feedback.alpha > 0 then
+        love.graphics.setScissor() -- Force clear any clips
+        
+        local fb = self.trick_feedback
+        love.graphics.push()
+        love.graphics.origin() 
+        
+        love.graphics.translate(self.center_x, self.center_y)
+        love.graphics.rotate(fb.rotation) -- Spin
+        
+        -- Scale: Base(1.5) * Anim(1.0)
+        -- Reduced base scale to minimize blur with current font asset
+        local base_s = 1.5 
+        local sx = base_s * fb.scale
+        local sy = base_s * fb.scale
+        love.graphics.scale(sx, sy)
+        
+        -- Use Large Font
+        local old_font = love.graphics.getFont()
+        if gFonts and gFonts.large then
+            love.graphics.setFont(gFonts.large)
+        end
+        
+        -- WIPE MASKS (using Scissor)
+        local wipe_prog = fb.scale_wipe -- goes 1.0 -> 0.0
+        
+        -- Rotation is effectively 0 during wipe, so Scissor is safe.
+        -- Calculate screen coordinates for the text area
+        local width = 500 * sx -- Wide enough to cover text + outline
+        local height = 200 * sy
+        local left = self.center_x - (width / 2)
+        local top = self.center_y - (height / 2)
+        
+        -- Apply Scissor for Wipe (Right to Left)
+        -- Width reduces from Full to 0
+        if wipe_prog < 1.0 then -- Optimization: only scissor if wiping
+             love.graphics.setScissor(left, top, width * wipe_prog, height)
+        end
+        
+        -- Text Outline
+        local outline_alpha = fb.alpha * 1.0
+        love.graphics.setColor(0, 0, 0, outline_alpha)
+        local offsets = {{-2,0}, {2,0}, {0,-2}, {0,2}, {-1.5,-1.5}, {1.5,1.5}, {1.5,-1.5}, {-1.5,1.5}}
+        for _, off in ipairs(offsets) do
+             love.graphics.printf(fb.text, -200 + off[1], -24 + off[2], 400, "center")
+        end
+        
+        -- Main Text
+        love.graphics.setColor(fb.color[1], fb.color[2], fb.color[3], fb.alpha)
+        love.graphics.printf(fb.text, -200, -24, 400, "center") 
+        
+        love.graphics.setScissor() -- Disable Scissor
+        
+        love.graphics.setFont(old_font)
+        love.graphics.pop()
+    end
 end
 
 function TableView:draw_kitty()
@@ -1142,46 +1327,25 @@ function TableView:on_drag_end()
         for _, c in ipairs(playable) do if c == card then is_valid = true break end end
         
         if is_valid then
-            -- Determine anim start pos
-            local start_x, start_y
-            if dist_drag < 10 then
-                 -- From Hand Pos
-                 start_x = self.center_x + d.orig_x
-                 start_y = (self.height - 100) + d.orig_y
+            -- If dragged significantly, store drop position for on_card_played
+            if dist_drag >= 10 then
+                 -- Start from current visual position (Mouse - Offset)
+                 local start_x = mx - d.offset_x
+                 local start_y = my - d.offset_y
+                 self.pending_drag_pos = {x=start_x, y=start_y}
+            end
+            -- Else (Click): Leave pending nil, on_card_played will calc hand pos
+
+            -- Call Game Logic Directly (Animation handled by callback)
+            local success, err = self.game:player_play_card(1, card)
+            
+            if success then
+                if gChatLog then gChatLog:add_message("You", {string.format("Plays %s", tostring(card))}, true) end
             else
-                 -- From Mouse Pos - Offset
-                 start_x = mx - d.offset_x
-                 start_y = my - d.offset_y
+                self.pending_drag_pos = nil -- Clear if failed
+                if gChatLog then gChatLog:add_message("System", {"Invalid Move"}, false, {1,0,0}) end
             end
             
-            local start_scale = 1.0
-            
-            -- Use same position calculation as on_card_played
-            local positions = {
-                [1] = {x=0, y=90},  -- Bottom Played
-            }
-            local offset = positions[1]
-            local end_x = self.center_x + offset.x - 40
-            local end_y = self.center_y + offset.y - 55
-
-            local anim = self.anim
-            self:play_card_animation(1, card, start_x, start_y, end_x, end_y, 0.3, d.idx, function()
-                self.particles:emit({
-                    x = end_x,
-                    y = end_y,
-                    count = 15,
-                    speed = 150,
-                    color = {1, 1, 0.5}
-                })
-
-                -- Mark when card landed
-                anim:mark_card_dealt(card)
-
-                local success, err = self.game:player_play_card(1, card)
-                if success then
-                    if gChatLog then gChatLog:add_message("You", {string.format("Plays %s", tostring(card))}, true) end
-                end
-            end, start_scale) 
             return
         else
             -- Invalid: Shake/Reject?

@@ -150,14 +150,7 @@ local function register_callbacks()
             gTableView:on_trick_complete(data)
         end
         
-        -- Audio & Shake
-        if gAudioManager then
-            if is_friendly then
-                gAudioManager:play("TRICK_WON", {volume=0.9})
-            else
-                gAudioManager:play("TRICK_LOST", {volume=0.8})
-            end
-        end
+        -- Audio & Shake handled by TableView with delay
     end)
     
     gGame:set_on_round_end(function(data)
@@ -198,6 +191,17 @@ local function reload_ui()
     Config = require "src.config"
     AI_DELAY = Config.game.ai_delay
     gDebugMode = Config.debug.auto_start
+    
+    -- Reload Audio Manager (to pick up sound file changes)
+    package.loaded["src.core.audio_manager"] = nil
+    local NewAudioManager = require "src.core.audio_manager"
+    local old_am_enabled = gAudioManager and gAudioManager.enabled or true
+    local old_am_vol = gAudioManager and gAudioManager.volume or 1.0
+    
+    gAudioManager = NewAudioManager.new()
+    gAudioManager.enabled = old_am_enabled
+    gAudioManager.volume = old_am_vol
+    print("[Main] Audio Manager Reloaded")
     
     -- Re-init Chat Log (persisting messages)
     local old_msgs = gChatLog and gChatLog.messages or {}
@@ -575,6 +579,8 @@ function love.draw()
     
     gTableView:draw()
     gChatLog:draw()
+    -- Draw Overlay last to be on top
+    gTableView:draw_feedback_overlay()
     
     -- Draw Loading Overlay
     if gAppState == "LOADING" then
