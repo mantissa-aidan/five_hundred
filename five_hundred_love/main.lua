@@ -238,7 +238,10 @@ function love.load()
     
     gGame = Game.new(player_names, team_names)
     gStrategies[1] = HumanStrategy.new()
-    
+
+    -- Enable Roguelike Mode
+    gGame:start_roguelike_run()
+
     -- Initialize View
     local screen_w = love.graphics.getWidth()
     local screen_h = love.graphics.getHeight()

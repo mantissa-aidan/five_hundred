@@ -69,6 +69,11 @@ function HUDView:draw()
     local x, y = 20, 20
     local w, h = 260, 320
 
+    -- Adjust height for roguelike mode
+    if self.game:is_roguelike() then
+        h = h + 120  -- Add extra space for roguelike HUD
+    end
+
     -- Panel BG
     love.graphics.setColor(0, 0, 0, 0.9)
     love.graphics.rectangle("fill", x, y, w, h, 12, 12)
@@ -80,6 +85,73 @@ function HUDView:draw()
 
     local left_pad = x + 15
     local cursor_y = y + 15
+
+    -- ROGUELIKE MODE HUD
+    if self.game:is_roguelike() then
+        -- Title
+        love.graphics.setColor(1, 0.8, 0.2)
+        if gFonts and gFonts.medium then love.graphics.setFont(gFonts.medium) end
+        love.graphics.printf("ROGUELIKE MODE", x, cursor_y, w, "center")
+        cursor_y = cursor_y + 30
+
+        -- Round number
+        love.graphics.setColor(0.9, 0.9, 0.9)
+        if gFonts and gFonts.small then love.graphics.setFont(gFonts.small) end
+        love.graphics.print("Round " .. self.game.run_state.current_round, left_pad, cursor_y)
+        cursor_y = cursor_y + 20
+
+        -- Total Score
+        love.graphics.setColor(0.4, 1, 0.4)
+        if gFonts and gFonts.medium then love.graphics.setFont(gFonts.medium) end
+        love.graphics.print("Total:", left_pad, cursor_y)
+        love.graphics.print(self.game.run_state:get_formatted_score(), left_pad + 100, cursor_y)
+        cursor_y = cursor_y + 25
+
+        -- Round Score / Target
+        love.graphics.setColor(1, 1, 1)
+        if gFonts and gFonts.small then love.graphics.setFont(gFonts.small) end
+        love.graphics.print("Round:", left_pad, cursor_y)
+
+        local round_score = self.game.run_state:get_formatted_round_score()
+        local target = self.game.run_state:get_formatted_target()
+        local progress_text = string.format("%s / %s", round_score, target)
+        love.graphics.print(progress_text, left_pad + 60, cursor_y)
+        cursor_y = cursor_y + 20
+
+        -- Progress bar
+        local bar_x = left_pad
+        local bar_y = cursor_y
+        local bar_w = w - 30
+        local bar_h = 12
+        local progress = self.game.run_state:get_subgoal_progress()
+
+        -- Background
+        love.graphics.setColor(0.2, 0.2, 0.2)
+        love.graphics.rectangle("fill", bar_x, bar_y, bar_w, bar_h, 4, 4)
+
+        -- Progress fill
+        local fill_w = bar_w * progress
+        if progress >= 1.0 then
+            love.graphics.setColor(0.2, 1, 0.2)  -- Green when complete
+        elseif progress >= 0.75 then
+            love.graphics.setColor(1, 1, 0.2)  -- Yellow when close
+        else
+            love.graphics.setColor(0.4, 0.6, 1)  -- Blue normally
+        end
+        love.graphics.rectangle("fill", bar_x, bar_y, fill_w, bar_h, 4, 4)
+
+        -- Border
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.setLineWidth(1)
+        love.graphics.rectangle("line", bar_x, bar_y, bar_w, bar_h, 4, 4)
+
+        cursor_y = cursor_y + 25
+
+        -- Separator
+        love.graphics.setColor(0.5, 0.5, 0.5)
+        love.graphics.line(left_pad, cursor_y, x + w - 15, cursor_y)
+        cursor_y = cursor_y + 15
+    end
 
     -- Data Prep
     local bid = self.game.winning_bid

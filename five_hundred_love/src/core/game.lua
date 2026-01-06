@@ -10,6 +10,10 @@ local Rank = CardModule.Rank
 local Bid = BidModule.Bid
 local BidType = BidModule.BidType
 
+-- Roguelike mode components
+local RunState = require "src.core.run_state"
+local ScoringEngine = require "src.core.scoring_engine"
+
 local Game = Utils.class("Game")
 
 -- Game States
@@ -62,9 +66,14 @@ function Game:init(player_names, team_names)
     
     self.message_log = {}
     self.on_card_play_callback = nil
-    
+
     -- AI timer for pacing bot actions (controller manages this)
     self.ai_timer = 0
+
+    -- Roguelike mode (optional, initialized via start_roguelike_run())
+    self.run_state = nil
+    self.scoring_engine = nil
+    self.mode = "TRADITIONAL"  -- "TRADITIONAL" or "ROGUELIKE"
 end
 
 function Game:set_on_card_play(callback)
@@ -92,6 +101,19 @@ function Game:set_on_round_end(callback)
     self.on_round_end_callback = callback
 end
 
+-- Start a roguelike run
+function Game:start_roguelike_run()
+    self.mode = "ROGUELIKE"
+    self.run_state = RunState.new()
+    self.scoring_engine = ScoringEngine.new(self.run_state)
+    self:log("Roguelike mode started! Target: " .. self.run_state.subgoal_target)
+end
+
+-- Check if currently in roguelike mode
+function Game:is_roguelike()
+    return self.mode == "ROGUELIKE"
+end
+
 function Game:log(msg)
     print("[GAME] " .. msg)
     table.insert(self.message_log, msg)
@@ -99,7 +121,14 @@ end
 
 function Game:start_new_round()
     if self.state == Game.STATE.GAME_OVER then return end
-    
+
+    -- Advance roguelike round if in roguelike mode
+    if self:is_roguelike() and self.state == Game.STATE.ROUND_OVER then
+        self.scoring_engine:new_round()
+        self:log(string.format("=== ROUND %d ===", self.run_state.current_round))
+        self:log(string.format("New Target: %s", self.run_state:get_formatted_target()))
+    end
+
     self:log("Starting New Round")
     self.dealer_idx = (self.dealer_idx % 4) + 1
     self:deal_cards()
@@ -419,7 +448,41 @@ function Game:player_play_card(player_idx, card)
     player:play_card(card)
     table.insert(self.current_trick, {player=player, card=card})
     table.insert(self.cards_played_this_round, card)
-    
+
+    -- Roguelike scoring: Score the card play
+    if self:is_roguelike() then
+        local eff_suit = self:get_effective_suit(card, self.trump_suit)
+        local is_trump = (eff_suit == self.trump_suit)
+        local is_bower = false
+
+        -- Check if right bower (Jack of trump)
+        if card.rank == Rank.JACK and card.suit == self.trump_suit then
+            is_bower = true
+        end
+
+        -- Check if left bower (Jack of same color)
+        if card.rank == Rank.JACK and self.trump_suit then
+            local left_bower_suit = nil
+            if self.trump_suit == Suit.SPADES then left_bower_suit = Suit.CLUBS
+            elseif self.trump_suit == Suit.CLUBS then left_bower_suit = Suit.SPADES
+            elseif self.trump_suit == Suit.DIAMONDS then left_bower_suit = Suit.HEARTS
+            elseif self.trump_suit == Suit.HEARTS then left_bower_suit = Suit.DIAMONDS
+            end
+            if card.suit == left_bower_suit then
+                is_bower = true
+            end
+        end
+
+        local points = self.scoring_engine:score_card_played({
+            card = card,
+            player_id = player_idx,
+            is_trump = is_trump,
+            is_bower = is_bower
+        })
+
+        self:log(string.format("%s played %s for %d points", player.name, tostring(card), points))
+    end
+
     if #self.current_trick == 1 then
         self.lead_suit = self:get_effective_suit(card, self.trump_suit)
     end
@@ -450,7 +513,21 @@ function Game:resolve_trick()
     winner:increment_tricks_won()
     self:log("Trick won by " .. winner.name)
     table.insert(self.tricks_history, {winner=winner, cards=self.current_trick})
-    
+
+    -- Roguelike scoring: Score the trick win
+    if self:is_roguelike() then
+        local winner_idx = self:get_player_index(winner)
+        local trick_number = #self.tricks_history
+
+        local points = self.scoring_engine:score_trick_won({
+            winner_player_id = winner_idx,
+            trick_number = trick_number
+        })
+
+        local streak = self.run_state.streak_states.consecutive_tricks.count
+        self:log(string.format("Trick scored %d points (Streak: %dx)", points, streak))
+    end
+
     if self.on_trick_complete_callback then
         local trick_num = #self.tricks_history
         
@@ -516,32 +593,81 @@ function Game:score_round()
         total_tricks = total_tricks + (p.tricks_won_this_round or 0)
     end
     
-    -- Update Scores
-    if total_tricks >= self.winning_bid.tricks then
-        self:log("Contract Made!")
-        declarer_team:update_score(self.winning_bid.points)
-    else
-        self:log("Contract Failed!")
-        declarer_team:update_score(-self.winning_bid.points)
-    end
-    
-    -- Trigger Hook with UPDATED scores (also clears animations via callback)
-    if self.on_round_end_callback then
-        self.on_round_end_callback({
-            team_a_score = self.teams[1].score, 
-            team_b_score = self.teams[2].score
-        })
-    end
-    
-    -- Check for game over (500 points or -500 points)
-    local game_over = false
-    for _, team in ipairs(self.teams) do
-        if team.score >= 500 or team.score <= -500 then
-            game_over = true
-            break
+    -- Update Scores (Traditional Mode)
+    local contract_success = (total_tricks >= self.winning_bid.tricks)
+    if not self:is_roguelike() then
+        if contract_success then
+            self:log("Contract Made!")
+            declarer_team:update_score(self.winning_bid.points)
+        else
+            self:log("Contract Failed!")
+            declarer_team:update_score(-self.winning_bid.points)
         end
     end
-    
+
+    -- Roguelike scoring: Score the contract and check subgoal
+    if self:is_roguelike() then
+        -- Determine if this player's team is defending
+        local is_defending = (declarer_team ~= self.teams[1])  -- Assume player is always on team 1
+
+        local points = self.scoring_engine:score_contract({
+            bid_value = self.winning_bid.points,
+            success = contract_success,
+            is_defending = is_defending
+        })
+
+        if contract_success then
+            self:log(string.format("Contract Made! +%d points", points))
+        else
+            self:log(string.format("Contract Failed. +%d points", points))
+        end
+
+        -- Check subgoal
+        local met, message = self.scoring_engine:check_subgoal()
+        if met then
+            self:log(string.format("Round %d complete! Score: %s / %s",
+                self.run_state.current_round,
+                self.run_state:get_formatted_round_score(),
+                self.run_state:get_formatted_target()))
+        else
+            self:log("Game Over: " .. message)
+        end
+    end
+
+    -- Trigger Hook with UPDATED scores (also clears animations via callback)
+    if self.on_round_end_callback then
+        local callback_data = {
+            team_a_score = self.teams[1].score,
+            team_b_score = self.teams[2].score
+        }
+
+        -- Add roguelike data if in roguelike mode
+        if self:is_roguelike() then
+            callback_data.roguelike_score = self.run_state.total_score
+            callback_data.roguelike_round_score = self.run_state.round_score
+            callback_data.roguelike_target = self.run_state.subgoal_target
+            callback_data.roguelike_round = self.run_state.current_round
+        end
+
+        self.on_round_end_callback(callback_data)
+    end
+
+    -- Check for game over (500 points or -500 points in traditional, subgoal fail in roguelike)
+    local game_over = false
+
+    if self:is_roguelike() then
+        -- In roguelike mode, game over if subgoal not met
+        game_over = self.run_state.is_game_over
+    else
+        -- Traditional mode: check team scores
+        for _, team in ipairs(self.teams) do
+            if team.score >= 500 or team.score <= -500 then
+                game_over = true
+                break
+            end
+        end
+    end
+
     if game_over then
         self.state = Game.STATE.GAME_OVER
         self:log("Game Over!")
