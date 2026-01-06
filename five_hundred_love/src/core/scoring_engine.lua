@@ -168,16 +168,21 @@ function ScoringEngine:score_contract(context)
 end
 
 -- Update streak when a trick is won
+-- Only counts consecutive wins by P1's team (Team A: players 1 and 3)
 function ScoringEngine:update_trick_streak(winner_id)
     local streak = self.run_state.streak_states.consecutive_tricks
 
-    if streak.player_id == winner_id then
-        -- Same player won again, increment streak
+    -- Check if winner is on P1's team (Team A = players 1 and 3)
+    local is_team_a = (winner_id == 1 or winner_id == 3)
+
+    if is_team_a then
+        -- Team A won, increment streak
         streak.count = streak.count + 1
-    else
-        -- Different player won, reset streak
-        streak.count = 1
         streak.player_id = winner_id
+    else
+        -- Opponent won, reset streak
+        streak.count = 0
+        streak.player_id = nil
     end
 
     -- Update in run state
@@ -185,11 +190,21 @@ function ScoringEngine:update_trick_streak(winner_id)
 end
 
 -- Update streaks based on card played
+-- Only tracks P1's cards (player_id == 1)
 function ScoringEngine:update_card_streaks(context)
     local card = context.card
     local is_trump = context.is_trump
+    local player_id = context.player_id
 
-    -- Suit streak: Track consecutive cards of same suit (NOT effective suit, actual suit)
+    -- Increment stats for all players
+    self.run_state.stats.total_cards_played = self.run_state.stats.total_cards_played + 1
+
+    -- Only track streaks for P1
+    if player_id ~= 1 then
+        return
+    end
+
+    -- Suit streak: Track consecutive cards of same suit played by P1
     local suit_streak = self.run_state.streak_states.same_suit_played
     if suit_streak.suit == card.suit then
         suit_streak.count = suit_streak.count + 1
@@ -199,7 +214,7 @@ function ScoringEngine:update_card_streaks(context)
     end
     self.run_state:update_streak("same_suit_played", suit_streak)
 
-    -- Trump streak: Track consecutive trump cards
+    -- Trump streak: Track consecutive trump cards played by P1
     local trump_streak = self.run_state.streak_states.trump_streak
     if is_trump then
         trump_streak.count = trump_streak.count + 1
@@ -208,7 +223,7 @@ function ScoringEngine:update_card_streaks(context)
     end
     self.run_state:update_streak("trump_streak", trump_streak)
 
-    -- High card streak: Track consecutive high cards (Jack or higher)
+    -- High card streak: Track consecutive high cards played by P1 (Jack or higher)
     local high_card_streak = self.run_state.streak_states.high_card_streak
     local is_high_card = (card.rank >= 11)  -- Jack=11, Queen=12, King=13, Ace=14, Joker=100
     if is_high_card then
@@ -217,9 +232,6 @@ function ScoringEngine:update_card_streaks(context)
         high_card_streak.count = 0
     end
     self.run_state:update_streak("high_card_streak", high_card_streak)
-
-    -- Increment stats
-    self.run_state.stats.total_cards_played = self.run_state.stats.total_cards_played + 1
 end
 
 -- Check if subgoal is met at end of round
