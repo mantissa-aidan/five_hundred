@@ -3,6 +3,7 @@
 -- Processes scoring events and updates RunState
 
 local ScoringConfig = require "src.config.scoring"
+local ModifierManager = require "src.core.modifier_manager"
 
 local ScoringEngine = {}
 ScoringEngine.__index = ScoringEngine
@@ -12,25 +13,41 @@ function ScoringEngine.new(run_state)
 
     self.run_state = run_state
     self.current_trick_cards = {}  -- Store card points for current trick
+    self.current_trick_plays = {}  -- Store full play info for snap detection
+
+    -- Initialize modifier manager
+    self.modifier_manager = ModifierManager.new(run_state)
 
     return self
 end
 
+-- Get the modifier manager (for external access)
+function ScoringEngine:get_modifier_manager()
+    return self.modifier_manager
+end
+
 -- Score a card being played
--- context = {card, player_id, is_trump, is_bower}
+-- context = {card, player_id, is_trump, is_bower, player}
 function ScoringEngine:score_card_played(context)
-    local rank = context.card.rank
+    local card = context.card
+    local rank = card.rank
     local is_trump = context.is_trump or false
     local is_bower = context.is_bower or false
 
-    -- Get active modifiers for card scoring
-    local modifiers = self.run_state:get_modifiers_by_type("SCORING")
+    -- Calculate base points from config
+    local points = ScoringConfig.calculate_card_points(rank, is_trump, is_bower, {})
 
-    -- Calculate points
-    local points = ScoringConfig.calculate_card_points(rank, is_trump, is_bower, modifiers)
+    -- Apply modifier bonuses to card scoring
+    points = self.modifier_manager:apply_card_scoring(card, is_trump, is_bower, points)
 
     -- Store for trick calculation
     table.insert(self.current_trick_cards, points)
+
+    -- Store play info for snap detection
+    table.insert(self.current_trick_plays, {
+        player = context.player or {index = context.player_id},
+        card = card
+    })
 
     -- Add to round score
     self.run_state:add_score(points)
@@ -70,15 +87,30 @@ function ScoringEngine:score_trick_won(context)
     -- Combine all multipliers (multiplicative stacking)
     local combined_multiplier = consecutive_mult * suit_mult * trump_mult * high_card_mult
 
-    -- Get active modifiers
-    local modifiers = self.run_state:get_modifiers_by_type("SCORING")
-
-    -- Calculate trick points
+    -- Calculate base trick points
     local points = ScoringConfig.calculate_trick_points(
         self.current_trick_cards,
         combined_multiplier,
-        modifiers
+        {}
     )
+
+    -- Check for snap condition (matching partner's rank)
+    local snap_triggered = self.modifier_manager:check_snap(self.current_trick_plays, 1)
+
+    -- Apply modifier bonuses to trick scoring
+    points = self.modifier_manager:apply_trick_scoring(
+        self.current_trick_plays,
+        combined_multiplier,
+        points
+    )
+
+    -- Apply snap bonus if triggered
+    if snap_triggered then
+        points = points * 10
+        self.snap_triggered = true  -- Flag for UI feedback
+    else
+        self.snap_triggered = false
+    end
 
     -- Add to round score
     self.run_state:add_score(points)
@@ -86,11 +118,15 @@ function ScoringEngine:score_trick_won(context)
     -- Update consecutive tricks streak
     self:update_trick_streak(winner_id)
 
-    -- Clear trick cards for next trick
+    -- Clear trick data for next trick
     self.current_trick_cards = {}
+    self.current_trick_plays = {}
 
     -- Update stats
     self.run_state.stats.total_tricks_won = self.run_state.stats.total_tricks_won + 1
+
+    -- Tick modifier durations
+    self.modifier_manager:tick("TRICK")
 
     return points
 end
@@ -102,12 +138,16 @@ function ScoringEngine:score_contract(context)
     local success = context.success
     local is_defending = context.is_defending or false
 
+    -- Calculate base contract points
     local points
     if is_defending then
         points = ScoringConfig.calculate_defense_bonus(bid_value, success)
     else
         points = ScoringConfig.calculate_contract_bonus(bid_value, success)
     end
+
+    -- Apply modifier bonuses to contract scoring
+    points = self.modifier_manager:apply_contract_scoring(bid_value, success, is_defending, points)
 
     -- Add to round score
     self.run_state:add_score(points)
@@ -120,6 +160,9 @@ function ScoringEngine:score_contract(context)
             self.run_state.stats.contracts_failed = self.run_state.stats.contracts_failed + 1
         end
     end
+
+    -- Tick modifier durations at round end
+    self.modifier_manager:tick("ROUND")
 
     return points
 end
