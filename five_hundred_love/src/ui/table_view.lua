@@ -8,6 +8,7 @@ local AnimationManager = require "src.ui.animation_manager"
 local HUDView = require "src.ui.hud_view"
 local TrickView = require "src.ui.trick_view"
 local HandView = require "src.ui.hand_view"
+local StreakIndicatorView = require "src.ui.streak_indicator_view"
 
 local TableView = Utils.class("TableView")
 local ParticleSystem = require "src.ui.particle_system"
@@ -52,7 +53,10 @@ function TableView:init(game)
 
     -- Hand View (extracted component - manages spring physics)
     self.hand_view = HandView.new(game, self.card_scale, self.center_x, self.height, self.anim)
-    
+
+    -- Streak Indicator View (shows active streaks in roguelike mode)
+    self.streak_view = StreakIndicatorView.new(game, self.width, self.height)
+
     -- UI Buttons
     self.next_trick_btn = Button.new(0, 0, 200, 60, "Next Trick", "action", function()
         self.game:next_trick()
@@ -113,7 +117,10 @@ function TableView:resize(w, h)
     if self.hand_view then
         self.hand_view:resize(self.center_x, self.height)
     end
-    
+    if self.streak_view then
+        self.streak_view:resize(self.width, self.height)
+    end
+
     -- Update Button Positions
     if self.next_trick_btn then
         self.next_trick_btn.x = self.center_x - self.next_trick_btn.w/2
@@ -384,6 +391,11 @@ function TableView:update(dt)
         self.hud_view:update(dt)
     end
 
+    -- Update Streak Indicator (via StreakIndicatorView)
+    if self.streak_view then
+        self.streak_view:update(dt)
+    end
+
     -- Update drag position
     if self.dragged_card then
         if not love.mouse.isDown(1) then
@@ -473,6 +485,11 @@ function TableView:draw()
 
     if self.game.state == "ROUND_OVER" and self.hud_view then
         self.hud_view:draw_round_over_modal()
+    end
+
+    -- Draw Streak Indicators (via StreakIndicatorView)
+    if self.streak_view then
+        self.streak_view:draw()
     end
 
     -- Draw Animations (via AnimationManager)

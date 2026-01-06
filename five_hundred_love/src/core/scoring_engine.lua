@@ -46,9 +46,29 @@ end
 function ScoringEngine:score_trick_won(context)
     local winner_id = context.winner_player_id
 
-    -- Get streak multiplier
-    local streak_count = self.run_state.streak_states.consecutive_tricks.count
-    local streak_multiplier = ScoringConfig.get_streak_multiplier("consecutive_tricks", streak_count)
+    -- Get ALL streak multipliers and combine them
+    local consecutive_mult = ScoringConfig.get_streak_multiplier(
+        "consecutive_tricks",
+        self.run_state.streak_states.consecutive_tricks.count
+    )
+
+    local suit_mult = ScoringConfig.get_streak_multiplier(
+        "same_suit_played",
+        self.run_state.streak_states.same_suit_played.count
+    )
+
+    local trump_mult = ScoringConfig.get_streak_multiplier(
+        "trump_streak",
+        self.run_state.streak_states.trump_streak.count
+    )
+
+    local high_card_mult = ScoringConfig.get_streak_multiplier(
+        "high_card_streak",
+        self.run_state.streak_states.high_card_streak.count
+    )
+
+    -- Combine all multipliers (multiplicative stacking)
+    local combined_multiplier = consecutive_mult * suit_mult * trump_mult * high_card_mult
 
     -- Get active modifiers
     local modifiers = self.run_state:get_modifiers_by_type("SCORING")
@@ -56,7 +76,7 @@ function ScoringEngine:score_trick_won(context)
     -- Calculate trick points
     local points = ScoringConfig.calculate_trick_points(
         self.current_trick_cards,
-        streak_multiplier,
+        combined_multiplier,
         modifiers
     )
 
@@ -123,11 +143,39 @@ end
 
 -- Update streaks based on card played
 function ScoringEngine:update_card_streaks(context)
-    -- TODO: Implement suit streak tracking
-    -- TODO: Implement trump streak tracking
-    -- TODO: Implement high card streak tracking
+    local card = context.card
+    local is_trump = context.is_trump
 
-    -- For now, just increment stats
+    -- Suit streak: Track consecutive cards of same suit (NOT effective suit, actual suit)
+    local suit_streak = self.run_state.streak_states.same_suit_played
+    if suit_streak.suit == card.suit then
+        suit_streak.count = suit_streak.count + 1
+    else
+        suit_streak.count = 1
+        suit_streak.suit = card.suit
+    end
+    self.run_state:update_streak("same_suit_played", suit_streak)
+
+    -- Trump streak: Track consecutive trump cards
+    local trump_streak = self.run_state.streak_states.trump_streak
+    if is_trump then
+        trump_streak.count = trump_streak.count + 1
+    else
+        trump_streak.count = 0
+    end
+    self.run_state:update_streak("trump_streak", trump_streak)
+
+    -- High card streak: Track consecutive high cards (Jack or higher)
+    local high_card_streak = self.run_state.streak_states.high_card_streak
+    local is_high_card = (card.rank >= 11)  -- Jack=11, Queen=12, King=13, Ace=14, Joker=100
+    if is_high_card then
+        high_card_streak.count = high_card_streak.count + 1
+    else
+        high_card_streak.count = 0
+    end
+    self.run_state:update_streak("high_card_streak", high_card_streak)
+
+    -- Increment stats
     self.run_state.stats.total_cards_played = self.run_state.stats.total_cards_played + 1
 end
 

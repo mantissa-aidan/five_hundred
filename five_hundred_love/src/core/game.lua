@@ -524,8 +524,24 @@ function Game:resolve_trick()
             trick_number = trick_number
         })
 
-        local streak = self.run_state.streak_states.consecutive_tricks.count
-        self:log(string.format("Trick scored %d points (Streak: %dx)", points, streak))
+        -- Build streak info string
+        local streaks = self.run_state.streak_states
+        local streak_info = {}
+        if streaks.consecutive_tricks.count > 0 then
+            table.insert(streak_info, string.format("Tricks:%d", streaks.consecutive_tricks.count))
+        end
+        if streaks.trump_streak.count >= 3 then
+            table.insert(streak_info, string.format("Trump:%d", streaks.trump_streak.count))
+        end
+        if streaks.high_card_streak.count >= 3 then
+            table.insert(streak_info, string.format("HighCards:%d", streaks.high_card_streak.count))
+        end
+
+        if #streak_info > 0 then
+            self:log(string.format("Trick scored %d points (Streaks: %s)", points, table.concat(streak_info, ", ")))
+        else
+            self:log(string.format("Trick scored %d points", points))
+        end
     end
 
     if self.on_trick_complete_callback then
