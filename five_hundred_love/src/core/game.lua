@@ -92,6 +92,10 @@ function Game:set_on_round_end(callback)
     self.on_round_end_callback = callback
 end
 
+function Game:set_on_bid_made(callback)
+    self.on_bid_made_callback = callback
+end
+
 function Game:log(msg)
     print("[GAME] " .. msg)
     table.insert(self.message_log, msg)
@@ -157,6 +161,24 @@ function Game:deal_cards()
         table.insert(self.kitty, cards[idx])
         idx = idx + 1
     end
+end
+
+-- --- Helper Methods ---
+
+function Game:is_trump(card, trump_suit)
+    if not trump_suit or trump_suit == Suit.NO_TRUMP then return false end
+    if card.rank == Rank.JOKER then return true end
+    return self:get_effective_suit(card, trump_suit) == trump_suit
+end
+
+function Game:is_right_bower(card, trump_suit)
+    if not trump_suit or trump_suit == Suit.NO_TRUMP then return false end
+    return card.rank == Rank.JACK and card.suit == trump_suit
+end
+
+function Game:is_left_bower(card, trump_suit)
+    if not trump_suit or trump_suit == Suit.NO_TRUMP then return false end
+    return card.rank == Rank.JACK and card.suit ~= trump_suit and self:get_effective_suit(card, trump_suit) == trump_suit
 end
 
 -- --- Rules Engine Methods ---
@@ -282,6 +304,11 @@ function Game:player_bid(player_idx, tricks, suit, type)
     }
     
     self.consecutive_passes = 0
+    
+    if self.on_bid_made_callback then
+        self.on_bid_made_callback(player, new_bid)
+    end
+    
     self:advance_turn()
     return true
 end
@@ -299,6 +326,10 @@ function Game:player_pass(player_idx)
     table.insert(self.bids_this_round, pass_bid)
     
     self.player_last_action[player_idx] = { type = "PASS" }
+    
+    if self.on_bid_made_callback then
+        self.on_bid_made_callback(player, {type = "PASS"}) -- Pass object
+    end
     
     self.consecutive_passes = self.consecutive_passes + 1
     
@@ -433,6 +464,30 @@ function Game:player_play_card(player_idx, card)
     return true
 end
 
+function Game:get_card_power(card)
+    if not card then return 0 end
+    
+    -- Joker is max power
+    if card:is_joker() then return 1.0 end
+    
+    local power = 0
+    -- Base power from Rank (4..14)
+    -- Normalize 4..14 to 0.0..0.6
+    local rank_norm = (card.rank - 4) / 10
+    power = rank_norm * 0.6
+    
+    -- Trump bonus (+0.6)
+    if self.trump_suit and self:is_trump(card, self.trump_suit) then
+        power = power + 0.6
+    end
+    
+    -- Bowers are special (Right/Left) - Boost them
+    if self:is_right_bower(card, self.trump_suit) then power = 1.0
+    elseif self:is_left_bower(card, self.trump_suit) then power = 0.95 end
+    
+    return math.min(1.0, power)
+end
+
 function Game:resolve_trick()
     local winner = nil
     local best_score = -1
@@ -517,7 +572,9 @@ function Game:score_round()
     end
     
     -- Update Scores
-    if total_tricks >= self.winning_bid.tricks then
+    -- Update Scores
+    local contract_made = total_tricks >= self.winning_bid.tricks
+    if contract_made then
         self:log("Contract Made!")
         declarer_team:update_score(self.winning_bid.points)
     else
@@ -529,7 +586,8 @@ function Game:score_round()
     if self.on_round_end_callback then
         self.on_round_end_callback({
             team_a_score = self.teams[1].score, 
-            team_b_score = self.teams[2].score
+            team_b_score = self.teams[2].score,
+            contract_made = contract_made
         })
     end
     

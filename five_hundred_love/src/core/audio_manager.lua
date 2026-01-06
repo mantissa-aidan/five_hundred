@@ -4,25 +4,35 @@ local Debug = require "src.config.debug"
 local AudioManager = Utils.class("AudioManager")
 
 AudioManager.SOUNDS = {
-    CARD_SLIDE = "Card_Deal_4.wav",
-    CARD_FLIP = "Card_Deal_4.wav",
-    CARD_HOVER = "pop.wav",
+    CARD_SLIDE = "slide_1.wav",
+    CARD_FLIP = "flip.wav",
+    CARD_HOVER = "card_hover.wav",
     DEAL = "deal_2.wav",
     CLICK = "click.wav",
     ALERT = "alert.wav",
     WIN = "win.wav",
     LOSE = "lose.wav",
     SHUFFLE = "shuffle.wav",
+    INVALID = "wrong.wav",
     
-    -- UI Sounds (Aliased to existing assets)
-    BTN_HOVER_1 = "low.wav", -- Standard Button
-    BTN_CLICK_1 = "tom.wav",
+    -- Bidding
+    BID_MADE = "bid_made.wav",
+    BID_WON = "bid_won.wav", -- Contract won
+    BID_LOST = "bid_lost.wav", -- Contract set?
     
-    BID_HOVER = "low.wav",   -- Bidding Grid
-    BID_CLICK = "tom.wav",       -- Thud for selection
+    -- Trick
+    TRICK_WON = "trick_won.wav",
+    TRICK_LOST = "trick_lost.wav",
     
-    NEXT_TRICK_HOVER = "low.wav", -- Tick sound
-    NEXT_TRICK_CLICK = "high.wav"
+    -- UI Sounds
+    BTN_HOVER_1 = "button_hover.wav",
+    BTN_CLICK_1 = "button_click.wav",
+    
+    BID_HOVER = "button_hover.wav",
+    BID_CLICK = "button_click.wav",
+    
+    NEXT_TRICK_HOVER = "button_hover.wav",
+    NEXT_TRICK_CLICK = "button_click.wav"
 }
 
 function AudioManager:init()
@@ -65,22 +75,25 @@ function AudioManager:load_assets()
     end
 end
 
-function AudioManager:play(sound_id)
+function AudioManager:play(sound_id, params)
     if not self.enabled then return end
     
     local source = self.sources[sound_id]
     if source then
         -- Clone for polyphony (overlapping sounds)
         local clone = source:clone()
-        clone:setVolume(self.volume)
+        clone:setVolume(self.volume * (params and params.volume or 1.0))
         
-        -- Random pitch variation: ±50 or ±100 cents (for testing - will reduce later)
-        -- Pick random variation: 50 or 100 cents
-        local cents_variation = (love.math.random() < 0.5) and 50 or 100
-        -- Random direction: up or down
-        local cents = (love.math.random() < 0.5) and cents_variation or -cents_variation
-        -- Convert cents to pitch ratio: pitch = 2^(cents/1200)
-        local pitch = 2 ^ (cents / 2200)
+        -- Pitch Logic
+        local pitch = 1.0
+        if params and params.pitch then
+            pitch = params.pitch
+        else
+            -- Default random variation
+            local cents_variation = (love.math.random() < 0.5) and 20 or 40
+            local cents = (love.math.random() < 0.5) and cents_variation or -cents_variation
+            pitch = 2 ^ (cents / 2200)
+        end
         clone:setPitch(pitch)
         
         clone:play()

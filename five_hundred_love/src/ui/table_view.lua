@@ -126,7 +126,7 @@ function TableView:resize(w, h)
     end
 end
 
-function TableView:on_card_played(p_idx, card)
+function TableView:on_card_played(p_idx, card, power)
     if p_idx == 1 then
         if gAudioManager then gAudioManager:play("CARD_SLIDE") end
         return
@@ -173,6 +173,7 @@ function TableView:on_card_played(p_idx, card)
         end_y = end_y,
         duration = 0.3,
         card_idx = card_idx,
+        power = power, -- Pass power level (0-1)
         on_complete = function()
             anim:mark_card_dealt(card)
         end
@@ -480,9 +481,12 @@ function TableView:draw()
     for _, anim in ipairs(self.anim:get_animations()) do
         if anim.type == "FLY_IN" then
             local progress = anim.t / anim.duration
+            
+            -- Easing Functions
             local function easeOutCubic(x)
                 return 1 - math.pow(1 - x, 3)
             end
+            
             local t = easeOutCubic(progress)
 
             local curr_x = anim.start_pos.x + (anim.end_pos.x - anim.start_pos.x) * t
@@ -491,8 +495,18 @@ function TableView:draw()
             local s_rot = anim.start_rot or 0
             local e_rot = anim.end_rot or 0
             local curr_rot = s_rot + (e_rot - s_rot) * t
+            
+            -- Z-Axis Slam Effect (Scaling)
+            local current_scale = 1.0
+            if (anim.power or 0) > 0.4 then
+                -- Parabolic arc for Z-axis: sin(0..pi)
+                -- Scale up to 1.5x for max power
+                local z_arc = math.sin(progress * math.pi)
+                local scale_boost = (anim.power or 0) * 0.8 * z_arc -- Boost up to +0.8x scale
+                current_scale = 1.0 + scale_boost
+            end
 
-            local params = {scale_x = 1, scale_y = 1, rotation = curr_rot, shadow_offset = 10}
+            local params = {scale_x = current_scale, scale_y = current_scale, rotation = curr_rot, shadow_offset = 10 * current_scale}
             local face_up = not is_dealing
             CardRenderer.draw_card(anim.card, curr_x, curr_y, self.card_scale, face_up, false, params)
         end

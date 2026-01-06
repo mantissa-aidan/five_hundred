@@ -7,6 +7,10 @@ local NNStrategy = require "src.ai.nn_strategy"
 local HumanStrategy = require "src.ai.human_strategy"
 local RandomStrategy = require "src.ai.random_strategy"
 local Config = require "src.config"
+local AudioManager = require "src.core.audio_manager"
+
+-- Global Audio Manager
+gAudioManager = nil
 
 
 -- Player strategies (indexed by player position 1-4)
@@ -47,12 +51,45 @@ local function register_callbacks()
             gChatLog:add_message("System", {"Bidding Started", "Dealer: " .. data.dealer_name}, false, Config.colors.system_color)
         elseif phase == "KITTY" then
             gChatLog:add_message("System", {data.winner_name .. " won bid", "Choosing Kitty..."}, false, Config.colors.system_color)
+            if gAudioManager then gAudioManager:play("BID_WON", {volume=0.9}) end
         elseif phase == "PLAYING" then
             gChatLog:add_message("System", {"Play Started"}, false, Config.colors.system_color)
         elseif phase == "TRICK_START" then
             gChatLog:add_message("System", {"Trick " .. data.trick_num .. "/10"}, false, {0.4, 0.4, 0.4})
         elseif phase == "REDEAL" then
             gChatLog:add_message("System", {"All passed. Redeal."}, false, {1, 0.5, 0})
+            if gAudioManager then gAudioManager:play("SHUFFLE", {volume=0.8}) end
+        end
+    end)
+    
+    gGame:set_on_bid_made(function(player, bid)
+        if not gAudioManager then return end
+        
+        if bid.type == "PASS" then
+             gAudioManager:play("BTN_CLICK_1", {volume=0.3}) -- Quiet pass
+        else
+            -- Progressive Logic
+            local suit_pitch = {
+                [0] = 0.8, -- Clubs (Wood)
+                [1] = 1.0, -- Diamonds (Glass)
+                [2] = 0.9, -- Hearts (Warm)
+                [3] = 1.2, -- Spades (Sharp)
+                [4] = 1.1  -- NT (Ethereal)
+            }
+            local base_pitch = suit_pitch[bid.suit] or 1.0
+            
+            -- Progressive Heaviness (Tricks 6..10)
+            local weight = (bid.tricks - 6) / 4 -- 0.0 to 1.0
+            if weight < 0 then weight = 0 end
+            
+            -- Higher bid = Deeper pitch (heavier) + Louder
+            local pitch_mod = weight * 0.3
+            local vol_mod = weight * 0.4
+            
+            local final_pitch = base_pitch - pitch_mod
+            local final_vol = 0.6 + vol_mod
+            
+            gAudioManager:play("BID_MADE", {pitch=final_pitch, volume=final_vol})
         end
     end)
     
@@ -60,6 +97,33 @@ local function register_callbacks()
         local suit_names = {[0]="Clubs", [1]="Diamonds", [2]="Hearts", [3]="Spades", [4]="No Trump"}
         local suit_str = suit_names[bid.suit] or tostring(bid.suit)
         gChatLog:add_message("System", {"Contract: " .. bid.tricks .. " " .. suit_str, "By " .. bid.player.name}, false, {0.8, 0.8, 0.2})
+        -- BID_WON played in phase change KITTY or here? Logic says here is safer for contract win.
+        if gAudioManager then gAudioManager:play("BID_WON", {volume=0.9}) end
+    end)
+    
+    gGame:set_on_card_play(function(player_idx, card)
+        local power = gGame:get_card_power(card)
+        local is_self = (gGame.players[player_idx].name == "You")
+        
+        if is_self then
+             print(string.format("[DEBUG] Card Played: %s | Power: %.2f", tostring(card), power))
+        end
+        
+        if gAudioManager then 
+            -- Self play is louder, High power is louder
+            local base_vol = is_self and 0.8 or 0.4
+            
+            -- Power boosts volume and lowers pitch (heavier)
+            local vol = math.min(1.0, base_vol + (power * 0.3))
+            local pitch = 1.0 - (power * 0.2) -- 0.8 to 1.0
+            
+            gAudioManager:play("CARD_FLIP", {volume=vol, pitch=pitch}) 
+        end
+        
+        -- Forward to TableView for animation with Power
+        if gTableView and gTableView.on_card_played then
+            gTableView:on_card_played(player_idx, card, power)
+        end
     end)
     
     gGame:set_on_trick_complete(function(data)
@@ -72,15 +136,9 @@ local function register_callbacks()
         local msgs = {string.format("Trick %d: %s won with %s", data.trick_num, data.winner.name, card_str)}
         table.insert(msgs, string.format("Lead: %s, Trump: %s", lead_str, trump_str))
         
-        -- Add all cards played (optional, for debugging)
-        if data.all_cards then
-            for i, card_info in ipairs(data.all_cards) do
-                table.insert(msgs, string.format("  %s: %s (str:%d)", 
-                    card_info.player.name, tostring(card_info.card), card_info.strength))
-            end
-        end
-        
         local col = {0.5, 0.5, 0.5}
+        local is_friendly = (data.winner.name == "You" or data.winner.name == "Partner")
+        
         if data.winner.name == "You" then
             col = {0.2, 0.8, 0.2}
         elseif data.winner.name == "Partner" then
@@ -91,10 +149,18 @@ local function register_callbacks()
         if gTableView and gTableView.on_trick_complete then
             gTableView:on_trick_complete(data)
         end
+        
+        -- Audio & Shake
+        if gAudioManager then
+            if is_friendly then
+                gAudioManager:play("TRICK_WON", {volume=0.9})
+            else
+                gAudioManager:play("TRICK_LOST", {volume=0.8})
+            end
+        end
     end)
     
     gGame:set_on_round_end(function(data)
-        -- Clear animation blocking to allow round end UI
         if gTableView and gTableView.anim then
             gTableView.anim:skip_all()
         end
@@ -104,6 +170,14 @@ local function register_callbacks()
             "Team A: " .. data.team_a_score,
             "Team B: " .. data.team_b_score
         }, false, {1, 0.8, 0})
+        
+        if gAudioManager then
+            if data.contract_made then
+                gAudioManager:play("BID_WON", {volume=1.0})
+            else
+                gAudioManager:play("BID_LOST", {volume=0.9})
+            end
+        end
     end)
     
     -- Dealing animation
@@ -205,7 +279,7 @@ end
 local gCanvas = nil
 local gCRTShader = nil
 local gTime = 0
-local gScreenShake = 0
+gScreenShake = 0
 
 function love.load()
     -- Initialize RNG
@@ -217,6 +291,7 @@ function love.load()
     -- Hot Reload Setup (Lurker)
     lurker = require "src.ext.lurker"
     lurker.path = "src" -- Only scan src directory
+    lurker.interval = 2 -- Scan every 2 seconds to reduce file I/O stutter on Windows
     lurker.postswap = reload_ui -- Call this after swap
     
     -- Load Unicode font (DejaVu Sans has suit symbols ♠♣♦♥)
@@ -286,7 +361,9 @@ function love.load()
 end
 
 function love.update(dt)
-    lurker.update() -- Check for file changes
+    if Config.debug.hot_reload then
+        lurker.update() -- Check for file changes
+    end
     gTime = gTime + dt
     
     -- Update Chat Animation

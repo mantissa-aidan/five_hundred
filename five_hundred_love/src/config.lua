@@ -39,7 +39,8 @@ local Config = {
     -- Debug Settings
     debug = {
         auto_start = false,
-        show_bot_hands = true
+        show_bot_hands = true,
+        hot_reload = true -- Set to true to enable hot reloading (can cause stutters on Windows if interval is too low)
     }
 }
 

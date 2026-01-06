@@ -44,7 +44,8 @@ function AnimationManager:queue(params)
         on_complete = params.on_complete,
         start_scale = params.start_scale or 1.0,
         start_rot = params.start_rot or 0,
-        end_rot = params.end_rot or 0
+        end_rot = params.end_rot or 0,
+        power = params.power -- Store power level
     })
 
     return self
@@ -122,6 +123,12 @@ function AnimationManager:update(dt)
         anim.t = anim.t + dt
         if anim.t >= anim.duration then
             if anim.on_complete then anim.on_complete() end
+            
+            -- Slam Shake for high power cards
+            if (anim.power or 0) > 0.7 then
+                gScreenShake = 1.5
+            end
+            
             table.remove(self.animations, i)
 
             -- Start delay timer after all animations complete
