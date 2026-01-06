@@ -2,6 +2,7 @@ local Utils = require "src.core.utils"
 local CardModule = require "src.core.card"
 local BidModule = require "src.core.bid"
 local Button = require "src.ui.button"
+local Debug = require "src.config.debug"
 
 local Suit = CardModule.Suit
 local Bid = BidModule.Bid
@@ -34,6 +35,10 @@ function BiddingView:init(game, container_w, container_h)
     -- Animation State
     self.intro_progress = 0.0  -- Will be set to 0.0 when animation triggers
     self.was_active = false
+end
+
+function BiddingView:is_animating()
+    return self.intro_progress > 0.001
 end
 
 function BiddingView:resize(container_w, container_h)
@@ -130,12 +135,27 @@ end
 
 function BiddingView:update(dt, dealing_in_progress)
     -- Hot-reload safety: initialize animation state if missing
-    if self.intro_progress == nil then self.intro_progress = 0.0 end
-    if self.was_active == nil then self.was_active = false end
+    if self.intro_progress == nil then 
+        self.intro_progress = 0.0
+        Debug:log("BIDDING_ANIM", "Hot-reload: initialized intro_progress to 0.0")
+    end
+    if self.was_active == nil then 
+        self.was_active = false
+        Debug:log("BIDDING_ANIM", "Hot-reload: initialized was_active to false")
+    end
     
     if self.game.state ~= "BIDDING" then
-        self.was_active = false
-        self.intro_progress = 0.0  -- Reset animation progress too!
+        -- Animate Out (Exit)
+        if self.intro_progress > 0 then
+             local speed = 12
+             self.intro_progress = self.intro_progress - self.intro_progress * speed * dt
+             if self.intro_progress < 0.001 then 
+                 self.intro_progress = 0 
+                 self.was_active = false
+             end
+        else
+             self.was_active = false
+        end
         return 
     end
     
@@ -143,13 +163,19 @@ function BiddingView:update(dt, dealing_in_progress)
     if not self.was_active and not dealing_in_progress then
         self.was_active = true
         self.intro_progress = 0.0
+        Debug:log("BIDDING_ANIM", "*** ANIMATION TRIGGERED (dealing complete) ***")
         if gAudioManager then gAudioManager:play("CARD_SLIDE") end
     end
     
     -- Animate Intro (Fast ease out) - only if animation has been triggered
     if self.was_active then
         local speed = 12
+        local old_progress = self.intro_progress
         self.intro_progress = self.intro_progress + (1.0 - self.intro_progress) * speed * dt
+        
+        if old_progress < 0.95 and self.intro_progress >= 0.95 then
+            Debug:log("BIDDING_ANIM", "Animation nearly complete: %.3f", self.intro_progress)
+        end
     end
     
     -- Logic to update button states (colors/disabled)
@@ -206,7 +232,7 @@ function BiddingView:update_layout()
 end
 
 function BiddingView:draw()
-    if self.game.state ~= "BIDDING" then return end
+    if not self:is_animating() and self.game.state ~= "BIDDING" then return end
     if #self.buttons == 0 then self:update_layout() end
     
     love.graphics.push()

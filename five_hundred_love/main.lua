@@ -95,13 +95,12 @@ local function register_callbacks()
     
     gGame:set_on_round_end(function(data)
         -- Clear animation blocking to allow round end UI
-        if gTableView then
-            gTableView.is_animating = false
-            gTableView.animation_delay_timer = 0
+        if gTableView and gTableView.anim then
+            gTableView.anim:skip_all()
         end
-        
+
         gChatLog:add_message("System", {
-            "Round Over", 
+            "Round Over",
             "Team A: " .. data.team_a_score,
             "Team B: " .. data.team_b_score
         }, false, {1, 0.8, 0})
@@ -340,7 +339,7 @@ function love.update(dt)
     -- Game Logic Update
     if gAppState == "GAME" then
         -- Block game updates during animations
-        if gTableView.is_animating then
+        if gTableView.anim:is_busy() then
             gTableView:update(dt)
             gChatLog:update(dt)
             return
@@ -384,14 +383,7 @@ function love.update(dt)
                    elseif gGame.state == "PLAYING" then
                        local player = gGame.players[p_idx]
                        local playable = gGame:get_playable_cards(player, gGame.lead_suit)
-                       -- 1. Try Direct Play (Global to prevent GC)
-                       local path = "assets/sounds/click.wav"
-                       if love.filesystem.getInfo(path) then
-             gDebugSource = love.audio.newSource(path, "static")
-             gDebugSource:play()
-             print("Direct Source Play Attempted: " .. tostring(gDebugSource))
-        else                    print("Direct Source Play Attempted: " .. tostring(gDebugSource))
-                       end
+
                        local card = strategy:decide_play(gGame, p_idx, playable)
                        if card then
                            gGame:player_play_card(p_idx, card)
@@ -437,7 +429,7 @@ function love.keypressed(key)
     elseif key == "space" then
         if gPaused then return end
         -- Skip dealing animation first
-        if gTableView and gTableView.dealing_in_progress then
+        if gTableView and gTableView.anim:is_dealing() then
             gTableView:skip_dealing_animation()
         elseif gGame.state == "BIDDING" and gGame.current_player_idx == 1 then
             gGame:player_pass(1)
@@ -450,6 +442,8 @@ function love.keypressed(key)
         gChatLog:add_message("System", {"UI Reloaded"}, false, {0.3, 0.5, 0.3})
     elseif key == "n" then
         gGame:start_new_round()
+        -- Recreate TableView to reset BiddingView animation state
+        gTableView = TableView.new(gGame)
         if gChatLog then gChatLog:clear() end
         gChatLog:add_message("System", {"New round started"}, false, {0.3, 0.5, 0.3})
         gPaused = false

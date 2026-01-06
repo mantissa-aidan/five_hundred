@@ -1,4 +1,5 @@
 local Utils = require "src.core.utils"
+local Debug = require "src.config.debug"
 
 local AudioManager = Utils.class("AudioManager")
 
@@ -20,7 +21,7 @@ AudioManager.SOUNDS = {
     BID_HOVER = "low.wav",   -- Bidding Grid
     BID_CLICK = "tom.wav",       -- Thud for selection
     
-    NEXT_TRICK_HOVER = "low.wav.wav", -- Tick sound
+    NEXT_TRICK_HOVER = "low.wav", -- Tick sound
     NEXT_TRICK_CLICK = "high.wav"
 }
 
@@ -101,10 +102,10 @@ function AudioManager:play(sound_id)
             end
         end
         
-        -- print(string.format("[AudioManager] PLAYING: %s (%s) from %s", sound_id, filename, caller))
+        Debug:log("AUDIO", "PLAYING: %s (%s) from %s", sound_id, filename, caller)
     else
         -- Silent fail / Debug log
-        print("[AudioManager] Warning: Sound not loaded: " .. tostring(sound_id))
+        Debug:log("AUDIO", "Warning: Sound not loaded: %s", tostring(sound_id))
     end
 end
 
